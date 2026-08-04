@@ -1,0 +1,30 @@
+.placeholder {
+  min-height: 100dvh;
+  display: grid;
+  place-content: center;
+  gap: 0.75rem;
+  padding: 2rem;
+  text-align: center;
+  font-family: var(--font-ui);
+  color: #12232e;
+  background: #e8eef2;
+}
+
+.placeholder p {
+  margin: 0;
+}
+
+.placeholder button {
+  appearance: none;
+  justify-self: center;
+  min-height: 2.75rem;
+  padding: 0.55rem 1.1rem;
+  border: none;
+  border-radius: 0.55rem;
+  background: #163a4a;
+  color: #eef5f4;
+  font-family: var(--font-ui);
+  font-size: 0.98rem;
+  font-weight: 650;
+  cursor: pointer;
+}

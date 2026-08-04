@@ -1,0 +1,45 @@
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const authRoutes = require('./routes/auth');
+
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:5173')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Origen no permitido por CORS'));
+      }
+    },
+    credentials: true,
+  }),
+);
+
+app.use(express.json());
+
+app.get('/api/health', (_req, res) => {
+  res.json({ status: 'ok', service: 'habertronic-orion-api' });
+});
+
+app.use('/api/auth', authRoutes);
+
+app.use((err, _req, res, _next) => {
+  if (err.message === 'Origen no permitido por CORS') {
+    return res.status(403).json({ error: err.message });
+  }
+  console.error(err);
+  res.status(500).json({ error: 'Error interno' });
+});
+
+app.listen(PORT, () => {
+  console.log(`API Orión en http://localhost:${PORT}`);
+});

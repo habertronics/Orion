@@ -1,0 +1,257 @@
+.r-auth {
+  --ink: #12232e;
+  --ink-soft: #3a5260;
+  --surface: rgba(238, 245, 244, 0.82);
+  --line: rgba(18, 35, 46, 0.12);
+  --login: #163a4a;
+  --register: #0f7a74;
+
+  position: relative;
+  isolation: isolate;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: clamp(1.5rem, 5vh, 2.5rem);
+  padding: clamp(1.25rem, 4vw, 2.5rem) clamp(1.25rem, 5vw, 3rem)
+    max(1.25rem, env(safe-area-inset-bottom));
+  color: var(--ink);
+  overflow: hidden;
+}
+
+.r-auth__atmosphere {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse 90% 55% at 12% 10%, rgba(15, 122, 116, 0.22), transparent 55%),
+    radial-gradient(ellipse 70% 45% at 92% 12%, rgba(47, 95, 158, 0.18), transparent 50%),
+    radial-gradient(ellipse 85% 55% at 50% 105%, rgba(22, 58, 74, 0.14), transparent 55%),
+    linear-gradient(168deg, #eef5f4 0%, #e3ebf0 45%, #d7e4e2 100%);
+}
+
+.r-auth__atmosphere::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(
+    rgba(18, 35, 46, 0.045) 0.7px,
+    transparent 0.7px
+  );
+  background-size: 14px 14px;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.r-auth__header {
+  max-width: 38rem;
+}
+
+.r-auth__back {
+  appearance: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.r-auth__brand {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 7vw, 3rem);
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.r-auth__subtitle {
+  margin: 0.75rem 0 0;
+  max-width: 28rem;
+  font-family: var(--font-ui);
+  font-size: clamp(0.98rem, 2.5vw, 1.1rem);
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+
+.r-auth__actions {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1rem;
+  max-width: 28rem;
+  width: 100%;
+  margin-inline: auto;
+}
+
+.r-auth__choice,
+.r-auth__submit {
+  appearance: none;
+  width: 100%;
+  min-height: 4.5rem;
+  border: none;
+  border-radius: 0.75rem;
+  color: #eef5f4;
+  font-family: var(--font-ui);
+  font-size: clamp(1.15rem, 3.2vw, 1.35rem);
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    filter 0.2s ease;
+}
+
+.r-auth__choice--login {
+  background: var(--login);
+}
+
+.r-auth__choice--register {
+  background: var(--register);
+}
+
+.r-auth__choice:hover,
+.r-auth__submit:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.05);
+}
+
+.r-auth__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.95rem;
+  max-width: 28rem;
+  width: 100%;
+  margin-inline: auto;
+  align-self: start;
+}
+
+.r-auth__field {
+  display: grid;
+  gap: 0.4rem;
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.r-auth__field input {
+  width: 100%;
+  min-height: 3rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 0.65rem;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 1.05rem;
+  font-weight: 500;
+}
+
+.r-auth__field input:focus-visible,
+.r-auth__choice:focus-visible,
+.r-auth__submit:focus-visible,
+.r-auth__back:focus-visible,
+.r-auth__refresh:focus-visible {
+  outline: 3px solid rgba(18, 35, 46, 0.3);
+  outline-offset: 2px;
+}
+
+.r-auth__suggested {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    'label refresh'
+    'code refresh';
+  gap: 0.25rem 0.75rem;
+  align-items: center;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.65rem;
+  background: var(--surface);
+}
+
+.r-auth__label {
+  grid-area: label;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.r-auth__code {
+  grid-area: code;
+  font-family: var(--font-ui);
+  font-size: 1.55rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--ink);
+}
+
+.r-auth__refresh {
+  grid-area: refresh;
+  appearance: none;
+  min-height: 2.5rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: #fff;
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.r-auth__check {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.7rem;
+  align-items: start;
+  font-family: var(--font-ui);
+  font-size: 0.98rem;
+  line-height: 1.35;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.r-auth__check input {
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-top: 0.1rem;
+  accent-color: var(--login);
+  cursor: pointer;
+}
+
+.r-auth__error {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+  color: #9b2c2c;
+}
+
+.r-auth__submit {
+  min-height: 3.4rem;
+  background: var(--register);
+  margin-top: 0.25rem;
+}
+
+.r-auth__link {
+  appearance: none;
+  border: none;
+  background: none;
+  padding: 0.35rem;
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .r-auth__choice,
+  .r-auth__submit {
+    transition: none;
+  }
+}
