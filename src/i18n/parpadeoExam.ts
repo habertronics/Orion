@@ -83,6 +83,10 @@ export function isExamComplete(state: ParpadeoExamState): boolean {
   return EXAM_STEPS.every((id) => isExamStepDone(state, id))
 }
 
+export function isSchirmerZero(result: SchirmerResult | null): boolean {
+  return result !== null && (result.odMm === 0 || result.osMm === 0)
+}
+
 export const examCopy: Record<
   Lang,
   {

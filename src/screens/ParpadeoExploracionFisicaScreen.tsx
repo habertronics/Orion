@@ -6,6 +6,7 @@ import {
   MEIBUM_GRADES,
   isExamComplete,
   isExamStepDone,
+  isSchirmerZero,
   type ExamStepId,
   type MeibumGrade,
   type ParpadeoExamState,
@@ -94,7 +95,11 @@ export function ParpadeoExploracionFisicaScreen({
       setFindingsDraft(state.meibomianFindings ?? emptyMeibomianFindings())
     }
     if (id === 'otherCriteria') {
-      setPlusDraft(state.otherCriteria ?? emptyPlusCriteria())
+      const draft = state.otherCriteria ?? emptyPlusCriteria()
+      setPlusDraft({
+        ...draft,
+        schirmerZero: isSchirmerZero(state.schirmer) ? true : draft.schirmerZero,
+      })
     }
     setOpen(id)
   }
@@ -124,6 +129,16 @@ export function ParpadeoExploracionFisicaScreen({
     setState((prev) => ({
       ...prev,
       schirmer: { odMm, osMm },
+      otherCriteria: prev.otherCriteria
+        ? {
+            ...prev.otherCriteria,
+            schirmerZero: isSchirmerZero({ odMm, osMm })
+              ? true
+              : isSchirmerZero(prev.schirmer)
+                ? false
+                : prev.otherCriteria.schirmerZero,
+          }
+        : prev.otherCriteria,
     }))
     setMeasureError(null)
     setOpen(null)
@@ -425,6 +440,7 @@ export function ParpadeoExploracionFisicaScreen({
               <PlusCriteriaForm
                 lang={lang}
                 value={plusDraft}
+                schirmerLocked={isSchirmerZero(state.schirmer)}
                 onChange={setPlusDraft}
                 onSave={() => {
                   setState((prev) => ({

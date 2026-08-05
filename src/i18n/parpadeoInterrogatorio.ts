@@ -30,16 +30,22 @@ export type EnvironmentSnapshot = {
   }
 }
 
-export type LocationChoice = {
-  lat: number
-  lng: number
-  accuracy: number
-  capturedAt: string
-  source: 'device' | 'geocoded'
-  sameLocality: boolean
-  label?: string
-  placeId?: number
-}
+export type LocationChoice =
+  | {
+      source: 'skipped'
+      sameLocality: boolean
+      capturedAt: string
+    }
+  | {
+      source: 'device' | 'geocoded'
+      lat: number
+      lng: number
+      accuracy: number
+      capturedAt: string
+      sameLocality: boolean
+      label?: string
+      placeId?: number
+    }
 
 export type ParpadeoInterrogatorioState = {
   age: number | null
@@ -117,6 +123,7 @@ export const interrogatorioCopy: Record<
     locationSameHint: string
     locationGpsBody: string
     locationAccept: string
+    locationSkip: string
     locationCityTitle: string
     locationCityHint: string
     locationCityPlaceholder: string
@@ -215,6 +222,7 @@ export const interrogatorioCopy: Record<
     locationGpsBody:
       'Se usará la localización aproximada del dispositivo. La precisión típica no es mejor que ~500 m. Sirve para estimar temperatura, humedad, presión, UV y calidad del aire de la zona.',
     locationAccept: 'Obtener ubicación + clima',
+    locationSkip: 'Continuar sin este dato',
     locationCityTitle: 'Ciudad o localidad del paciente',
     locationCityHint:
       'Escribe el nombre de la ciudad. Aparecerán opciones (p. ej. Cuzco, Perú / Bolivia).',
@@ -314,6 +322,7 @@ export const interrogatorioCopy: Record<
     locationGpsBody:
       'The device approximate location will be used. Typical accuracy is no better than ~500 m. It estimates temperature, humidity, pressure, UV, and air quality for the area.',
     locationAccept: 'Get location + weather',
+    locationSkip: 'Continue without this data',
     locationCityTitle: 'Patient city or locality',
     locationCityHint:
       'Type the city name. Matching options will appear (e.g. Cusco, Peru / Bolivia).',
@@ -413,6 +422,7 @@ export const interrogatorioCopy: Record<
     locationGpsBody:
       'Será usada a localização aproximada do dispositivo. A precisão típica não é melhor que ~500 m. Serve para estimar temperatura, umidade, pressão, UV e qualidade do ar da região.',
     locationAccept: 'Obter localização + clima',
+    locationSkip: 'Continuar sem este dado',
     locationCityTitle: 'Cidade ou localidade do paciente',
     locationCityHint:
       'Digite o nome da cidade. Opções aparecerão (ex.: Cusco, Peru / Bolívia).',
@@ -429,6 +439,14 @@ export const interrogatorioCopy: Record<
   },
 }
 
+export function isLocationStepComplete(
+  state: ParpadeoInterrogatorioState,
+): boolean {
+  if (!state.locationAccepted || !state.location) return false
+  if (state.location.source === 'skipped') return true
+  return state.environment !== null
+}
+
 export function isInterrogatorioComplete(
   state: ParpadeoInterrogatorioState,
 ): boolean {
@@ -440,8 +458,6 @@ export function isInterrogatorioComplete(
     state.usingLubricant !== null &&
     state.osdi6Done &&
     state.osdi6 !== null &&
-    state.locationAccepted &&
-    state.location !== null &&
-    state.environment !== null
+    isLocationStepComplete(state)
   )
 }

@@ -41,6 +41,7 @@ export const plusCopy: Record<
     intro: string
     hint: string
     save: string
+    schirmerAuto: string
     items: Record<PlusCriterionId, string>
   }
 > = {
@@ -49,6 +50,7 @@ export const plusCopy: Record<
     intro: 'LUBOS-III, más cualquiera de estos criterios:',
     hint: 'Marca solo los criterios presentes. Si no aplica ninguno, guarda vacío.',
     save: 'Guardar criterios',
+    schirmerAuto: 'Marcado automáticamente porque el Schirmer fue 0 mm en al menos un ojo.',
     items: {
       irreversibleDamage: 'Daño irreversible de la superficie ocular.',
       schirmerZero: 'Test de Schirmer: I = 0 mm/5 minutos en al menos un ojo.',
@@ -65,6 +67,8 @@ export const plusCopy: Record<
     intro: 'LUBOS-III, plus any of these criteria:',
     hint: 'Check only present criteria. If none apply, save empty.',
     save: 'Save criteria',
+    schirmerAuto:
+      'Checked automatically because Schirmer was 0 mm in at least one eye.',
     items: {
       irreversibleDamage: 'Irreversible ocular surface damage.',
       schirmerZero: 'Schirmer test: I = 0 mm/5 minutes in at least one eye.',
@@ -80,6 +84,8 @@ export const plusCopy: Record<
     intro: 'LUBOS-III, mais qualquer um destes critérios:',
     hint: 'Marque apenas os critérios presentes. Se nenhum se aplicar, salve vazio.',
     save: 'Salvar critérios',
+    schirmerAuto:
+      'Marcado automaticamente porque o Schirmer foi 0 mm em pelo menos um olho.',
     items: {
       irreversibleDamage: 'Dano irreversível da superfície ocular.',
       schirmerZero: 'Teste de Schirmer: I = 0 mm/5 minutos em pelo menos um olho.',

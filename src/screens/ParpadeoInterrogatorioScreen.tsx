@@ -3,6 +3,7 @@ import {
   emptyInterrogatorio,
   interrogatorioCopy,
   isInterrogatorioComplete,
+  isLocationStepComplete,
   type NonLubeTreatment,
   type ParpadeoInterrogatorioState,
   type SexOption,
@@ -56,11 +57,7 @@ function stepDone(state: ParpadeoInterrogatorioState, id: StepId): boolean {
     case 'osdi6':
       return state.osdi6Done && state.osdi6 !== null
     case 'location':
-      return (
-        state.locationAccepted &&
-        state.location !== null &&
-        state.environment !== null
-      )
+      return isLocationStepComplete(state)
   }
 }
 
@@ -137,7 +134,9 @@ export function ParpadeoInterrogatorioScreen({
             : 'no'
           : null,
       )
-      setCityQuery(state.location?.label ?? '')
+      setCityQuery(
+        state.location?.source === 'geocoded' ? (state.location.label ?? '') : '',
+      )
       setPlaces([])
     }
     setOpen(id)
@@ -233,6 +232,22 @@ export function ParpadeoInterrogatorioScreen({
         placeId: place.id,
       },
       environment,
+    }))
+    setLocationMessage(null)
+    setOpen(null)
+  }
+
+  function skipLocation() {
+    if (sameLocality === null) return
+    setState((prev) => ({
+      ...prev,
+      locationAccepted: true,
+      location: {
+        source: 'skipped',
+        sameLocality: sameLocality === 'yes',
+        capturedAt: new Date().toISOString(),
+      },
+      environment: null,
     }))
     setLocationMessage(null)
     setOpen(null)
@@ -636,7 +651,7 @@ export function ParpadeoInterrogatorioScreen({
                 {sameLocality === 'yes' && (
                   <div className="p-int__location-branch">
                     <p className="p-int__dialog-hint">{t.locationGpsBody}</p>
-                    {state.location?.sameLocality && state.environment && (
+                    {state.location?.source === 'device' && state.environment && (
                       <p className="p-int__coords">
                         ≈ {state.location.lat}, {state.location.lng} ·{' '}
                         {state.environment.weather.temperatureC ?? '—'}°C ·{' '}
@@ -647,14 +662,24 @@ export function ParpadeoInterrogatorioScreen({
                     {locationMessage && (
                       <p className="p-int__msg">{locationMessage}</p>
                     )}
-                    <button
-                      type="button"
-                      className="p-int__confirm"
-                      disabled={locationBusy}
-                      onClick={() => void acceptSameLocalityGps()}
-                    >
-                      ✓ {t.locationAccept}
-                    </button>
+                    <div className="p-int__location-actions">
+                      <button
+                        type="button"
+                        className="p-int__confirm"
+                        disabled={locationBusy}
+                        onClick={() => void acceptSameLocalityGps()}
+                      >
+                        ✓ {t.locationAccept}
+                      </button>
+                      <button
+                        type="button"
+                        className="p-int__skip"
+                        disabled={locationBusy}
+                        onClick={skipLocation}
+                      >
+                        {t.locationSkip}
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -698,8 +723,7 @@ export function ParpadeoInterrogatorioScreen({
                       </ul>
                     )}
 
-                    {state.location &&
-                      !state.location.sameLocality &&
+                    {state.location?.source === 'geocoded' &&
                       state.location.label &&
                       state.environment && (
                         <p className="p-int__coords">
@@ -711,6 +735,14 @@ export function ParpadeoInterrogatorioScreen({
                     {locationMessage && (
                       <p className="p-int__msg">{locationMessage}</p>
                     )}
+                    <button
+                      type="button"
+                      className="p-int__skip"
+                      disabled={locationBusy}
+                      onClick={skipLocation}
+                    >
+                      {t.locationSkip}
+                    </button>
                   </div>
                 )}
               </>

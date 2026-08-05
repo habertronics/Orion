@@ -9,6 +9,7 @@ import type { Lang } from '../i18n/preferences'
 type PlusCriteriaFormProps = {
   lang: Lang
   value: PlusCriteriaResult
+  schirmerLocked: boolean
   onChange: (next: PlusCriteriaResult) => void
   onSave: () => void
 }
@@ -16,12 +17,14 @@ type PlusCriteriaFormProps = {
 export function PlusCriteriaForm({
   lang,
   value,
+  schirmerLocked,
   onChange,
   onSave,
 }: PlusCriteriaFormProps) {
   const t = plusCopy[lang]
 
   function toggle(id: PlusCriterionId) {
+    if (id === 'schirmerZero' && schirmerLocked) return
     onChange({ ...value, [id]: !value[id] })
   }
 
@@ -39,18 +42,27 @@ export function PlusCriteriaForm({
         <div className="plus__body">
           <p className="plus__intro">{t.intro}</p>
           <ul className="plus__list">
-            {PLUS_CRITERIA.map((id) => (
-              <li key={id}>
-                <label className="plus__item">
-                  <input
-                    type="checkbox"
-                    checked={value[id]}
-                    onChange={() => toggle(id)}
-                  />
-                  <span>{t.items[id]}</span>
-                </label>
-              </li>
-            ))}
+            {PLUS_CRITERIA.map((id) => {
+              const locked = id === 'schirmerZero' && schirmerLocked
+              return (
+                <li key={id}>
+                  <label className={`plus__item${locked ? ' is-locked' : ''}`}>
+                    <input
+                      type="checkbox"
+                      checked={value[id]}
+                      disabled={locked}
+                      onChange={() => toggle(id)}
+                    />
+                    <span>
+                      {t.items[id]}
+                      {locked && (
+                        <small className="plus__auto">{t.schirmerAuto}</small>
+                      )}
+                    </span>
+                  </label>
+                </li>
+              )
+            })}
           </ul>
         </div>
       </div>

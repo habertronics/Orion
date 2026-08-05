@@ -268,6 +268,34 @@
   margin-top: 1rem;
 }
 
+.p-int__location-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+  align-items: stretch;
+}
+
+.p-int__skip {
+  appearance: none;
+  width: 100%;
+  min-height: 3rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px dashed rgba(18, 35, 46, 0.28);
+  border-radius: 0.55rem;
+  background: #f3f1ec;
+  color: var(--ink-soft, #3a5260);
+  font-family: var(--font-ui);
+  font-size: 0.92rem;
+  font-weight: 650;
+  line-height: 1.25;
+  cursor: pointer;
+}
+
+.p-int__skip:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
 .p-int__suggestions {
   list-style: none;
   margin: 0 0 0.85rem;

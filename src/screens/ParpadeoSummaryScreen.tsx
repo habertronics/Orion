@@ -19,8 +19,11 @@ const copy: Record<
     sameLocality: string
     locationSourceDevice: string
     locationSourceGeocoded: string
+    locationSourceSkipped: string
+    locationSkipped: string
     locationCoords: string
     locationSource: string
+    environmentSkipped: string
     osdiAnswers: string
     osdiSubDiscomfort: string
     osdiSubFunction: string
@@ -56,8 +59,11 @@ const copy: Record<
     sameLocality: 'Misma localidad que la exploración',
     locationSourceDevice: 'GPS del dispositivo',
     locationSourceGeocoded: 'Ciudad buscada',
+    locationSourceSkipped: 'Omitido',
+    locationSkipped: 'Continuar sin este dato',
     locationCoords: 'Coordenadas',
     locationSource: 'Fuente',
+    environmentSkipped: 'Sin dato ambiental',
     osdiAnswers: 'Respuestas (ítems 1–6)',
     osdiSubDiscomfort: 'Subescala malestar / visión',
     osdiSubFunction: 'Subescala función / tareas',
@@ -92,8 +98,11 @@ const copy: Record<
     sameLocality: 'Same locality as the examination',
     locationSourceDevice: 'Device GPS',
     locationSourceGeocoded: 'Searched city',
+    locationSourceSkipped: 'Skipped',
+    locationSkipped: 'Continued without this data',
     locationCoords: 'Coordinates',
     locationSource: 'Source',
+    environmentSkipped: 'No environmental data',
     osdiAnswers: 'Answers (items 1–6)',
     osdiSubDiscomfort: 'Discomfort / vision subscale',
     osdiSubFunction: 'Function / tasks subscale',
@@ -128,8 +137,11 @@ const copy: Record<
     sameLocality: 'Mesma localidade da exploração',
     locationSourceDevice: 'GPS do dispositivo',
     locationSourceGeocoded: 'Cidade buscada',
+    locationSourceSkipped: 'Omitido',
+    locationSkipped: 'Continuar sem este dado',
     locationCoords: 'Coordenadas',
     locationSource: 'Fonte',
+    environmentSkipped: 'Sem dado ambiental',
     osdiAnswers: 'Respostas (itens 1–6)',
     osdiSubDiscomfort: 'Subescala desconforto / visão',
     osdiSubFunction: 'Subescala função / tarefas',
@@ -272,14 +284,16 @@ export function ParpadeoSummaryScreen({
           <Row
             label={iq.steps.location}
             value={
-              loc?.label
-                ? loc.label
-                : loc
-                  ? `≈ ${loc.lat}, ${loc.lng}`
-                  : '—'
+              !loc
+                ? '—'
+                : loc.source === 'skipped'
+                  ? t.locationSkipped
+                  : loc.source === 'geocoded' && loc.label
+                    ? loc.label
+                    : `≈ ${loc.lat}, ${loc.lng}`
             }
           />
-          {loc && (
+          {loc && loc.source !== 'skipped' && (
             <>
               <Row
                 label={t.locationCoords}
@@ -294,6 +308,9 @@ export function ParpadeoSummaryScreen({
                 }
               />
             </>
+          )}
+          {loc?.source === 'skipped' && (
+            <Row label={t.locationSource} value={t.locationSourceSkipped} />
           )}
         </section>
 
@@ -387,7 +404,12 @@ export function ParpadeoSummaryScreen({
               />
             </>
           ) : (
-            <Row label={t.sectionEnvironment} value="—" />
+            <Row
+              label={t.sectionEnvironment}
+              value={
+                loc?.source === 'skipped' ? t.environmentSkipped : '—'
+              }
+            />
           )}
         </section>
       </div>

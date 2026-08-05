@@ -559,3 +559,20 @@
   accent-color: #6b1d1d;
   cursor: pointer;
 }
+
+.plus__item.is-locked {
+  opacity: 0.92;
+}
+
+.plus__item.is-locked input {
+  cursor: default;
+}
+
+.plus__auto {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.88);
+}
