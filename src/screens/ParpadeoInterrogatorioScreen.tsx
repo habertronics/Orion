@@ -15,6 +15,13 @@ import {
   searchPlaces,
   type PlaceSuggestion,
 } from '../lib/environment'
+import {
+  emptyOsdi6Draft,
+  liveOsdi6,
+  OSDI6_SCORES,
+  scoreOsdi6,
+  type Osdi6Score,
+} from '../lib/osdi6'
 import './ParpadeoInterrogatorioScreen.css'
 
 type StepId =
@@ -47,7 +54,7 @@ function stepDone(state: ParpadeoInterrogatorioState, id: StepId): boolean {
     case 'lubricant':
       return state.usingLubricant !== null
     case 'osdi6':
-      return state.osdi6Done
+      return state.osdi6Done && state.osdi6 !== null
     case 'location':
       return (
         state.locationAccepted &&
@@ -72,8 +79,10 @@ export function ParpadeoInterrogatorioScreen({
   const [cityQuery, setCityQuery] = useState('')
   const [places, setPlaces] = useState<PlaceSuggestion[]>([])
   const [searchBusy, setSearchBusy] = useState(false)
+  const [osdiDraft, setOsdiDraft] = useState<(Osdi6Score | null)[]>(emptyOsdi6Draft)
 
   const complete = useMemo(() => isInterrogatorioComplete(state), [state])
+  const osdiLive = useMemo(() => liveOsdi6(osdiDraft), [osdiDraft])
 
   const steps: { id: StepId; label: string }[] = [
     { id: 'age', label: t.steps.age },
@@ -117,6 +126,9 @@ export function ParpadeoInterrogatorioScreen({
   function openStep(id: StepId) {
     setLocationMessage(null)
     if (id === 'age' && state.age !== null) setDraftAge(state.age)
+    if (id === 'osdi6') {
+      setOsdiDraft(state.osdi6?.answers ? [...state.osdi6.answers] : emptyOsdi6Draft())
+    }
     if (id === 'location') {
       setSameLocality(
         state.location
@@ -129,6 +141,25 @@ export function ParpadeoInterrogatorioScreen({
       setPlaces([])
     }
     setOpen(id)
+  }
+
+  function answerOsdiQuestion(questionIndex: number, score: Osdi6Score) {
+    setOsdiDraft((prev) => {
+      const next = [...prev]
+      next[questionIndex] = score
+      return next
+    })
+  }
+
+  function saveOsdi6() {
+    const result = scoreOsdi6(osdiDraft)
+    if (!result) return
+    setState((prev) => ({
+      ...prev,
+      osdi6Done: true,
+      osdi6: result,
+    }))
+    setOpen(null)
   }
 
   async function acceptSameLocalityGps() {
@@ -256,7 +287,9 @@ export function ParpadeoInterrogatorioScreen({
 
       {open && (
         <div className="p-int__modal" role="dialog" aria-modal="true">
-          <div className="p-int__dialog">
+        <div
+          className={`p-int__dialog${open === 'osdi6' ? ' p-int__dialog--osdi' : ''}`}
+        >
             <button
               type="button"
               className="p-int__dialog-close"
@@ -406,16 +439,148 @@ export function ParpadeoInterrogatorioScreen({
             {open === 'osdi6' && (
               <>
                 <h3>{t.osdi6Title}</h3>
-                <p className="p-int__dialog-hint">{t.osdi6Hint}</p>
+                <p className="p-int__dialog-hint">{t.osdi6Credit}</p>
+
+                <div className="p-int__osdi-table">
+                  <div className="p-int__osdi-head" aria-hidden="true">
+                    <div className="p-int__osdi-head-q" />
+                    {OSDI6_SCORES.map((score) => (
+                      <div
+                        key={score}
+                        className={`p-int__osdi-head-cell p-int__osdi-head-cell--${score}`}
+                        title={t.osdi6Frequency[score]}
+                      >
+                        <span className="p-int__osdi-head-label">
+                          {t.osdi6Frequency[score]}
+                        </span>
+                        <span className="p-int__osdi-head-num">{score}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {(
+                    [
+                      {
+                        section: 0,
+                        questions: [0, 1] as const,
+                        subKey: 'discomfort' as const,
+                      },
+                      {
+                        section: 1,
+                        questions: [2, 3] as const,
+                        subKey: 'visualFunction' as const,
+                      },
+                      {
+                        section: 2,
+                        questions: [4, 5] as const,
+                        subKey: 'environmental' as const,
+                      },
+                    ] as const
+                  ).map((block) => (
+                    <section key={block.section} className="p-int__osdi-block">
+                      <p className="p-int__osdi-section">
+                        {t.osdi6Sections[block.section]}
+                      </p>
+                      {block.questions.map((qi) => (
+                        <div key={qi} className="p-int__osdi-row">
+                          <p className="p-int__osdi-q">
+                            {qi + 1}. {t.osdi6Questions[qi]}
+                          </p>
+                          <div
+                            className="p-int__osdi-cells"
+                            role="group"
+                            aria-label={t.osdi6Questions[qi]}
+                          >
+                            {OSDI6_SCORES.map((score) => {
+                              const selected = osdiDraft[qi] === score
+                              return (
+                                <button
+                                  key={score}
+                                  type="button"
+                                  className={`p-int__osdi-cell p-int__osdi-cell--${score}${
+                                    selected ? ' is-filled' : ''
+                                  }`}
+                                  aria-pressed={selected}
+                                  title={t.osdi6Frequency[score]}
+                                  onClick={() => answerOsdiQuestion(qi, score)}
+                                >
+                                  {score}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                      <p className="p-int__osdi-subtotal">
+                        {block.subKey === 'discomfort' && t.osdi6SubDiscomfort}
+                        {block.subKey === 'visualFunction' && t.osdi6SubFunction}
+                        {block.subKey === 'environmental' &&
+                          t.osdi6SubEnvironment}
+                        <span className="p-int__osdi-subtotal-arrow" aria-hidden="true">
+                          {' '}
+                          ⇒{' '}
+                        </span>
+                        <strong>{osdiLive.subscales[block.subKey]}</strong>
+                      </p>
+                    </section>
+                  ))}
+
+                  <p className="p-int__osdi-total">
+                    <strong>
+                      {t.osdi6Total}: {osdiLive.total}
+                    </strong>
+                    <span className="p-int__osdi-max"> / 24</span>
+                  </p>
+
+                  {osdiLive.possibleDryEye !== null && (
+                    <p
+                      className={
+                        osdiLive.possibleDryEye
+                          ? 'p-int__osdi-flag is-possible'
+                          : 'p-int__osdi-flag'
+                      }
+                    >
+                      {osdiLive.possibleDryEye
+                        ? t.osdi6PossibleDryEye
+                        : t.osdi6UnlikelyDryEye}
+                    </p>
+                  )}
+                </div>
+
+                <div
+                  className="p-int__osdi-gauge"
+                  role="img"
+                  aria-label={`${t.osdi6Total} ${osdiLive.total}`}
+                >
+                  <div className="p-int__osdi-gauge-track">
+                    <div
+                      className="p-int__osdi-gauge-split"
+                      style={{ left: `${osdiLive.thresholdPct}%` }}
+                    />
+                    <div
+                      className="p-int__osdi-gauge-marker"
+                      style={{ left: `${osdiLive.markerPct}%` }}
+                    />
+                  </div>
+                  <div className="p-int__osdi-gauge-labels">
+                    <span>{t.osdi6Normal}</span>
+                    <span className="p-int__osdi-gauge-mid">4</span>
+                    <span>{t.osdi6DryEye}</span>
+                  </div>
+                  <div className="p-int__osdi-gauge-scale">
+                    <span>0</span>
+                    <span>4</span>
+                    <span>24</span>
+                  </div>
+                </div>
+
                 <button
                   type="button"
                   className="p-int__confirm"
-                  onClick={() => {
-                    setState((prev) => ({ ...prev, osdi6Done: true }))
-                    setOpen(null)
-                  }}
+                  disabled={!osdiLive.complete}
+                  onClick={saveOsdi6}
                 >
-                  ✓ {t.osdi6Done}
+                  ✓ {t.osdi6Confirm}
                 </button>
               </>
             )}

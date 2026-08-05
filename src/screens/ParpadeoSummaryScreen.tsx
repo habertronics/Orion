@@ -11,6 +11,8 @@ const copy: Record<
     notSaved: string
     age: string
     sex: string
+    osdi6: string
+    osdi6Possible: string
     location: string
     weather: string
     air: string
@@ -25,6 +27,8 @@ const copy: Record<
     notSaved: 'No se pudo guardar en Neon. Revisa la API.',
     age: 'Edad',
     sex: 'Sexo',
+    osdi6: 'OSDI-6',
+    osdi6Possible: 'posible ojo seco',
     location: 'Ubicación aprox.',
     weather: 'Clima',
     air: 'Aire',
@@ -38,6 +42,8 @@ const copy: Record<
     notSaved: 'Could not save to Neon. Check the API.',
     age: 'Age',
     sex: 'Sex',
+    osdi6: 'OSDI-6',
+    osdi6Possible: 'possible dry eye',
     location: 'Approx. location',
     weather: 'Weather',
     air: 'Air',
@@ -51,6 +57,8 @@ const copy: Record<
     notSaved: 'Não foi possível salvar no Neon. Revise a API.',
     age: 'Idade',
     sex: 'Sexo',
+    osdi6: 'OSDI-6',
+    osdi6Possible: 'possível olho seco',
     location: 'Localização aprox.',
     weather: 'Clima',
     air: 'Ar',
@@ -97,6 +105,14 @@ export function ParpadeoSummaryScreen({
         </p>
         <p>
           <strong>{t.sex}:</strong> {data.sex ?? '—'}
+        </p>
+        <p>
+          <strong>{t.osdi6}:</strong>{' '}
+          {data.osdi6
+            ? `${data.osdi6.total}/24${
+                data.osdi6.possibleDryEye ? ` · ${t.osdi6Possible}` : ''
+              } · M ${data.osdi6.subscales.discomfort} · F ${data.osdi6.subscales.visualFunction} · A ${data.osdi6.subscales.environmental}`
+            : '—'}
         </p>
         <p>
           <strong>{t.location}:</strong>{' '}

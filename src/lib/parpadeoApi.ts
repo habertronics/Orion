@@ -15,6 +15,7 @@ export async function saveParpadeoInterrogatorio(
     nonLubeTreatment: data.nonLubeTreatment,
     usingLubricant: data.usingLubricant,
     osdi6Done: data.osdi6Done,
+    osdi6: data.osdi6,
   }
 
   try {
