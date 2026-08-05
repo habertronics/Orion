@@ -102,7 +102,7 @@ export function ParpadeoInterrogatorioScreen({
     setLocationBusy(false)
 
     if (!environment) {
-      setLocationMessage(t.locationError)
+      setLocationMessage(t.locationWeatherError)
       return
     }
 

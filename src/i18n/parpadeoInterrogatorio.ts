@@ -94,6 +94,7 @@ export const interrogatorioCopy: Record<
     locationAccept: string
     locationDenied: string
     locationError: string
+    locationWeatherError: string
     locationCapturing: string
     incompleteHint: string
   }
@@ -143,6 +144,8 @@ export const interrogatorioCopy: Record<
     locationAccept: 'Acepto y obtener ubicación + clima',
     locationDenied: 'Permiso denegado. Actívalo en el navegador para continuar.',
     locationError: 'No se pudo obtener la ubicación. Intenta de nuevo.',
+    locationWeatherError:
+      'Ubicación OK, pero no se pudo obtener el clima. Revisa Open-Meteo en Render.',
     locationCapturing: 'Obteniendo ubicación y datos ambientales…',
     incompleteHint: 'Completa todos los pasos (verde) para continuar.',
   },
@@ -191,6 +194,8 @@ export const interrogatorioCopy: Record<
     locationAccept: 'Agree and get location + weather',
     locationDenied: 'Permission denied. Enable it in the browser to continue.',
     locationError: 'Could not get location. Please try again.',
+    locationWeatherError:
+      'Location OK, but weather could not be fetched. Check Open-Meteo on Render.',
     locationCapturing: 'Getting location and environmental data…',
     incompleteHint: 'Complete all steps (green) to continue.',
   },
@@ -239,6 +244,8 @@ export const interrogatorioCopy: Record<
     locationAccept: 'Aceito e obter localização + clima',
     locationDenied: 'Permissão negada. Ative-a no navegador para continuar.',
     locationError: 'Não foi possível obter a localização. Tente de novo.',
+    locationWeatherError:
+      'Localização OK, mas o clima falhou. Revise o Open-Meteo no Render.',
     locationCapturing: 'Obtendo localização e dados ambientais…',
     incompleteHint: 'Conclua todos os passos (verde) para seguir.',
   },

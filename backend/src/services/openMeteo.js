@@ -1,5 +1,9 @@
-const BASE =
+const WEATHER_BASE =
   process.env.OPEN_METEO_BASE_URL || 'https://customer-api.open-meteo.com';
+
+const AIR_BASE =
+  process.env.OPEN_METEO_AIR_BASE_URL ||
+  'https://customer-air-quality-api.open-meteo.com';
 
 function withKey(url) {
   const key = process.env.OPEN_METEO_API_KEY;
@@ -11,36 +15,40 @@ function withKey(url) {
   return u.toString();
 }
 
+async function fetchJson(url, label) {
+  const res = await fetch(url);
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`${label} HTTP ${res.status} ${body.slice(0, 180)}`);
+  }
+  return res.json();
+}
+
 /**
  * Snapshot ambiental a partir de coordenadas aproximadas.
  */
 async function fetchEnvironmentSnapshot(lat, lng) {
   const weatherUrl = withKey(
-    `${BASE}/v1/forecast?latitude=${lat}&longitude=${lng}` +
-      '&current=temperature_2m,relative_humidity_2m,pressure_msl,surface_pressure,uv_index,wind_speed_10m' +
+    `${WEATHER_BASE}/v1/forecast?latitude=${lat}&longitude=${lng}` +
+      '&current=temperature_2m,relative_humidity_2m,pressure_msl,surface_pressure,wind_speed_10m' +
       '&timezone=auto',
   );
 
   const airUrl = withKey(
-    `${BASE}/v1/air-quality?latitude=${lat}&longitude=${lng}` +
+    `${AIR_BASE}/v1/air-quality?latitude=${lat}&longitude=${lng}` +
       '&current=pm2_5,pm10,european_aqi,us_aqi,dust,ozone,nitrogen_dioxide,uv_index' +
       '&timezone=auto',
   );
 
-  const [weatherRes, airRes] = await Promise.all([
-    fetch(weatherUrl),
-    fetch(airUrl),
-  ]);
+  const weather = await fetchJson(weatherUrl, 'Open-Meteo weather');
 
-  if (!weatherRes.ok) {
-    throw new Error(`Open-Meteo weather HTTP ${weatherRes.status}`);
-  }
-  if (!airRes.ok) {
-    throw new Error(`Open-Meteo air HTTP ${airRes.status}`);
+  let air = { current: {} };
+  try {
+    air = await fetchJson(airUrl, 'Open-Meteo air');
+  } catch (err) {
+    console.warn('Air quality opcional falló:', err.message);
   }
 
-  const weather = await weatherRes.json();
-  const air = await airRes.json();
   const w = weather.current || {};
   const a = air.current || {};
 
@@ -54,7 +62,7 @@ async function fetchEnvironmentSnapshot(lat, lng) {
       humidityPct: w.relative_humidity_2m ?? null,
       pressureMslHpa: w.pressure_msl ?? null,
       surfacePressureHpa: w.surface_pressure ?? null,
-      uvIndex: w.uv_index ?? a.uv_index ?? null,
+      uvIndex: a.uv_index ?? null,
       windSpeedKmh: w.wind_speed_10m ?? null,
     },
     air: {
