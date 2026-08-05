@@ -263,3 +263,45 @@
 .p-int__msg {
   color: var(--pending);
 }
+
+.p-int__location-branch {
+  margin-top: 1rem;
+}
+
+.p-int__suggestions {
+  list-style: none;
+  margin: 0 0 0.85rem;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+  max-height: 14rem;
+  overflow: auto;
+}
+
+.p-int__suggestion {
+  appearance: none;
+  width: 100%;
+  text-align: left;
+  min-height: 2.75rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid rgba(18, 35, 46, 0.12);
+  border-radius: 0.45rem;
+  background: #f7fafb;
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 0.98rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.p-int__suggestion:hover,
+.p-int__suggestion:focus-visible {
+  background: #e8f2f1;
+  border-color: rgba(15, 122, 116, 0.35);
+  outline: none;
+}
+
+.p-int__suggestion:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}

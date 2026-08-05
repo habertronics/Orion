@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   emptyInterrogatorio,
   interrogatorioCopy,
@@ -10,7 +10,11 @@ import {
 } from '../i18n/parpadeoInterrogatorio'
 import type { Lang } from '../i18n/preferences'
 import { captureApproximateLocation } from '../lib/location'
-import { fetchEnvironmentSnapshot } from '../lib/environment'
+import {
+  fetchEnvironmentSnapshot,
+  searchPlaces,
+  type PlaceSuggestion,
+} from '../lib/environment'
 import './ParpadeoInterrogatorioScreen.css'
 
 type StepId =
@@ -21,6 +25,8 @@ type StepId =
   | 'lubricant'
   | 'osdi6'
   | 'location'
+
+type SameLocality = 'yes' | 'no' | null
 
 type ParpadeoInterrogatorioScreenProps = {
   lang: Lang
@@ -62,6 +68,10 @@ export function ParpadeoInterrogatorioScreen({
   const [draftAge, setDraftAge] = useState(45)
   const [locationBusy, setLocationBusy] = useState(false)
   const [locationMessage, setLocationMessage] = useState<string | null>(null)
+  const [sameLocality, setSameLocality] = useState<SameLocality>(null)
+  const [cityQuery, setCityQuery] = useState('')
+  const [places, setPlaces] = useState<PlaceSuggestion[]>([])
+  const [searchBusy, setSearchBusy] = useState(false)
 
   const complete = useMemo(() => isInterrogatorioComplete(state), [state])
 
@@ -75,13 +85,53 @@ export function ParpadeoInterrogatorioScreen({
     { id: 'location', label: t.steps.location },
   ]
 
+  useEffect(() => {
+    if (sameLocality !== 'no') {
+      setPlaces([])
+      return
+    }
+
+    const q = cityQuery.trim()
+    if (q.length < 2) {
+      setPlaces([])
+      setSearchBusy(false)
+      return
+    }
+
+    let cancelled = false
+    setSearchBusy(true)
+    const timer = window.setTimeout(() => {
+      void searchPlaces(q, lang).then((results) => {
+        if (cancelled) return
+        setPlaces(results)
+        setSearchBusy(false)
+      })
+    }, 280)
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+    }
+  }, [cityQuery, sameLocality, lang])
+
   function openStep(id: StepId) {
     setLocationMessage(null)
     if (id === 'age' && state.age !== null) setDraftAge(state.age)
+    if (id === 'location') {
+      setSameLocality(
+        state.location
+          ? state.location.sameLocality
+            ? 'yes'
+            : 'no'
+          : null,
+      )
+      setCityQuery(state.location?.label ?? '')
+      setPlaces([])
+    }
     setOpen(id)
   }
 
-  async function acceptLocation() {
+  async function acceptSameLocalityGps() {
     setLocationBusy(true)
     setLocationMessage(t.locationCapturing)
     const result = await captureApproximateLocation()
@@ -109,7 +159,48 @@ export function ParpadeoInterrogatorioScreen({
     setState((prev) => ({
       ...prev,
       locationAccepted: true,
-      location: result.location,
+      location: {
+        ...result.location,
+        source: 'device',
+        sameLocality: true,
+        label: undefined,
+      },
+      environment,
+    }))
+    setLocationMessage(null)
+    setOpen(null)
+  }
+
+  async function acceptGeocodedPlace(place: PlaceSuggestion) {
+    setLocationBusy(true)
+    setLocationMessage(t.locationCapturing)
+    setCityQuery(place.label)
+    setPlaces([])
+
+    const lat = Number(place.latitude.toFixed(3))
+    const lng = Number(place.longitude.toFixed(3))
+    const environment = await fetchEnvironmentSnapshot(lat, lng)
+
+    setLocationBusy(false)
+
+    if (!environment) {
+      setLocationMessage(t.locationWeatherError)
+      return
+    }
+
+    setState((prev) => ({
+      ...prev,
+      locationAccepted: true,
+      location: {
+        lat,
+        lng,
+        accuracy: 5000,
+        capturedAt: new Date().toISOString(),
+        source: 'geocoded',
+        sameLocality: false,
+        label: place.label,
+        placeId: place.id,
+      },
       environment,
     }))
     setLocationMessage(null)
@@ -332,26 +423,117 @@ export function ParpadeoInterrogatorioScreen({
             {open === 'location' && (
               <>
                 <h3>{t.locationTitle}</h3>
-                <p className="p-int__dialog-hint">{t.locationBody}</p>
-                {state.location && state.environment && (
-                  <p className="p-int__coords">
-                    ≈ {state.location.lat}, {state.location.lng} ·{' '}
-                    {state.environment.weather.temperatureC ?? '—'}°C ·{' '}
-                    {state.environment.weather.humidityPct ?? '—'}% HR · UV{' '}
-                    {state.environment.weather.uvIndex ?? '—'}
-                  </p>
+                <p className="p-int__dialog-hint">{t.locationSameQuestion}</p>
+                <p className="p-int__dialog-hint">{t.locationSameHint}</p>
+
+                <div className="p-int__options">
+                  <button
+                    type="button"
+                    className={`p-int__option${
+                      sameLocality === 'yes' ? ' is-selected' : ''
+                    }`}
+                    onClick={() => {
+                      setSameLocality('yes')
+                      setLocationMessage(null)
+                      setPlaces([])
+                    }}
+                  >
+                    {t.yes}
+                  </button>
+                  <button
+                    type="button"
+                    className={`p-int__option${
+                      sameLocality === 'no' ? ' is-selected' : ''
+                    }`}
+                    onClick={() => {
+                      setSameLocality('no')
+                      setLocationMessage(null)
+                    }}
+                  >
+                    {t.no}
+                  </button>
+                </div>
+
+                {sameLocality === 'yes' && (
+                  <div className="p-int__location-branch">
+                    <p className="p-int__dialog-hint">{t.locationGpsBody}</p>
+                    {state.location?.sameLocality && state.environment && (
+                      <p className="p-int__coords">
+                        ≈ {state.location.lat}, {state.location.lng} ·{' '}
+                        {state.environment.weather.temperatureC ?? '—'}°C ·{' '}
+                        {state.environment.weather.humidityPct ?? '—'}% HR · UV{' '}
+                        {state.environment.weather.uvIndex ?? '—'}
+                      </p>
+                    )}
+                    {locationMessage && (
+                      <p className="p-int__msg">{locationMessage}</p>
+                    )}
+                    <button
+                      type="button"
+                      className="p-int__confirm"
+                      disabled={locationBusy}
+                      onClick={() => void acceptSameLocalityGps()}
+                    >
+                      ✓ {t.locationAccept}
+                    </button>
+                  </div>
                 )}
-                {locationMessage && (
-                  <p className="p-int__msg">{locationMessage}</p>
+
+                {sameLocality === 'no' && (
+                  <div className="p-int__location-branch">
+                    <p className="p-int__dialog-hint">{t.locationCityHint}</p>
+                    <label className="p-int__field">
+                      <span>{t.locationCityTitle}</span>
+                      <input
+                        type="search"
+                        autoComplete="off"
+                        placeholder={t.locationCityPlaceholder}
+                        value={cityQuery}
+                        disabled={locationBusy}
+                        onChange={(e) => setCityQuery(e.target.value)}
+                      />
+                    </label>
+
+                    {cityQuery.trim().length > 0 &&
+                      cityQuery.trim().length < 2 && (
+                        <p className="p-int__dialog-hint">{t.locationCityEmpty}</p>
+                      )}
+                    {searchBusy && (
+                      <p className="p-int__dialog-hint">{t.locationSearching}</p>
+                    )}
+
+                    {places.length > 0 && (
+                      <ul className="p-int__suggestions" role="listbox">
+                        {places.map((place) => (
+                          <li key={place.id}>
+                            <button
+                              type="button"
+                              className="p-int__suggestion"
+                              disabled={locationBusy}
+                              onClick={() => void acceptGeocodedPlace(place)}
+                            >
+                              {place.label}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+
+                    {state.location &&
+                      !state.location.sameLocality &&
+                      state.location.label &&
+                      state.environment && (
+                        <p className="p-int__coords">
+                          {t.locationPlaceSelected}: {state.location.label} ·{' '}
+                          {state.environment.weather.temperatureC ?? '—'}°C ·{' '}
+                          {state.environment.weather.humidityPct ?? '—'}% HR
+                        </p>
+                      )}
+                    {locationMessage && (
+                      <p className="p-int__msg">{locationMessage}</p>
+                    )}
+                  </div>
                 )}
-                <button
-                  type="button"
-                  className="p-int__confirm"
-                  disabled={locationBusy}
-                  onClick={() => void acceptLocation()}
-                >
-                  ✓ {t.locationAccept}
-                </button>
               </>
             )}
           </div>

@@ -28,6 +28,17 @@ export type EnvironmentSnapshot = {
   }
 }
 
+export type LocationChoice = {
+  lat: number
+  lng: number
+  accuracy: number
+  capturedAt: string
+  source: 'device' | 'geocoded'
+  sameLocality: boolean
+  label?: string
+  placeId?: number
+}
+
 export type ParpadeoInterrogatorioState = {
   age: number | null
   sex: SexOption | null
@@ -36,14 +47,7 @@ export type ParpadeoInterrogatorioState = {
   usingLubricant: YesNo | null
   osdi6Done: boolean
   locationAccepted: boolean
-  location:
-    | {
-        lat: number
-        lng: number
-        accuracy: number
-        capturedAt: string
-      }
-    | null
+  location: LocationChoice | null
   environment: EnvironmentSnapshot | null
 }
 
@@ -90,12 +94,20 @@ export const interrogatorioCopy: Record<
     osdi6Hint: string
     osdi6Done: string
     locationTitle: string
-    locationBody: string
+    locationSameQuestion: string
+    locationSameHint: string
+    locationGpsBody: string
     locationAccept: string
+    locationCityTitle: string
+    locationCityHint: string
+    locationCityPlaceholder: string
+    locationCityEmpty: string
+    locationSearching: string
     locationDenied: string
     locationError: string
     locationWeatherError: string
     locationCapturing: string
+    locationPlaceSelected: string
     incompleteHint: string
   }
 > = {
@@ -116,7 +128,7 @@ export const interrogatorioCopy: Record<
       treatment: 'Tratamiento (no lubricante)',
       lubricant: '¿Usa lubricante?',
       osdi6: 'OSDI-6',
-      location: 'Ubicación aproximada',
+      location: 'Localidad',
     },
     ageLabel: 'Edad del paciente (años)',
     ageHint: 'Elige la edad y confirma.',
@@ -138,15 +150,26 @@ export const interrogatorioCopy: Record<
     osdi6Hint:
       'Aquí irá el cuestionario OSDI-6 completo. Por ahora puedes marcarlo como terminado para continuar el flujo.',
     osdi6Done: 'Marcar OSDI-6 como completado',
-    locationTitle: 'Ubicación aproximada',
-    locationBody:
-      'Acepto utilizar la localización aproximada actual. La precisión típica no es mejor que ~500 m: no sabemos la dirección exacta. Se usa para estimar temperatura, humedad, presión atmosférica, UV y calidad del aire de la zona.',
-    locationAccept: 'Acepto y obtener ubicación + clima',
+    locationTitle: 'Localidad del paciente',
+    locationSameQuestion:
+      '¿La persona es de la misma localidad donde se realiza la exploración?',
+    locationSameHint:
+      'Si responde Sí, usamos la ubicación aproximada del dispositivo (consultorio). Si responde No, busca la ciudad del paciente.',
+    locationGpsBody:
+      'Se usará la localización aproximada del dispositivo. La precisión típica no es mejor que ~500 m. Sirve para estimar temperatura, humedad, presión, UV y calidad del aire de la zona.',
+    locationAccept: 'Obtener ubicación + clima',
+    locationCityTitle: 'Ciudad o localidad del paciente',
+    locationCityHint:
+      'Escribe el nombre de la ciudad. Aparecerán opciones (p. ej. Cuzco, Perú / Bolivia).',
+    locationCityPlaceholder: 'Ej. Cuzco, Chicago, Madrid…',
+    locationCityEmpty: 'Escribe al menos 2 letras para buscar.',
+    locationSearching: 'Buscando ciudades…',
     locationDenied: 'Permiso denegado. Actívalo en el navegador para continuar.',
     locationError: 'No se pudo obtener la ubicación. Intenta de nuevo.',
     locationWeatherError:
       'Ubicación OK, pero no se pudo obtener el clima. Revisa Open-Meteo en Render.',
-    locationCapturing: 'Obteniendo ubicación y datos ambientales…',
+    locationCapturing: 'Obteniendo datos ambientales…',
+    locationPlaceSelected: 'Ciudad seleccionada',
     incompleteHint: 'Completa todos los pasos (verde) para continuar.',
   },
   en: {
@@ -166,7 +189,7 @@ export const interrogatorioCopy: Record<
       treatment: 'Treatment (non-lubricant)',
       lubricant: 'Using lubricant?',
       osdi6: 'OSDI-6',
-      location: 'Approximate location',
+      location: 'Locality',
     },
     ageLabel: 'Patient age (years)',
     ageHint: 'Choose the age and confirm.',
@@ -188,15 +211,26 @@ export const interrogatorioCopy: Record<
     osdi6Hint:
       'The full OSDI-6 questionnaire will go here. For now you can mark it as done to continue the flow.',
     osdi6Done: 'Mark OSDI-6 as completed',
-    locationTitle: 'Approximate location',
-    locationBody:
-      'I agree to use the current approximate location. Typical accuracy is no better than ~500 m: we do not know the exact address. It is used to estimate temperature, humidity, atmospheric pressure, UV, and air quality for the area.',
-    locationAccept: 'Agree and get location + weather',
+    locationTitle: 'Patient locality',
+    locationSameQuestion:
+      'Is the person from the same locality where the examination is taking place?',
+    locationSameHint:
+      'If Yes, we use the device approximate location (clinic). If No, search for the patient’s city.',
+    locationGpsBody:
+      'The device approximate location will be used. Typical accuracy is no better than ~500 m. It estimates temperature, humidity, pressure, UV, and air quality for the area.',
+    locationAccept: 'Get location + weather',
+    locationCityTitle: 'Patient city or locality',
+    locationCityHint:
+      'Type the city name. Matching options will appear (e.g. Cusco, Peru / Bolivia).',
+    locationCityPlaceholder: 'E.g. Cusco, Chicago, Madrid…',
+    locationCityEmpty: 'Type at least 2 letters to search.',
+    locationSearching: 'Searching cities…',
     locationDenied: 'Permission denied. Enable it in the browser to continue.',
     locationError: 'Could not get location. Please try again.',
     locationWeatherError:
       'Location OK, but weather could not be fetched. Check Open-Meteo on Render.',
-    locationCapturing: 'Getting location and environmental data…',
+    locationCapturing: 'Getting environmental data…',
+    locationPlaceSelected: 'City selected',
     incompleteHint: 'Complete all steps (green) to continue.',
   },
   pt: {
@@ -216,7 +250,7 @@ export const interrogatorioCopy: Record<
       treatment: 'Tratamento (não lubrificante)',
       lubricant: 'Usa lubrificante?',
       osdi6: 'OSDI-6',
-      location: 'Localização aproximada',
+      location: 'Localidade',
     },
     ageLabel: 'Idade do paciente (anos)',
     ageHint: 'Escolha a idade e confirme.',
@@ -238,15 +272,26 @@ export const interrogatorioCopy: Record<
     osdi6Hint:
       'Aqui ficará o OSDI-6 completo. Por enquanto você pode marcá-lo como concluído para seguir o fluxo.',
     osdi6Done: 'Marcar OSDI-6 como concluído',
-    locationTitle: 'Localização aproximada',
-    locationBody:
-      'Aceito utilizar a localização aproximada atual. A precisão típica não é melhor que ~500 m: não sabemos o endereço exato. Serve para estimar temperatura, umidade, pressão atmosférica, UV e qualidade do ar da região.',
-    locationAccept: 'Aceito e obter localização + clima',
+    locationTitle: 'Localidade do paciente',
+    locationSameQuestion:
+      'A pessoa é da mesma localidade onde a exploração está sendo feita?',
+    locationSameHint:
+      'Se Sim, usamos a localização aproximada do dispositivo (consultório). Se Não, busque a cidade do paciente.',
+    locationGpsBody:
+      'Será usada a localização aproximada do dispositivo. A precisão típica não é melhor que ~500 m. Serve para estimar temperatura, umidade, pressão, UV e qualidade do ar da região.',
+    locationAccept: 'Obter localização + clima',
+    locationCityTitle: 'Cidade ou localidade do paciente',
+    locationCityHint:
+      'Digite o nome da cidade. Opções aparecerão (ex.: Cusco, Peru / Bolívia).',
+    locationCityPlaceholder: 'Ex.: Cusco, Chicago, Madrid…',
+    locationCityEmpty: 'Digite pelo menos 2 letras para buscar.',
+    locationSearching: 'Buscando cidades…',
     locationDenied: 'Permissão negada. Ative-a no navegador para continuar.',
     locationError: 'Não foi possível obter a localização. Tente de novo.',
     locationWeatherError:
       'Localização OK, mas o clima falhou. Revise o Open-Meteo no Render.',
-    locationCapturing: 'Obtendo localização e dados ambientais…',
+    locationCapturing: 'Obtendo dados ambientais…',
+    locationPlaceSelected: 'Cidade selecionada',
     incompleteHint: 'Conclua todos os passos (verde) para seguir.',
   },
 }

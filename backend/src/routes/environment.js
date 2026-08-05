@@ -1,8 +1,22 @@
 const express = require('express');
 const { authRequired } = require('../middleware/auth');
 const { fetchEnvironmentSnapshot } = require('../services/openMeteo');
+const { searchPlaces } = require('../services/geocoding');
 
 const router = express.Router();
+
+router.get('/places', authRequired, async (req, res) => {
+  const q = String(req.query.q || '');
+  const language = String(req.query.lang || 'es');
+
+  try {
+    const places = await searchPlaces(q, language);
+    res.json({ places });
+  } catch (err) {
+    console.error('Geocoding error:', err.message);
+    res.status(502).json({ error: 'geocoding_unavailable' });
+  }
+});
 
 router.post('/snapshot', authRequired, async (req, res) => {
   const lat = Number(req.body.lat);
@@ -12,7 +26,6 @@ router.post('/snapshot', authRequired, async (req, res) => {
     return res.status(400).json({ error: 'invalid_coordinates' });
   }
 
-  // Redondeo extra por privacidad (~100–500 m)
   const safeLat = Number(lat.toFixed(3));
   const safeLng = Number(lng.toFixed(3));
 

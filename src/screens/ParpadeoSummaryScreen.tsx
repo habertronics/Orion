@@ -101,7 +101,9 @@ export function ParpadeoSummaryScreen({
         <p>
           <strong>{t.location}:</strong>{' '}
           {data.location
-            ? `${data.location.lat}, ${data.location.lng}`
+            ? data.location.label
+              ? `${data.location.label} (≈ ${data.location.lat}, ${data.location.lng})`
+              : `≈ ${data.location.lat}, ${data.location.lng}`
             : '—'}
         </p>
         <p>
