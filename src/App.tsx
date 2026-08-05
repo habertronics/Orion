@@ -7,12 +7,14 @@ import { ResearcherProjectsScreen } from './screens/ResearcherProjectsScreen'
 import { ProtocolIntroScreen } from './screens/ProtocolIntroScreen'
 import { ParpadeoInterrogatorioScreen } from './screens/ParpadeoInterrogatorioScreen'
 import { ParpadeoSummaryScreen } from './screens/ParpadeoSummaryScreen'
+import { ParpadeoExploracionFisicaScreen } from './screens/ParpadeoExploracionFisicaScreen'
 import {
   clearRememberedCredentials,
   clearSession,
   getSession,
 } from './auth/researcherAuth'
 import type { ParpadeoInterrogatorioState } from './i18n/parpadeoInterrogatorio'
+import type { ParpadeoExamState } from './i18n/parpadeoExam'
 import { saveParpadeoInterrogatorio } from './lib/parpadeoApi'
 import {
   completeWelcome,
@@ -31,6 +33,7 @@ type AppView =
   | 'protocol-intro'
   | 'protocol-interrogatorio'
   | 'protocol-summary'
+  | 'protocol-exam'
   | 'protocol-next'
 
 function App() {
@@ -50,6 +53,7 @@ function App() {
   const [interrogatorio, setInterrogatorio] =
     useState<ParpadeoInterrogatorioState | null>(null)
   const [interrogatorioSaved, setInterrogatorioSaved] = useState(false)
+  const [exam, setExam] = useState<ParpadeoExamState | null>(null)
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -64,6 +68,7 @@ function App() {
     setSelectedProtocol(null)
     setInterrogatorio(null)
     setInterrogatorioSaved(false)
+    setExam(null)
     setView('researcher-auth')
   }
 
@@ -189,7 +194,20 @@ function App() {
         data={interrogatorio}
         saved={interrogatorioSaved}
         onBack={() => setView('protocol-interrogatorio')}
-        onContinue={() => setView('protocol-next')}
+        onContinue={() => setView('protocol-exam')}
+      />
+    )
+  }
+
+  if (view === 'protocol-exam' && selectedProtocol === 'parpadeo') {
+    return (
+      <ParpadeoExploracionFisicaScreen
+        lang={lang}
+        onBack={() => setView('protocol-summary')}
+        onNext={(data) => {
+          setExam(data)
+          setView('protocol-next')
+        }}
       />
     )
   }
@@ -197,13 +215,19 @@ function App() {
   return (
     <main className="placeholder">
       <p>Protocolo: {selectedProtocol}</p>
-      <p>{saving ? 'Guardando…' : 'Próximo: ID anónimo y medición MediaPipe.'}</p>
+      <p>
+        {saving
+          ? 'Guardando…'
+          : exam
+            ? 'Exploración física completada. Próximo: ID anónimo y medición MediaPipe.'
+            : 'Próximo: ID anónimo y medición MediaPipe.'}
+      </p>
       <button
         type="button"
         onClick={() =>
           setView(
             selectedProtocol === 'parpadeo'
-              ? 'protocol-summary'
+              ? 'protocol-exam'
               : 'researcher-projects',
           )
         }
