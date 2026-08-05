@@ -1,5 +1,8 @@
 import type { Lang } from '../i18n/preferences'
-import type { ParpadeoInterrogatorioState } from '../i18n/parpadeoInterrogatorio'
+import {
+  interrogatorioCopy,
+  type ParpadeoInterrogatorioState,
+} from '../i18n/parpadeoInterrogatorio'
 import './ParpadeoSummaryScreen.css'
 
 const copy: Record<
@@ -9,13 +12,34 @@ const copy: Record<
     title: string
     saved: string
     notSaved: string
-    age: string
-    sex: string
-    osdi6: string
-    osdi6Possible: string
-    location: string
-    weather: string
-    air: string
+    sectionAnswers: string
+    sectionOsdi: string
+    sectionLocation: string
+    sectionEnvironment: string
+    sameLocality: string
+    locationSourceDevice: string
+    locationSourceGeocoded: string
+    locationCoords: string
+    locationSource: string
+    osdiAnswers: string
+    osdiSubDiscomfort: string
+    osdiSubFunction: string
+    osdiSubEnvironment: string
+    osdiPossible: string
+    osdiNormal: string
+    temp: string
+    humidity: string
+    pressure: string
+    surfacePressure: string
+    uv: string
+    wind: string
+    pm25: string
+    pm10: string
+    dust: string
+    ozone: string
+    no2: string
+    aqiEu: string
+    aqiUs: string
     next: string
     back: string
   }
@@ -25,13 +49,34 @@ const copy: Record<
     title: 'Datos capturados',
     saved: 'Guardado en la base de datos (Neon).',
     notSaved: 'No se pudo guardar en Neon. Revisa la API.',
-    age: 'Edad',
-    sex: 'Sexo',
-    osdi6: 'OSDI-6',
-    osdi6Possible: 'posible ojo seco',
-    location: 'Ubicación aprox.',
-    weather: 'Clima',
-    air: 'Aire',
+    sectionAnswers: 'Interrogatorio',
+    sectionOsdi: 'OSDI-6',
+    sectionLocation: 'Localidad',
+    sectionEnvironment: 'Ambiente',
+    sameLocality: 'Misma localidad que la exploración',
+    locationSourceDevice: 'GPS del dispositivo',
+    locationSourceGeocoded: 'Ciudad buscada',
+    locationCoords: 'Coordenadas',
+    locationSource: 'Fuente',
+    osdiAnswers: 'Respuestas (ítems 1–6)',
+    osdiSubDiscomfort: 'Subescala malestar / visión',
+    osdiSubFunction: 'Subescala función / tareas',
+    osdiSubEnvironment: 'Subescala ambiental',
+    osdiPossible: 'Posible ojo seco (suma ≥ 4)',
+    osdiNormal: 'Normal (suma < 4)',
+    temp: 'Temperatura',
+    humidity: 'Humedad relativa',
+    pressure: 'Presión (msl)',
+    surfacePressure: 'Presión superficie',
+    uv: 'Índice UV',
+    wind: 'Viento',
+    pm25: 'PM2.5',
+    pm10: 'PM10',
+    dust: 'Polvo',
+    ozone: 'Ozono',
+    no2: 'NO₂',
+    aqiEu: 'AQI europeo',
+    aqiUs: 'AQI EE.UU.',
     next: 'Continuar',
     back: 'Volver',
   },
@@ -40,13 +85,34 @@ const copy: Record<
     title: 'Captured data',
     saved: 'Saved to the database (Neon).',
     notSaved: 'Could not save to Neon. Check the API.',
-    age: 'Age',
-    sex: 'Sex',
-    osdi6: 'OSDI-6',
-    osdi6Possible: 'possible dry eye',
-    location: 'Approx. location',
-    weather: 'Weather',
-    air: 'Air',
+    sectionAnswers: 'Questionnaire',
+    sectionOsdi: 'OSDI-6',
+    sectionLocation: 'Locality',
+    sectionEnvironment: 'Environment',
+    sameLocality: 'Same locality as the examination',
+    locationSourceDevice: 'Device GPS',
+    locationSourceGeocoded: 'Searched city',
+    locationCoords: 'Coordinates',
+    locationSource: 'Source',
+    osdiAnswers: 'Answers (items 1–6)',
+    osdiSubDiscomfort: 'Discomfort / vision subscale',
+    osdiSubFunction: 'Function / tasks subscale',
+    osdiSubEnvironment: 'Environmental subscale',
+    osdiPossible: 'Possible dry eye (score ≥ 4)',
+    osdiNormal: 'Normal (score < 4)',
+    temp: 'Temperature',
+    humidity: 'Relative humidity',
+    pressure: 'Pressure (msl)',
+    surfacePressure: 'Surface pressure',
+    uv: 'UV index',
+    wind: 'Wind',
+    pm25: 'PM2.5',
+    pm10: 'PM10',
+    dust: 'Dust',
+    ozone: 'Ozone',
+    no2: 'NO₂',
+    aqiEu: 'European AQI',
+    aqiUs: 'US AQI',
     next: 'Continue',
     back: 'Back',
   },
@@ -55,16 +121,46 @@ const copy: Record<
     title: 'Dados capturados',
     saved: 'Salvo no banco de dados (Neon).',
     notSaved: 'Não foi possível salvar no Neon. Revise a API.',
-    age: 'Idade',
-    sex: 'Sexo',
-    osdi6: 'OSDI-6',
-    osdi6Possible: 'possível olho seco',
-    location: 'Localização aprox.',
-    weather: 'Clima',
-    air: 'Ar',
+    sectionAnswers: 'Questionário',
+    sectionOsdi: 'OSDI-6',
+    sectionLocation: 'Localidade',
+    sectionEnvironment: 'Ambiente',
+    sameLocality: 'Mesma localidade da exploração',
+    locationSourceDevice: 'GPS do dispositivo',
+    locationSourceGeocoded: 'Cidade buscada',
+    locationCoords: 'Coordenadas',
+    locationSource: 'Fonte',
+    osdiAnswers: 'Respostas (itens 1–6)',
+    osdiSubDiscomfort: 'Subescala desconforto / visão',
+    osdiSubFunction: 'Subescala função / tarefas',
+    osdiSubEnvironment: 'Subescala ambiental',
+    osdiPossible: 'Possível olho seco (soma ≥ 4)',
+    osdiNormal: 'Normal (soma < 4)',
+    temp: 'Temperatura',
+    humidity: 'Umidade relativa',
+    pressure: 'Pressão (msl)',
+    surfacePressure: 'Pressão de superfície',
+    uv: 'Índice UV',
+    wind: 'Vento',
+    pm25: 'PM2.5',
+    pm10: 'PM10',
+    dust: 'Poeira',
+    ozone: 'Ozônio',
+    no2: 'NO₂',
+    aqiEu: 'AQI europeu',
+    aqiUs: 'AQI EUA',
     next: 'Continuar',
     back: 'Voltar',
   },
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <p className="p-sum__row">
+      <span className="p-sum__label">{label}</span>
+      <span className="p-sum__value">{value}</span>
+    </p>
+  )
 }
 
 type ParpadeoSummaryScreenProps = {
@@ -83,7 +179,20 @@ export function ParpadeoSummaryScreen({
   onBack,
 }: ParpadeoSummaryScreenProps) {
   const t = copy[lang]
+  const iq = interrogatorioCopy[lang]
   const env = data.environment
+  const loc = data.location
+  const osdi = data.osdi6
+
+  const yesNo = (v: 'yes' | 'no' | null) =>
+    v === 'yes' ? iq.yes : v === 'no' ? iq.no : '—'
+
+  const treatment =
+    data.nonLubeTreatment === null
+      ? '—'
+      : data.nonLubeTreatment === 'none'
+        ? iq.treatmentNone
+        : iq.treatmentOptions[data.nonLubeTreatment]
 
   return (
     <main className="p-sum">
@@ -99,42 +208,189 @@ export function ParpadeoSummaryScreen({
         </p>
       </header>
 
-      <section className="p-sum__card">
-        <p>
-          <strong>{t.age}:</strong> {data.age ?? '—'}
-        </p>
-        <p>
-          <strong>{t.sex}:</strong> {data.sex ?? '—'}
-        </p>
-        <p>
-          <strong>{t.osdi6}:</strong>{' '}
-          {data.osdi6
-            ? `${data.osdi6.total}/24${
-                data.osdi6.possibleDryEye ? ` · ${t.osdi6Possible}` : ''
-              } · M ${data.osdi6.subscales.discomfort} · F ${data.osdi6.subscales.visualFunction} · A ${data.osdi6.subscales.environmental}`
-            : '—'}
-        </p>
-        <p>
-          <strong>{t.location}:</strong>{' '}
-          {data.location
-            ? data.location.label
-              ? `${data.location.label} (≈ ${data.location.lat}, ${data.location.lng})`
-              : `≈ ${data.location.lat}, ${data.location.lng}`
-            : '—'}
-        </p>
-        <p>
-          <strong>{t.weather}:</strong>{' '}
-          {env
-            ? `${env.weather.temperatureC ?? '—'}°C · ${env.weather.humidityPct ?? '—'}% HR · ${env.weather.pressureMslHpa ?? '—'} hPa · UV ${env.weather.uvIndex ?? '—'}`
-            : '—'}
-        </p>
-        <p>
-          <strong>{t.air}:</strong>{' '}
-          {env
-            ? `PM2.5 ${env.air.pm25 ?? '—'} · PM10 ${env.air.pm10 ?? '—'} · AQI ${env.air.usAqi ?? env.air.europeanAqi ?? '—'}`
-            : '—'}
-        </p>
-      </section>
+      <div className="p-sum__sections">
+        <section className="p-sum__card">
+          <h3 className="p-sum__section">{t.sectionAnswers}</h3>
+          <Row label={iq.steps.age} value={data.age != null ? String(data.age) : '—'} />
+          <Row
+            label={iq.steps.sex}
+            value={data.sex ? iq.sexOptions[data.sex] : '—'}
+          />
+          <Row
+            label={iq.steps.diagnosis}
+            value={yesNo(data.dryEyeDiagnosis)}
+          />
+          <Row label={iq.steps.treatment} value={treatment} />
+          <Row label={iq.steps.lubricant} value={yesNo(data.usingLubricant)} />
+        </section>
+
+        <section className="p-sum__card">
+          <h3 className="p-sum__section">{t.sectionOsdi}</h3>
+          {osdi ? (
+            <>
+              <Row
+                label={t.osdiAnswers}
+                value={osdi.answers.map((a, i) => `${i + 1}=${a}`).join(' · ')}
+              />
+              <Row
+                label={t.osdiSubDiscomfort}
+                value={String(osdi.subscales.discomfort)}
+              />
+              <Row
+                label={t.osdiSubFunction}
+                value={String(osdi.subscales.visualFunction)}
+              />
+              <Row
+                label={t.osdiSubEnvironment}
+                value={String(osdi.subscales.environmental)}
+              />
+              <Row label={iq.osdi6Total} value={`${osdi.total} / 24`} />
+              <Row
+                label={iq.steps.osdi6}
+                value={
+                  osdi.possibleDryEye ? t.osdiPossible : t.osdiNormal
+                }
+              />
+            </>
+          ) : (
+            <Row label={iq.steps.osdi6} value="—" />
+          )}
+        </section>
+
+        <section className="p-sum__card">
+          <h3 className="p-sum__section">{t.sectionLocation}</h3>
+          <Row
+            label={t.sameLocality}
+            value={
+              loc
+                ? loc.sameLocality
+                  ? iq.yes
+                  : iq.no
+                : '—'
+            }
+          />
+          <Row
+            label={iq.steps.location}
+            value={
+              loc?.label
+                ? loc.label
+                : loc
+                  ? `≈ ${loc.lat}, ${loc.lng}`
+                  : '—'
+            }
+          />
+          {loc && (
+            <>
+              <Row
+                label={t.locationCoords}
+                value={`≈ ${loc.lat}, ${loc.lng}`}
+              />
+              <Row
+                label={t.locationSource}
+                value={
+                  loc.source === 'device'
+                    ? t.locationSourceDevice
+                    : t.locationSourceGeocoded
+                }
+              />
+            </>
+          )}
+        </section>
+
+        <section className="p-sum__card">
+          <h3 className="p-sum__section">{t.sectionEnvironment}</h3>
+          {env ? (
+            <>
+              <Row
+                label={t.temp}
+                value={
+                  env.weather.temperatureC != null
+                    ? `${env.weather.temperatureC} °C`
+                    : '—'
+                }
+              />
+              <Row
+                label={t.humidity}
+                value={
+                  env.weather.humidityPct != null
+                    ? `${env.weather.humidityPct} %`
+                    : '—'
+                }
+              />
+              <Row
+                label={t.pressure}
+                value={
+                  env.weather.pressureMslHpa != null
+                    ? `${env.weather.pressureMslHpa} hPa`
+                    : '—'
+                }
+              />
+              <Row
+                label={t.surfacePressure}
+                value={
+                  env.weather.surfacePressureHpa != null
+                    ? `${env.weather.surfacePressureHpa} hPa`
+                    : '—'
+                }
+              />
+              <Row
+                label={t.uv}
+                value={
+                  env.weather.uvIndex != null
+                    ? String(env.weather.uvIndex)
+                    : '—'
+                }
+              />
+              <Row
+                label={t.wind}
+                value={
+                  env.weather.windSpeedKmh != null
+                    ? `${env.weather.windSpeedKmh} km/h`
+                    : '—'
+                }
+              />
+              <Row
+                label={t.pm25}
+                value={env.air.pm25 != null ? String(env.air.pm25) : '—'}
+              />
+              <Row
+                label={t.pm10}
+                value={env.air.pm10 != null ? String(env.air.pm10) : '—'}
+              />
+              <Row
+                label={t.dust}
+                value={env.air.dust != null ? String(env.air.dust) : '—'}
+              />
+              <Row
+                label={t.ozone}
+                value={env.air.ozone != null ? String(env.air.ozone) : '—'}
+              />
+              <Row
+                label={t.no2}
+                value={
+                  env.air.nitrogenDioxide != null
+                    ? String(env.air.nitrogenDioxide)
+                    : '—'
+                }
+              />
+              <Row
+                label={t.aqiEu}
+                value={
+                  env.air.europeanAqi != null
+                    ? String(env.air.europeanAqi)
+                    : '—'
+                }
+              />
+              <Row
+                label={t.aqiUs}
+                value={env.air.usAqi != null ? String(env.air.usAqi) : '—'}
+              />
+            </>
+          ) : (
+            <Row label={t.sectionEnvironment} value="—" />
+          )}
+        </section>
+      </div>
 
       <button type="button" className="p-sum__next" onClick={onContinue}>
         {t.next}

@@ -71,8 +71,53 @@
   line-height: 1.5;
 }
 
-.p-sum__card p {
-  margin: 0.45rem 0;
+.p-sum__sections {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 36rem;
+  overflow-y: auto;
+}
+
+.p-sum__section {
+  margin: 0 0 0.55rem;
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.p-sum__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 0.45rem 0.75rem;
+  margin: 0.4rem 0;
+  align-items: start;
+}
+
+.p-sum__label {
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.p-sum__value {
+  font-size: 0.95rem;
+  font-weight: 650;
+  text-align: right;
+  word-break: break-word;
+}
+
+@media (max-width: 480px) {
+  .p-sum__row {
+    grid-template-columns: 1fr;
+    gap: 0.15rem;
+  }
+
+  .p-sum__value {
+    text-align: left;
+  }
 }
 
 .p-sum__next {
