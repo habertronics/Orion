@@ -1,0 +1,4 @@
+ALTER TABLE parpadeo_sessions
+  ADD COLUMN IF NOT EXISTS exam_json JSONB,
+  ADD COLUMN IF NOT EXISTS meter_json JSONB,
+  ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ;

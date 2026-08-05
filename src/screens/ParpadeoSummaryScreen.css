@@ -134,3 +134,8 @@
   font-weight: 700;
   cursor: pointer;
 }
+
+.p-sum__next:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

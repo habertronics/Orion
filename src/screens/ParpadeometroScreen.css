@@ -1,0 +1,181 @@
+.p-meter {
+  --ink: #12232e;
+  --ink-soft: #3a5260;
+  --primary: #163a4a;
+  --accent: #0f7a74;
+
+  position: relative;
+  isolation: isolate;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 1.25rem;
+  padding: clamp(1.15rem, 4vw, 2.25rem) clamp(1.15rem, 5vw, 2.75rem)
+    max(1.15rem, env(safe-area-inset-bottom));
+  color: var(--ink);
+  overflow: hidden;
+}
+
+.p-meter__atmosphere {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse 90% 55% at 12% 10%, rgba(15, 122, 116, 0.24), transparent 55%),
+    radial-gradient(ellipse 70% 45% at 92% 12%, rgba(47, 95, 158, 0.2), transparent 50%),
+    linear-gradient(168deg, #eef5f4 0%, #e3ebf0 45%, #d7e4e2 100%);
+}
+
+.p-meter__header {
+  max-width: 40rem;
+}
+
+.p-meter__back {
+  appearance: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.p-meter__brand {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 6vw, 2.6rem);
+  font-weight: 600;
+  line-height: 1.05;
+}
+
+.p-meter__subtitle {
+  margin: 0.55rem 0 0;
+  max-width: 32rem;
+  font-family: var(--font-ui);
+  font-size: 0.98rem;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+
+.p-meter__protocol {
+  margin: 0.75rem 0 0;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.p-meter__section {
+  margin: 1rem 0 0;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.p-meter__body {
+  max-width: 40rem;
+  display: grid;
+  align-content: start;
+  gap: 1.1rem;
+}
+
+.p-meter__hint {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 1.02rem;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.p-meter__launch {
+  appearance: none;
+  display: grid;
+  gap: 0.35rem;
+  width: 100%;
+  min-height: 6.4rem;
+  padding: 1.15rem 1.25rem;
+  border: none;
+  border-radius: 1rem;
+  background:
+    radial-gradient(circle at 18% 20%, rgba(255, 255, 255, 0.16), transparent 42%),
+    linear-gradient(145deg, #1a4d58 0%, #163a4a 55%, #0f7a74 100%);
+  color: #f4fbfa;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 14px 32px rgba(18, 35, 46, 0.22);
+}
+
+.p-meter__launch-kicker {
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.78;
+}
+
+.p-meter__launch-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.55rem, 5vw, 2.05rem);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.p-meter__footer {
+  max-width: 40rem;
+}
+
+.p-meter__next,
+.p-meter-run__next {
+  appearance: none;
+  width: 100%;
+  min-height: 3.3rem;
+  border: none;
+  border-radius: 0.75rem;
+  background: #163a4a;
+  color: #eef5f4;
+  font-family: var(--font-ui);
+  font-size: 1.08rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.p-meter-run {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  background: #061018;
+}
+
+.p-meter-run__exit {
+  appearance: none;
+  z-index: 2;
+  margin: 0;
+  padding: 0.7rem 1rem;
+  border: none;
+  background: #12232e;
+  color: #eef5f4;
+  font-family: var(--font-ui);
+  font-size: 0.92rem;
+  font-weight: 650;
+  text-align: left;
+  cursor: pointer;
+}
+
+.p-meter-run__frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #ecfeff;
+}
+
+.p-meter-run__next {
+  border-radius: 0;
+  min-height: 3.5rem;
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}

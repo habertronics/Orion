@@ -14,10 +14,26 @@ const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:5173')
   .map((o) => o.trim())
   .filter(Boolean);
 
+function isDevLocalOrigin(origin) {
+  try {
+    const { hostname } = new URL(origin);
+    return (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname === '[::1]' ||
+      /^192\.168\.\d+\.\d+$/.test(hostname) ||
+      /^10\.\d+\.\d+\.\d+$/.test(hostname) ||
+      /^172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+$/.test(hostname)
+    );
+  } catch {
+    return false;
+  }
+}
+
 app.use(
   cors({
     origin(origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin || allowedOrigins.includes(origin) || isDevLocalOrigin(origin)) {
         callback(null, true);
       } else {
         callback(new Error('Origen no permitido por CORS'));
@@ -46,6 +62,6 @@ app.use((err, _req, res, _next) => {
   res.status(500).json({ error: 'Error interno' });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`API Orión en http://localhost:${PORT}`);
 });

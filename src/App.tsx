@@ -8,6 +8,8 @@ import { ProtocolIntroScreen } from './screens/ProtocolIntroScreen'
 import { ParpadeoInterrogatorioScreen } from './screens/ParpadeoInterrogatorioScreen'
 import { ParpadeoSummaryScreen } from './screens/ParpadeoSummaryScreen'
 import { ParpadeoExploracionFisicaScreen } from './screens/ParpadeoExploracionFisicaScreen'
+import { ParpadeometroScreen } from './screens/ParpadeometroScreen'
+import { ParpadeoExamSummaryScreen } from './screens/ParpadeoExamSummaryScreen'
 import {
   clearRememberedCredentials,
   clearSession,
@@ -15,7 +17,11 @@ import {
 } from './auth/researcherAuth'
 import type { ParpadeoInterrogatorioState } from './i18n/parpadeoInterrogatorio'
 import type { ParpadeoExamState } from './i18n/parpadeoExam'
-import { saveParpadeoInterrogatorio } from './lib/parpadeoApi'
+import {
+  saveParpadeoComplete,
+  saveParpadeoInterrogatorio,
+} from './lib/parpadeoApi'
+import type { MeterResult } from './lib/parpadeoMeter'
 import {
   completeWelcome,
   loadPreferences,
@@ -34,6 +40,8 @@ type AppView =
   | 'protocol-interrogatorio'
   | 'protocol-summary'
   | 'protocol-exam'
+  | 'protocol-parpadeometro'
+  | 'protocol-exam-summary'
   | 'protocol-next'
 
 function App() {
@@ -54,6 +62,7 @@ function App() {
     useState<ParpadeoInterrogatorioState | null>(null)
   const [interrogatorioSaved, setInterrogatorioSaved] = useState(false)
   const [exam, setExam] = useState<ParpadeoExamState | null>(null)
+  const [meter, setMeter] = useState<MeterResult | null>(null)
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -69,6 +78,7 @@ function App() {
     setInterrogatorio(null)
     setInterrogatorioSaved(false)
     setExam(null)
+    setMeter(null)
     setView('researcher-auth')
   }
 
@@ -206,7 +216,41 @@ function App() {
         onBack={() => setView('protocol-summary')}
         onNext={(data) => {
           setExam(data)
-          setView('protocol-next')
+          setView('protocol-parpadeometro')
+        }}
+      />
+    )
+  }
+
+  if (view === 'protocol-parpadeometro' && selectedProtocol === 'parpadeo') {
+    return (
+      <ParpadeometroScreen
+        lang={lang}
+        onBack={() => setView('protocol-exam')}
+        onNext={(result) => {
+          setMeter(result)
+          setView('protocol-exam-summary')
+        }}
+      />
+    )
+  }
+
+  if (view === 'protocol-exam-summary' && selectedProtocol === 'parpadeo') {
+    return (
+      <ParpadeoExamSummaryScreen
+        lang={lang}
+        exam={exam}
+        meter={meter}
+        canUpload={Boolean(researcherEmail && interrogatorio)}
+        onBack={() => setView('protocol-parpadeometro')}
+        onUpload={async () => {
+          if (!interrogatorio) return false
+          const saved = await saveParpadeoComplete({
+            interrogatorio,
+            exam,
+            meter,
+          })
+          return Boolean(saved)
         }}
       />
     )

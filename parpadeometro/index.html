@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0e7490" />
+    <meta name="description" content="Habertronic Parpadeo — análisis de parpadeo con MediaPipe" />
+    <link rel="icon" type="image/svg+xml" href="/parpadeometro/icons/icon.svg" />
+    <link rel="apple-touch-icon" href="/parpadeometro/icons/icon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&family=Sora:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <title>Parpadeómetro IA — Habertronic Orión</title>
+  </head>
+  <body>
+    <div id="app">
+      <header class="topbar">
+        <p class="brand">Habertronic Orión · Parpadeómetro <span class="app-ver" id="appVer">v2.2</span></p>
+        <div class="top-actions">
+          <label class="field" for="cameraSelect">
+            <span>Cámara</span>
+            <select id="cameraSelect" disabled>
+              <option value="">Detectar al iniciar…</option>
+            </select>
+          </label>
+          <button type="button" class="btn primary" id="startCamBtn">Iniciar cámara</button>
+          <button type="button" class="btn ghost" id="stopCamBtn" disabled>Detener</button>
+          <button type="button" class="btn accent inicio-btn" id="inicioBtn" disabled>
+            <span class="inicio-main" id="inicioMain">Inicio</span>
+            <span class="inicio-sub" id="inicioSub" hidden></span>
+          </button>
+          <button type="button" class="btn ghost" id="lecturaBtn" disabled>Actividad</button>
+        </div>
+        <p class="status" id="status">Listo para iniciar</p>
+        <p class="flow-hint" id="flowHint">
+          1) Cámara → 2) Inicio (elige tiempo, botón se pone amarillo) → 3) Actividad → 4) Inicio amarillo
+        </p>
+        <p class="bg-note" id="bgNote" hidden>
+          Si sales a otra app, el sistema suele pausar la cámara. Para medir a la vez, usa
+          <strong>Actividad</strong> (lectura, video o Tetris) dentro de esta pantalla.
+        </p>
+        <div class="result-banner" id="resultBanner" hidden>
+          <strong id="resultTitle">Prueba terminada</strong>
+          <p id="resultDetail">—</p>
+        </div>
+      </header>
+
+      <section class="stats" id="statsBar" hidden>
+        <div class="stat">
+          <span class="stat-label">Parpadeos</span>
+          <strong class="stat-value" id="blinkCount">0</strong>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Tiempo</span>
+          <strong class="stat-value" id="timeLeft">—</strong>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Apertura</span>
+          <strong class="stat-value" id="apertureValue">—</strong>
+        </div>
+      </section>
+
+      <div class="work-area">
+        <main class="stage">
+          <div class="viewport" id="viewport">
+            <video id="video" playsinline autoplay muted></video>
+            <canvas id="overlay"></canvas>
+            <div class="placeholder" id="placeholder">
+              <p>Activa la cámara para ver la malla facial y medir el parpadeo</p>
+            </div>
+            <p class="pip-badge" id="pipBadge" hidden>Sensando</p>
+          </div>
+        </main>
+
+        <button type="button" class="sense-chip" id="senseChip" hidden aria-label="Sensor activo, arrastra para mover">
+          <span class="sense-dot" aria-hidden="true"></span>
+          <span class="sense-chip-text" id="senseChipText">Sensando</span>
+        </button>
+
+        <section class="reader-panel" id="readerPanel" hidden>
+          <div class="reader-toolbar">
+            <h2>Actividad</h2>
+            <button type="button" class="btn ghost compact" id="exitLecturaBtn">Salir</button>
+          </div>
+
+          <div class="activity-tabs tabs-3" role="tablist" aria-label="Tipo de actividad">
+            <button type="button" class="tab-btn active" data-tab="lectura">Lectura</button>
+            <button type="button" class="tab-btn" data-tab="video">Video</button>
+            <button type="button" class="tab-btn" data-tab="tetris">Tetris</button>
+          </div>
+
+          <div class="tab-panel active" id="tab-lectura" data-panel="lectura">
+            <p class="reader-help">
+              Elige un tema de Wikipedia o pega tu propio enlace. El artículo se carga aquí para que leas sin salir de la app.
+            </p>
+            <div class="topic-grid" id="wikiTopicGrid"></div>
+            <form class="url-row" id="wikiForm">
+              <input
+                id="wikiUrlInput"
+                type="text"
+                placeholder="Pegar dirección de Wikipedia (ej. https://es.wikipedia.org/wiki/Luna)"
+              />
+              <button type="submit" class="btn primary compact">Cargar enlace</button>
+            </form>
+            <article class="wiki-article" id="wikiArticle">
+              <div class="wiki-article-head">
+                <h3 id="wikiTitle">Elige un tema para empezar</h3>
+                <a id="wikiOpenLink" href="#" target="_blank" rel="noopener noreferrer" hidden>Ver en Wikipedia</a>
+              </div>
+              <div class="wiki-body" id="wikiBody">
+                Selecciona Astronomía, Matemáticas, Física, cocina, ejercicio u otro tema de la lista.
+              </div>
+            </article>
+          </div>
+
+          <div class="tab-panel" id="tab-video" data-panel="video" hidden>
+            <p class="reader-help">
+              Videos cortos listos para ver (~5–10 min). También puedes pegar un enlace de YouTube o subir un archivo MP4.
+            </p>
+            <div class="video-grid" id="videoPresetGrid"></div>
+            <form class="url-row" id="videoForm">
+              <input id="videoUrlInput" type="url" placeholder="Pegar enlace de YouTube / Shorts / TikTok" />
+              <button type="submit" class="btn primary compact">Cargar enlace</button>
+            </form>
+            <div class="inline-actions">
+              <label class="file-btn btn ghost compact">
+                Subir video
+                <input id="videoFileInput" type="file" accept="video/*" hidden />
+              </label>
+            </div>
+            <div class="embed-frame-wrap video-wrap">
+              <iframe
+                id="videoFrame"
+                title="Video embebido"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen
+                hidden
+              ></iframe>
+              <video id="localVideo" controls playsinline hidden></video>
+              <p class="embed-fallback" id="videoFallback" hidden></p>
+            </div>
+          </div>
+
+          <div class="tab-panel" id="tab-tetris" data-panel="tetris" hidden>
+            <p class="reader-help">
+              Juega Tetris mientras se mide el parpadeo. En PC: flechas, espacio = soltar, P = pausa.
+            </p>
+            <div class="tetris-layout">
+              <div class="tetris-board-wrap">
+                <canvas id="tetrisCanvas" width="250" height="500" aria-label="Tablero de Tetris"></canvas>
+              </div>
+              <div class="tetris-side">
+                <div class="tetris-stats">
+                  <div><span>Puntos</span><strong id="tetrisScore">0</strong></div>
+                  <div><span>Líneas</span><strong id="tetrisLines">0</strong></div>
+                  <div><span>Estado</span><strong id="tetrisStatus">Listo</strong></div>
+                </div>
+                <div class="tetris-actions">
+                  <button type="button" class="btn primary compact" id="tetrisStartBtn">Jugar</button>
+                  <button type="button" class="btn ghost compact" id="tetrisPauseBtn" disabled>Pausa</button>
+                  <button type="button" class="btn ghost compact" id="tetrisResetBtn">Reiniciar</button>
+                </div>
+                <div class="tetris-pad">
+                  <button type="button" class="pad-btn pad-rotate" id="tetrisRotateBtn">
+                    <span class="pad-icon">↻</span>
+                    <span class="pad-label">Girar</span>
+                  </button>
+                  <div class="pad-row">
+                    <button type="button" class="pad-btn pad-move" id="tetrisLeftBtn">
+                      <span class="pad-icon">←</span>
+                      <span class="pad-label">Izq</span>
+                    </button>
+                    <button type="button" class="pad-btn pad-move" id="tetrisDownBtn">
+                      <span class="pad-icon">↓</span>
+                      <span class="pad-label">Bajar</span>
+                    </button>
+                    <button type="button" class="pad-btn pad-move" id="tetrisRightBtn">
+                      <span class="pad-icon">→</span>
+                      <span class="pad-label">Der</span>
+                    </button>
+                  </div>
+                  <button type="button" class="pad-btn pad-drop wide" id="tetrisDropBtn">
+                    <span class="pad-icon">⬇</span>
+                    <span class="pad-label">Soltar pieza</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <section class="chart-panel" id="chartPanel">
+        <div class="chart-head">
+          <h2>Apertura palpebral</h2>
+          <p id="chartHint">La gráfica se activa al iniciar una prueba</p>
+        </div>
+        <canvas id="chart" width="900" height="180" aria-label="Gráfica de apertura palpebral"></canvas>
+      </section>
+    </div>
+
+    <div class="modal" id="durationModal" hidden>
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <h2 id="modalTitle">Selecciona la duración</h2>
+        <p class="modal-sub">Luego ve a Actividad y pulsa el botón amarillo Inicio para comenzar</p>
+        <div class="duration-grid">
+          <button type="button" class="duration-btn" data-seconds="10">10 segundos</button>
+          <button type="button" class="duration-btn" data-seconds="30">30 segundos</button>
+          <button type="button" class="duration-btn" data-seconds="60">1 minuto</button>
+          <button type="button" class="duration-btn" data-seconds="180">3 minutos</button>
+          <button type="button" class="duration-btn" data-seconds="300">5 minutos</button>
+        </div>
+        <button type="button" class="btn ghost modal-close" id="modalCloseBtn">Cancelar</button>
+      </div>
+    </div>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

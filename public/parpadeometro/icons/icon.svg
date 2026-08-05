@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Habertronic Parpadeo">
+  <defs>
+    <linearGradient id="g" x1="70" y1="40" x2="440" y2="470" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#22d3ee"/>
+      <stop offset="1" stop-color="#0e7490"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#g)"/>
+  <path fill="none" stroke="#ecfeff" stroke-width="22" stroke-linecap="round" d="M96 256c48-78 120-118 160-118s112 40 160 118"/>
+  <path fill="none" stroke="#f59e0b" stroke-width="18" stroke-linecap="round" d="M128 268c40-58 96-88 128-88s88 30 128 88"/>
+  <circle cx="256" cy="268" r="28" fill="#ecfeff"/>
+  <circle cx="256" cy="268" r="12" fill="#164e63"/>
+</svg>
