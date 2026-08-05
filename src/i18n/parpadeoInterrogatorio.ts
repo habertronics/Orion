@@ -105,7 +105,11 @@ export const interrogatorioCopy: Record<
     osdi6SubDiscomfort: string
     osdi6SubFunction: string
     osdi6SubEnvironment: string
+    osdi6SubDiscomfortShort: string
+    osdi6SubFunctionShort: string
+    osdi6SubEnvironmentShort: string
     osdi6Frequency: Record<Osdi6Frequency, string>
+    osdi6FrequencyShort: Record<Osdi6Frequency, string>
     osdi6Sections: [string, string, string]
     osdi6Questions: [string, string, string, string, string, string]
     locationTitle: string
@@ -173,9 +177,19 @@ export const interrogatorioCopy: Record<
     osdi6SubDiscomfort: 'Puntuación subescala malestar ocular y alteraciones visuales',
     osdi6SubFunction: 'Puntuación subescala función visual / tareas',
     osdi6SubEnvironment: 'Puntuación subescala ambiental',
+    osdi6SubDiscomfortShort: 'Malestar / visión',
+    osdi6SubFunctionShort: 'Función / tareas',
+    osdi6SubEnvironmentShort: 'Ambiental',
     osdi6Frequency: {
       4: 'Constantemente',
       3: 'Con mucha frecuencia',
+      2: 'A menudo',
+      1: 'Alguna vez',
+      0: 'Nunca',
+    },
+    osdi6FrequencyShort: {
+      4: 'Const.',
+      3: 'Mucha frec.',
       2: 'A menudo',
       1: 'Alguna vez',
       0: 'Nunca',
@@ -262,12 +276,22 @@ export const interrogatorioCopy: Record<
     osdi6SubDiscomfort: 'Ocular discomfort / visual disturbance subscale score',
     osdi6SubFunction: 'Visual function / tasks subscale score',
     osdi6SubEnvironment: 'Environmental subscale score',
+    osdi6SubDiscomfortShort: 'Discomfort / vision',
+    osdi6SubFunctionShort: 'Function / tasks',
+    osdi6SubEnvironmentShort: 'Environmental',
     osdi6Frequency: {
       4: 'All of the time',
       3: 'Most of the time',
       2: 'Often',
       1: 'Some of the time',
       0: 'None of the time',
+    },
+    osdi6FrequencyShort: {
+      4: 'All time',
+      3: 'Most',
+      2: 'Often',
+      1: 'Some',
+      0: 'None',
     },
     osdi6Sections: [
       'Have you experienced any of the following symptoms during a typical day in the last month?',
@@ -351,10 +375,20 @@ export const interrogatorioCopy: Record<
     osdi6SubDiscomfort: 'Pontuação subescala desconforto ocular e alterações visuais',
     osdi6SubFunction: 'Pontuação subescala função visual / tarefas',
     osdi6SubEnvironment: 'Pontuação subescala ambiental',
+    osdi6SubDiscomfortShort: 'Desconforto / visão',
+    osdi6SubFunctionShort: 'Função / tarefas',
+    osdi6SubEnvironmentShort: 'Ambiental',
     osdi6Frequency: {
       4: 'Constantemente',
       3: 'Com muita frequência',
       2: 'Frequentemente',
+      1: 'Às vezes',
+      0: 'Nunca',
+    },
+    osdi6FrequencyShort: {
+      4: 'Const.',
+      3: 'Muita frec.',
+      2: 'Freq.',
       1: 'Às vezes',
       0: 'Nunca',
     },

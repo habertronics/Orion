@@ -444,18 +444,23 @@ export function ParpadeoInterrogatorioScreen({
                 <div className="p-int__osdi-table">
                   <div className="p-int__osdi-head" aria-hidden="true">
                     <div className="p-int__osdi-head-q" />
-                    {OSDI6_SCORES.map((score) => (
-                      <div
-                        key={score}
-                        className={`p-int__osdi-head-cell p-int__osdi-head-cell--${score}`}
-                        title={t.osdi6Frequency[score]}
-                      >
-                        <span className="p-int__osdi-head-label">
-                          {t.osdi6Frequency[score]}
-                        </span>
-                        <span className="p-int__osdi-head-num">{score}</span>
-                      </div>
-                    ))}
+                    <div className="p-int__osdi-head-scores">
+                      {OSDI6_SCORES.map((score) => (
+                        <div
+                          key={score}
+                          className={`p-int__osdi-head-cell p-int__osdi-head-cell--${score}`}
+                          title={t.osdi6Frequency[score]}
+                        >
+                          <span className="p-int__osdi-head-label p-int__osdi-head-label--full">
+                            {t.osdi6Frequency[score]}
+                          </span>
+                          <span className="p-int__osdi-head-label p-int__osdi-head-label--short">
+                            {t.osdi6FrequencyShort[score]}
+                          </span>
+                          <span className="p-int__osdi-head-num">{score}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
                   {(
@@ -512,13 +517,22 @@ export function ParpadeoInterrogatorioScreen({
                         </div>
                       ))}
                       <p className="p-int__osdi-subtotal">
-                        {block.subKey === 'discomfort' && t.osdi6SubDiscomfort}
-                        {block.subKey === 'visualFunction' && t.osdi6SubFunction}
-                        {block.subKey === 'environmental' &&
-                          t.osdi6SubEnvironment}
+                        <span className="p-int__osdi-subtotal-full">
+                          {block.subKey === 'discomfort' && t.osdi6SubDiscomfort}
+                          {block.subKey === 'visualFunction' && t.osdi6SubFunction}
+                          {block.subKey === 'environmental' &&
+                            t.osdi6SubEnvironment}
+                        </span>
+                        <span className="p-int__osdi-subtotal-short">
+                          {block.subKey === 'discomfort' &&
+                            t.osdi6SubDiscomfortShort}
+                          {block.subKey === 'visualFunction' &&
+                            t.osdi6SubFunctionShort}
+                          {block.subKey === 'environmental' &&
+                            t.osdi6SubEnvironmentShort}
+                        </span>
                         <span className="p-int__osdi-subtotal-arrow" aria-hidden="true">
-                          {' '}
-                          ⇒{' '}
+                          ⇒
                         </span>
                         <strong>{osdiLive.subscales[block.subKey]}</strong>
                       </p>
