@@ -4,6 +4,7 @@ const cors = require('cors');
 const authRoutes = require('./routes/auth');
 const projectRoutes = require('./routes/projects');
 const environmentRoutes = require('./routes/environment');
+const parpadeoRoutes = require('./routes/parpadeo');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -35,6 +36,7 @@ app.get('/api/health', (_req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/environment', environmentRoutes);
+app.use('/api/parpadeo', parpadeoRoutes);
 
 app.use((err, _req, res, _next) => {
   if (err.message === 'Origen no permitido por CORS') {

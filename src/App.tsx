@@ -6,12 +6,14 @@ import { ResearcherHelloScreen } from './screens/ResearcherHelloScreen'
 import { ResearcherProjectsScreen } from './screens/ResearcherProjectsScreen'
 import { ProtocolIntroScreen } from './screens/ProtocolIntroScreen'
 import { ParpadeoInterrogatorioScreen } from './screens/ParpadeoInterrogatorioScreen'
+import { ParpadeoSummaryScreen } from './screens/ParpadeoSummaryScreen'
 import {
   clearRememberedCredentials,
   clearSession,
   getSession,
 } from './auth/researcherAuth'
 import type { ParpadeoInterrogatorioState } from './i18n/parpadeoInterrogatorio'
+import { saveParpadeoInterrogatorio } from './lib/parpadeoApi'
 import {
   completeWelcome,
   loadPreferences,
@@ -28,6 +30,7 @@ type AppView =
   | 'researcher-projects'
   | 'protocol-intro'
   | 'protocol-interrogatorio'
+  | 'protocol-summary'
   | 'protocol-next'
 
 function App() {
@@ -46,6 +49,8 @@ function App() {
   const [selectedProtocol, setSelectedProtocol] = useState<string | null>(null)
   const [interrogatorio, setInterrogatorio] =
     useState<ParpadeoInterrogatorioState | null>(null)
+  const [interrogatorioSaved, setInterrogatorioSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     document.documentElement.lang = lang
@@ -58,6 +63,7 @@ function App() {
     setDisplayName('')
     setSelectedProtocol(null)
     setInterrogatorio(null)
+    setInterrogatorioSaved(false)
     setView('researcher-auth')
   }
 
@@ -165,8 +171,25 @@ function App() {
         onBack={() => setView('protocol-intro')}
         onNext={(data) => {
           setInterrogatorio(data)
-          setView('protocol-next')
+          setSaving(true)
+          void saveParpadeoInterrogatorio(data).then((saved) => {
+            setInterrogatorioSaved(Boolean(saved))
+            setSaving(false)
+            setView('protocol-summary')
+          })
         }}
+      />
+    )
+  }
+
+  if (view === 'protocol-summary' && interrogatorio) {
+    return (
+      <ParpadeoSummaryScreen
+        lang={lang}
+        data={interrogatorio}
+        saved={interrogatorioSaved}
+        onBack={() => setView('protocol-interrogatorio')}
+        onContinue={() => setView('protocol-next')}
       />
     )
   }
@@ -174,17 +197,13 @@ function App() {
   return (
     <main className="placeholder">
       <p>Protocolo: {selectedProtocol}</p>
-      <p>
-        Interrogatorio listo
-        {interrogatorio?.age != null ? ` · edad ${interrogatorio.age}` : ''}.
-      </p>
-      <p>Próximo: ID anónimo del paciente y medición MediaPipe.</p>
+      <p>{saving ? 'Guardando…' : 'Próximo: ID anónimo y medición MediaPipe.'}</p>
       <button
         type="button"
         onClick={() =>
           setView(
             selectedProtocol === 'parpadeo'
-              ? 'protocol-interrogatorio'
+              ? 'protocol-summary'
               : 'researcher-projects',
           )
         }
