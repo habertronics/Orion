@@ -1,26 +1,11 @@
--- Habertronic Orión — esquema completo
+-- Migración: nickname + proyectos + membresías
+-- Seguro de re-ejecutar (IF NOT EXISTS / ON CONFLICT)
 
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+ALTER TABLE researchers
+  ADD COLUMN IF NOT EXISTS nickname VARCHAR(80);
 
-CREATE TABLE IF NOT EXISTS researchers (
-  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  email         VARCHAR(255) NOT NULL UNIQUE,
-  password_hash VARCHAR(255) NOT NULL,
-  nickname      VARCHAR(80),
-  role          VARCHAR(30) NOT NULL DEFAULT 'researcher',
-  active        BOOLEAN NOT NULL DEFAULT TRUE,
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS researcher_login_events (
-  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  researcher_id UUID REFERENCES researchers(id) ON DELETE SET NULL,
-  email         VARCHAR(255),
-  success       BOOLEAN NOT NULL,
-  ip_address    VARCHAR(45),
-  user_agent    TEXT,
-  logged_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
+ALTER TABLE researchers
+  ADD COLUMN IF NOT EXISTS role VARCHAR(30) NOT NULL DEFAULT 'researcher';
 
 CREATE TABLE IF NOT EXISTS projects (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -42,15 +27,17 @@ CREATE TABLE IF NOT EXISTS project_members (
   UNIQUE (project_id, researcher_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_researchers_email ON researchers (email);
-CREATE INDEX IF NOT EXISTS idx_researcher_login_events_logged_at
-  ON researcher_login_events (logged_at);
 CREATE INDEX IF NOT EXISTS idx_project_members_researcher
   ON project_members (researcher_id);
 
 INSERT INTO projects (slug, name_es, name_en, name_pt)
 VALUES
-  ('parpadeo', 'Protocolo Parpadeo', 'Blink Protocol', 'Protocolo Piscar'),
+  (
+    'parpadeo',
+    'Protocolo Parpadeo',
+    'Blink Protocol',
+    'Protocolo Piscar'
+  ),
   (
     'interferometria',
     'Protocolo Interferometría',
@@ -58,3 +45,11 @@ VALUES
     'Protocolo Interferometria'
   )
 ON CONFLICT (slug) DO NOTHING;
+
+-- Altos existentes: aprobar en todos los proyectos activos
+INSERT INTO project_members (project_id, researcher_id, status)
+SELECT p.id, r.id, 'approved'
+FROM projects p
+CROSS JOIN researchers r
+WHERE p.active = TRUE
+ON CONFLICT (project_id, researcher_id) DO NOTHING;

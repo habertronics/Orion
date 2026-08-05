@@ -1,0 +1,137 @@
+.p-intro {
+  --ink: #12232e;
+  --ink-soft: #3a5260;
+  --primary: #0f7a74;
+
+  position: relative;
+  isolation: isolate;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 1.25rem;
+  padding: clamp(1.25rem, 4vw, 2.5rem) clamp(1.25rem, 5vw, 3rem)
+    max(1.25rem, env(safe-area-inset-bottom));
+  color: var(--ink);
+  overflow: hidden;
+}
+
+.p-intro__atmosphere {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse 90% 55% at 12% 10%, rgba(15, 122, 116, 0.22), transparent 55%),
+    radial-gradient(ellipse 70% 45% at 92% 12%, rgba(47, 95, 158, 0.18), transparent 50%),
+    radial-gradient(ellipse 85% 55% at 50% 105%, rgba(22, 58, 74, 0.14), transparent 55%),
+    linear-gradient(168deg, #eef5f4 0%, #e3ebf0 45%, #d7e4e2 100%);
+}
+
+.p-intro__header {
+  max-width: 40rem;
+}
+
+.p-intro__back {
+  appearance: none;
+  margin: 0 0 0.85rem;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.p-intro__brand {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.9rem, 6.5vw, 2.85rem);
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.p-intro__subtitle {
+  margin: 0.65rem 0 0;
+  max-width: 32rem;
+  font-family: var(--font-ui);
+  font-size: clamp(0.95rem, 2.4vw, 1.08rem);
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+
+.p-intro__protocol {
+  margin: 1rem 0 0;
+  font-family: var(--font-ui);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.p-intro__body {
+  max-width: 40rem;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.p-intro__label {
+  margin: 0 0 0.85rem;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.p-intro__text {
+  margin: 0 0 1rem;
+  font-family: var(--font-ui);
+  font-size: clamp(1rem, 2.5vw, 1.08rem);
+  line-height: 1.55;
+  color: var(--ink);
+}
+
+.p-intro__text:last-child {
+  margin-bottom: 0;
+}
+
+.p-intro__footer {
+  max-width: 40rem;
+  padding-top: 0.5rem;
+}
+
+.p-intro__next {
+  appearance: none;
+  width: 100%;
+  min-height: 3.4rem;
+  border: none;
+  border-radius: 0.75rem;
+  background: var(--primary);
+  color: #eef5f4;
+  font-family: var(--font-ui);
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    filter 0.2s ease;
+}
+
+.p-intro__next:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.05);
+}
+
+.p-intro__back:focus-visible,
+.p-intro__next:focus-visible {
+  outline: 3px solid rgba(18, 35, 46, 0.3);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .p-intro__next {
+    transition: none;
+  }
+}

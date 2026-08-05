@@ -6,6 +6,8 @@ const TOKEN_KEY = 'habertronic-orion-researcher-token'
 
 export type ResearcherSession = {
   email: string
+  nickname: string | null
+  displayName: string
 }
 
 export type RememberedCredentials = {
@@ -18,11 +20,12 @@ export type AuthErrorCode =
   | 'email_taken'
   | 'invalid_credentials'
   | 'missing_password'
+  | 'missing_nickname'
   | 'server_error'
   | 'network_error'
 
 export type AuthResult =
-  | { ok: true; email: string }
+  | { ok: true; email: string; nickname: string | null; displayName: string }
   | { ok: false; error: AuthErrorCode }
 
 function normalizeEmail(email: string): string {
@@ -84,7 +87,15 @@ export function getSession(): ResearcherSession | null {
     const raw = sessionStorage.getItem(SESSION_KEY)
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<ResearcherSession>
-      if (parsed.email && getToken()) return { email: String(parsed.email) }
+      if (parsed.email && getToken()) {
+        const email = String(parsed.email)
+        const nickname = parsed.nickname ? String(parsed.nickname) : null
+        return {
+          email,
+          nickname,
+          displayName: String(parsed.displayName || nickname || email),
+        }
+      }
     }
   } catch {
     // fall through
@@ -93,18 +104,30 @@ export function getSession(): ResearcherSession | null {
   const remembered = getRememberedCredentials()
   const token = localStorage.getItem(TOKEN_KEY)
   if (remembered && token) {
-    setSession(remembered.email)
+    const session = {
+      email: remembered.email,
+      nickname: null,
+      displayName: remembered.email,
+    }
+    setSession(session)
     sessionStorage.setItem(TOKEN_KEY, token)
-    return { email: remembered.email }
+    return session
   }
 
   return null
 }
 
-export function setSession(email: string): void {
+export function setSession(session: {
+  email: string
+  nickname?: string | null
+  displayName?: string
+}): void {
+  const email = normalizeEmail(session.email)
+  const nickname = session.nickname ?? null
+  const displayName = session.displayName || nickname || email
   sessionStorage.setItem(
     SESSION_KEY,
-    JSON.stringify({ email: normalizeEmail(email) }),
+    JSON.stringify({ email, nickname, displayName }),
   )
 }
 
@@ -113,31 +136,57 @@ export function clearSession(): void {
   clearToken()
 }
 
-async function authRequest(
-  path: '/api/auth/register' | '/api/auth/login',
-  email: string,
-  password: string,
-): Promise<AuthResult & { token?: string }> {
-  const normalized = normalizeEmail(email)
+type AuthOk = {
+  ok: true
+  email: string
+  nickname: string | null
+  displayName: string
+  token: string
+}
+
+async function authRequest(input: {
+  path: '/api/auth/register' | '/api/auth/login'
+  email: string
+  password: string
+  useNickname?: boolean
+  nickname?: string
+}): Promise<AuthOk | { ok: false; error: AuthErrorCode }> {
+  const normalized = normalizeEmail(input.email)
 
   if (!normalized.includes('@') || normalized.length < 5) {
     return { ok: false, error: 'invalid_email' }
   }
-  if (!password) {
+  if (!input.password) {
     return { ok: false, error: 'missing_password' }
+  }
+  if (input.useNickname && !String(input.nickname || '').trim()) {
+    return { ok: false, error: 'missing_nickname' }
   }
 
   try {
-    const response = await fetch(`${getApiUrl()}${path}`, {
+    const body: Record<string, unknown> = {
+      email: normalized,
+      password: input.password,
+    }
+    if (input.path === '/api/auth/register') {
+      body.useNickname = Boolean(input.useNickname)
+      body.nickname = input.useNickname ? String(input.nickname || '').trim() : null
+    }
+
+    const response = await fetch(`${getApiUrl()}${input.path}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: normalized, password }),
+      body: JSON.stringify(body),
     })
 
     const data = (await response.json().catch(() => ({}))) as {
       error?: string
       token?: string
-      user?: { email?: string }
+      user?: {
+        email?: string
+        nickname?: string | null
+        displayName?: string
+      }
     }
 
     if (!response.ok) {
@@ -147,6 +196,7 @@ async function authRequest(
         code === 'email_taken' ||
         code === 'invalid_credentials' ||
         code === 'missing_password' ||
+        code === 'missing_nickname' ||
         code === 'server_error'
       ) {
         return { ok: false, error: code }
@@ -158,7 +208,14 @@ async function authRequest(
       return { ok: false, error: 'server_error' }
     }
 
-    return { ok: true, email: data.user.email, token: data.token }
+    const nickname = data.user.nickname ?? null
+    return {
+      ok: true,
+      email: data.user.email,
+      nickname,
+      displayName: data.user.displayName || nickname || data.user.email,
+      token: data.token,
+    }
   } catch {
     return { ok: false, error: 'network_error' }
   }
@@ -168,16 +225,24 @@ export async function registerResearcher(input: {
   email: string
   password: string
   remember: boolean
+  useNickname: boolean
+  nickname: string
 }): Promise<AuthResult> {
-  const result = await authRequest(
-    '/api/auth/register',
-    input.email,
-    input.password,
-  )
-  if (!result.ok || !result.token) return result
+  const result = await authRequest({
+    path: '/api/auth/register',
+    email: input.email,
+    password: input.password,
+    useNickname: input.useNickname,
+    nickname: input.nickname,
+  })
+  if (!result.ok) return result
 
   setToken(result.token, input.remember)
-  setSession(result.email)
+  setSession({
+    email: result.email,
+    nickname: result.nickname,
+    displayName: result.displayName,
+  })
 
   if (input.remember) {
     setRememberedCredentials(result.email, input.password)
@@ -185,7 +250,12 @@ export async function registerResearcher(input: {
     clearRememberedCredentials()
   }
 
-  return { ok: true, email: result.email }
+  return {
+    ok: true,
+    email: result.email,
+    nickname: result.nickname,
+    displayName: result.displayName,
+  }
 }
 
 export async function loginResearcher(input: {
@@ -193,11 +263,19 @@ export async function loginResearcher(input: {
   password: string
   remember: boolean
 }): Promise<AuthResult> {
-  const result = await authRequest('/api/auth/login', input.email, input.password)
-  if (!result.ok || !result.token) return result
+  const result = await authRequest({
+    path: '/api/auth/login',
+    email: input.email,
+    password: input.password,
+  })
+  if (!result.ok) return result
 
   setToken(result.token, input.remember)
-  setSession(result.email)
+  setSession({
+    email: result.email,
+    nickname: result.nickname,
+    displayName: result.displayName,
+  })
 
   if (input.remember) {
     setRememberedCredentials(result.email, input.password)
@@ -205,5 +283,31 @@ export async function loginResearcher(input: {
     clearRememberedCredentials()
   }
 
-  return { ok: true, email: result.email }
+  return {
+    ok: true,
+    email: result.email,
+    nickname: result.nickname,
+    displayName: result.displayName,
+  }
+}
+
+export type ProjectInfo = {
+  id: string
+  slug: string
+  name_es: string
+  name_en: string
+  name_pt: string
+  status: string
+}
+
+export async function fetchMyProjects(): Promise<ProjectInfo[]> {
+  const token = getToken()
+  if (!token) return []
+
+  const response = await fetch(`${getApiUrl()}/api/projects/mine`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!response.ok) return []
+  const data = (await response.json()) as { projects?: ProjectInfo[] }
+  return data.projects ?? []
 }

@@ -10,8 +10,28 @@ function normalizeEmail(email) {
   return String(email || '').trim().toLowerCase();
 }
 
+function normalizeNickname(value) {
+  const nick = String(value || '').trim();
+  return nick.length ? nick.slice(0, 80) : null;
+}
+
 function isValidEmail(email) {
   return email.includes('@') && email.length >= 5;
+}
+
+function displayName(researcher) {
+  return researcher.nickname || researcher.email;
+}
+
+async function enrollInActiveProjects(researcherId) {
+  await query(
+    `INSERT INTO project_members (project_id, researcher_id, status)
+     SELECT id, $1, 'approved'
+     FROM projects
+     WHERE active = TRUE
+     ON CONFLICT (project_id, researcher_id) DO NOTHING`,
+    [researcherId],
+  );
 }
 
 async function logLoginAttempt({ researcherId, email, success, req }) {
@@ -31,21 +51,41 @@ async function logLoginAttempt({ researcherId, email, success, req }) {
 
 function signToken(researcher) {
   return jwt.sign(
-    { id: researcher.id, email: researcher.email, role: 'researcher' },
+    {
+      id: researcher.id,
+      email: researcher.email,
+      nickname: researcher.nickname || null,
+      role: researcher.role || 'researcher',
+    },
     process.env.JWT_SECRET,
     { expiresIn: '30d' },
   );
 }
 
+function userPayload(researcher) {
+  return {
+    id: researcher.id,
+    email: researcher.email,
+    nickname: researcher.nickname || null,
+    displayName: displayName(researcher),
+    role: researcher.role || 'researcher',
+  };
+}
+
 router.post('/register', async (req, res) => {
   const email = normalizeEmail(req.body.email);
   const password = String(req.body.password || '');
+  const useNickname = Boolean(req.body.useNickname);
+  const nickname = useNickname ? normalizeNickname(req.body.nickname) : null;
 
   if (!isValidEmail(email)) {
     return res.status(400).json({ error: 'invalid_email' });
   }
   if (!password) {
     return res.status(400).json({ error: 'missing_password' });
+  }
+  if (useNickname && !nickname) {
+    return res.status(400).json({ error: 'missing_nickname' });
   }
 
   try {
@@ -59,20 +99,20 @@ router.post('/register', async (req, res) => {
 
     const passwordHash = await bcrypt.hash(password, 10);
     const inserted = await query(
-      `INSERT INTO researchers (email, password_hash)
-       VALUES ($1, $2)
-       RETURNING id, email, created_at`,
-      [email, passwordHash],
+      `INSERT INTO researchers (email, password_hash, nickname)
+       VALUES ($1, $2, $3)
+       RETURNING id, email, nickname, role, created_at`,
+      [email, passwordHash, nickname],
     );
 
     const researcher = inserted.rows[0];
-    const token = signToken(researcher);
+    await enrollInActiveProjects(researcher.id);
 
+    const token = signToken(researcher);
     res.status(201).json({
       token,
       user: {
-        id: researcher.id,
-        email: researcher.email,
+        ...userPayload(researcher),
         createdAt: researcher.created_at,
       },
     });
@@ -95,7 +135,7 @@ router.post('/login', async (req, res) => {
 
   try {
     const result = await query(
-      `SELECT id, email, password_hash, active
+      `SELECT id, email, nickname, role, password_hash, active
        FROM researchers WHERE email = $1`,
       [email],
     );
@@ -123,14 +163,12 @@ router.post('/login', async (req, res) => {
       success: true,
       req,
     });
+    await enrollInActiveProjects(researcher.id);
 
     const token = signToken(researcher);
     res.json({
       token,
-      user: {
-        id: researcher.id,
-        email: researcher.email,
-      },
+      user: userPayload(researcher),
     });
   } catch (err) {
     console.error('Login error:', err);
@@ -141,7 +179,7 @@ router.post('/login', async (req, res) => {
 router.get('/me', authRequired, async (req, res) => {
   try {
     const result = await query(
-      `SELECT id, email, created_at
+      `SELECT id, email, nickname, role, created_at
        FROM researchers
        WHERE id = $1 AND active = TRUE`,
       [req.user.id],
@@ -151,8 +189,7 @@ router.get('/me', authRequired, async (req, res) => {
       return res.status(404).json({ error: 'not_found' });
     }
     res.json({
-      id: researcher.id,
-      email: researcher.email,
+      ...userPayload(researcher),
       createdAt: researcher.created_at,
     });
   } catch (err) {

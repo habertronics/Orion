@@ -13,7 +13,11 @@ type AuthView = 'choose' | 'register' | 'login'
 
 type ResearcherAuthScreenProps = {
   lang: Lang
-  onAuthenticated: (email: string) => void
+  onAuthenticated: (user: {
+    email: string
+    nickname: string | null
+    displayName: string
+  }) => void
   onBack: () => void
 }
 
@@ -29,6 +33,8 @@ export function ResearcherAuthScreen({
   const [suggested, setSuggested] = useState(() => suggestPassword())
   const [useOwnPassword, setUseOwnPassword] = useState(false)
   const [ownPassword, setOwnPassword] = useState('')
+  const [useNickname, setUseNickname] = useState(false)
+  const [nickname, setNickname] = useState('')
   const [loginPassword, setLoginPassword] = useState(remembered?.password ?? '')
   const [remember, setRemember] = useState(Boolean(remembered))
   const [error, setError] = useState<string | null>(null)
@@ -43,13 +49,23 @@ export function ResearcherAuthScreen({
     const password = useOwnPassword ? ownPassword : suggested
     setBusy(true)
     setError(null)
-    const result = await registerResearcher({ email, password, remember })
+    const result = await registerResearcher({
+      email,
+      password,
+      remember,
+      useNickname,
+      nickname,
+    })
     setBusy(false)
     if (!result.ok) {
       setError(t.errors[result.error])
       return
     }
-    onAuthenticated(result.email)
+    onAuthenticated({
+      email: result.email,
+      nickname: result.nickname,
+      displayName: result.displayName,
+    })
   }
 
   async function handleLogin(event: FormEvent) {
@@ -66,7 +82,11 @@ export function ResearcherAuthScreen({
       setError(t.errors[result.error])
       return
     }
-    onAuthenticated(result.email)
+    onAuthenticated({
+      email: result.email,
+      nickname: result.nickname,
+      displayName: result.displayName,
+    })
   }
 
   return (
@@ -123,6 +143,29 @@ export function ResearcherAuthScreen({
               required
             />
           </label>
+
+          <label className="r-auth__check">
+            <input
+              type="checkbox"
+              checked={useNickname}
+              onChange={(e) => setUseNickname(e.target.checked)}
+            />
+            <span>{t.useNickname}</span>
+          </label>
+
+          {useNickname && (
+            <label className="r-auth__field">
+              <span>{t.nickname}</span>
+              <input
+                type="text"
+                autoComplete="nickname"
+                placeholder={t.nicknamePlaceholder}
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
+                required
+              />
+            </label>
+          )}
 
           {!useOwnPassword && (
             <div className="r-auth__suggested">
