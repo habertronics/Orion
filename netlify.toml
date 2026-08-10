@@ -23,6 +23,16 @@
   status = 200
 
 [[redirects]]
+  from = "/db"
+  to = "/db/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/db/"
+  to = "/db/index.html"
+  status = 200
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
@@ -41,6 +51,18 @@
   for = "/*"
   [headers.values]
     Permissions-Policy = "camera=(self), microphone=()"
+
+[[headers]]
+  for = "/db/manifest.webmanifest"
+  [headers.values]
+    Content-Type = "application/manifest+json"
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/db/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+    X-Robots-Tag = "noindex, nofollow"
 
 [[headers]]
   for = "/status/manifest.webmanifest"

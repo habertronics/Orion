@@ -13,6 +13,7 @@ export default defineConfig({
         main: resolve(import.meta.dirname, 'index.html'),
         parpadeometro: resolve(import.meta.dirname, 'parpadeometro/index.html'),
         status: resolve(import.meta.dirname, 'status/index.html'),
+        db: resolve(import.meta.dirname, 'db/index.html'),
       },
     },
   },
@@ -29,6 +30,11 @@ export default defineConfig({
         'status/icons/icon-512.png',
         'status/icons/apple-touch-icon.png',
         'status/manifest.webmanifest',
+        'db/icons/icon.svg',
+        'db/icons/icon-192.png',
+        'db/icons/icon-512.png',
+        'db/icons/apple-touch-icon.png',
+        'db/manifest.webmanifest',
       ],
       manifest: {
         name: 'Habertronic Orión',
@@ -65,7 +71,7 @@ export default defineConfig({
         clientsClaim: true,
         skipWaiting: true,
         navigateFallback: 'index.html',
-        navigateFallbackDenylist: [/^\/parpadeometro/, /^\/status/],
+        navigateFallbackDenylist: [/^\/parpadeometro/, /^\/status/, /^\/db/],
         globPatterns: ['**/*.{js,css,html,svg,ico,png,woff2}'],
         runtimeCaching: [
           {

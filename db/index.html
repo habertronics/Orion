@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#1e293b" />
+    <meta
+      name="description"
+      content="Orión DB — registros de médicos e intervenciones de protocolo"
+    />
+    <meta name="application-name" content="Orión DB" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Orión DB" />
+    <link rel="manifest" href="/db/manifest.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="/db/icons/icon.svg" />
+    <link rel="apple-touch-icon" href="/db/icons/apple-touch-icon.png" />
+    <title>Orión DB · Registros</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="top">
+        <div class="brand-row">
+          <img class="brand-icon" src="/db/icons/icon.svg" width="48" height="48" alt="" />
+          <div>
+            <p class="eyebrow">Habertronic</p>
+            <h1>Orión DB</h1>
+          </div>
+        </div>
+        <p class="lede">
+          Registros de médicos e intervenciones de protocolo, estilo hoja de cálculo.
+        </p>
+        <p class="ver" id="appVer">v1.0</p>
+      </header>
+
+      <section class="gate" id="gatePanel">
+        <h2>Acceso</h2>
+        <p>Introduce la contraseña para ver los registros.</p>
+        <form id="gateForm" class="gate-form" autocomplete="off">
+          <label for="pinInput">Contraseña</label>
+          <input id="pinInput" type="password" inputmode="numeric" maxlength="32" required />
+          <button type="submit" class="btn">Entrar</button>
+        </form>
+        <p class="gate-error" id="gateError" hidden>Contraseña incorrecta</p>
+      </section>
+
+      <section class="board" id="boardPanel" hidden>
+        <div class="summary" id="summaryBar"></div>
+
+        <div class="filters" role="tablist" aria-label="Vistas">
+          <button type="button" class="filter-btn active" data-view="medicos">Médicos</button>
+          <button type="button" class="filter-btn" data-view="intervenciones">Intervenciones</button>
+          <button type="button" class="filter-btn" data-view="agrupado">Médico + intervención</button>
+        </div>
+
+        <div class="tools">
+          <label class="check">
+            <input type="checkbox" id="onlyComplete" checked />
+            Solo intervenciones completas
+          </label>
+          <button type="button" class="btn ghost" id="refreshBtn">Actualizar</button>
+          <button type="button" class="btn ghost" id="exportBtn">Exportar CSV</button>
+          <button type="button" class="btn ghost" id="logoutBtn">Cerrar sesión</button>
+        </div>
+
+        <p class="meta" id="statusLine">Cargando…</p>
+        <div class="table-wrap" id="tableWrap"></div>
+      </section>
+    </main>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

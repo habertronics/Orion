@@ -1,0 +1,14 @@
+---
+description: Versionado e identidad de Orión DB (registros)
+globs: db/**
+alwaysApply: false
+---
+
+# Orión DB
+
+Mini app independiente en `db/` (no mezclar con PWA clínica ni con `status/`).
+
+- Nombre visible / PWA: **Orión DB**
+- Versión en `db/config.js` (`APP_VERSION`) y `db/index.html` (`#appVer`)
+- PIN: `DB_ACCESS_PIN` debe coincidir con `ADMIN_DASHBOARD_PIN` en Render
+- Al cambiar UI o datos visibles, subir versión (v1.0 → v1.1…)
