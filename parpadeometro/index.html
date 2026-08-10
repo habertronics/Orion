@@ -18,7 +18,7 @@
   <body>
     <div id="app">
       <header class="topbar">
-        <p class="brand">Habertronic Orión · Parpadeómetro <span class="app-ver" id="appVer">v2.7</span></p>
+        <p class="brand">Habertronic Orión · Parpadeómetro <span class="app-ver" id="appVer">v2.8</span></p>
         <div class="top-actions">
           <label class="field" for="cameraSelect">
             <span>Cámara</span>
@@ -77,72 +77,125 @@
             Info
           </button>
           <div class="metrics-info" id="metricsInfoPanel" hidden>
-            <h3>Cómo leer estas métricas</h3>
+            <h3>Para interpretar el resultado (sin necesidad de saber de computadoras)</h3>
+            <p>
+              Esta herramienta observa la cara con la cámara y estima, momento a momento,
+              <strong>qué tan abiertos están los párpados</strong>. Eso se dibuja como la línea azul
+              de la gráfica: cuando sube, el ojo está más abierto; cuando baja, el párpado se cierra.
+              No mide “fuerza” ni “dolor”: solo apertura.
+            </p>
+            <p>
+              Para decidir si hubo un parpadeo, la aplicación no usa una regla fija e inflexible.
+              Usa dos referencias que se ajustan solas: una <strong>roja</strong> (cierre completo)
+              y una <strong>amarilla</strong> (cierre parcial / incompleto). Piense en ellas como
+              “marcas móviles” que siguen el nivel habitual de apertura del paciente, incluso si
+              mira un poco hacia arriba o hacia abajo en la pantalla.
+            </p>
+
+            <h3>Cómo leer la gráfica al final de la prueba</h3>
+            <p>
+              Al terminar, verá tres trazos:
+            </p>
+            <p>
+              <strong>Línea azul:</strong> la apertura real del párpado durante toda la muestra.
+              Los “valles” (bajadas) son momentos de cierre.
+            </p>
+            <p>
+              <strong>Curva roja (discontinua):</strong> el nivel a partir del cual el sistema
+              considera un <strong>parpadeo completo</strong>. Si la azul baja y cruza por debajo
+              de la roja, ese evento suele contarse como parpadeo completo.
+            </p>
+            <p>
+              <strong>Curva amarilla (discontinua):</strong> el nivel de la zona intermedia.
+              Si la azul entra entre amarillo y rojo (cierre parcial, sin llegar al completo),
+              se registra un <strong>parpadeo incompleto</strong>.
+            </p>
+            <p>
+              <strong>Por qué rojo y amarillo son curvas y no una raya recta:</strong>
+              durante la prueba esos umbrales se mueven junto con la mirada y el tono palpebral.
+              Si el paciente mira hacia abajo, la apertura “en reposo” baja un poco; el sistema
+              baja también las marcas roja y amarilla para no confundir esa postura con un parpadeo.
+              Si mirara hacia arriba, ocurre lo contrario. Por eso, al final, se dibuja
+              <em>cómo fueron cambiando</em> esas marcas a lo largo del tiempo.
+            </p>
+            <p>
+              <strong>Error frecuente al interpretar (importante):</strong>
+              a veces se ve un valle azul que “parece” un parpadeo, pero no se contó.
+              Eso no significa necesariamente que la máquina falló. Mire las curvas roja/amarilla
+              en ese mismo instante: si el valle no cruzó la marca roja de ese momento, el sistema
+              lo trató como movimiento de mirada o cierre insuficiente, no como parpadeo completo.
+              La gráfica final existe precisamente para poder revisar eso con calma.
+            </p>
+
+            <h3>Qué significa cada número</h3>
             <p>
               <strong>Parpadeos por minuto (BPM):</strong>
-              se calcula como (número de parpadeos completos × 60) ÷ duración de la prueba en segundos.
-              Ejemplo: 20 parpadeos en 60 s = 20/min.
+              es la frecuencia de parpadeos <em>completos</em> extrapolada a un minuto.
+              Se obtiene así: (cantidad de parpadeos completos × 60) ÷ segundos que duró la prueba.
+              Ejemplo: 20 parpadeos en 60 segundos = 20 por minuto.
             </p>
             <p>
               <strong>Media del intervalo:</strong>
-              promedio del tiempo (en segundos) entre un parpadeo completo y el siguiente.
-              Indica cada cuánto parpadeas “en promedio”.
+              promedio, en segundos, del tiempo que pasa entre un parpadeo completo y el siguiente.
+              Responde a la pregunta: “en promedio, ¿cada cuánto parpadeó?”
             </p>
             <p>
               <strong>Mediana:</strong>
-              el valor central de esos intervalos ordenados. Es menos sensible a un intervalo muy raro
-              (muy corto o muy largo) que la media.
+              el valor del medio cuando se ordenan todos esos intervalos de menor a mayor.
+              Sirve cuando un intervalo raro (muy corto o muy largo) distorsiona el promedio:
+              la mediana suele ser más “representativa” del ritmo habitual.
             </p>
             <p>
               <strong>Moda:</strong>
-              el intervalo que más se repite (redondeado a centésimas de segundo). Muestra el ritmo
-              “típico” de tu parpadeo.
+              el intervalo que más se repite. Es el ritmo que apareció con más frecuencia
+              (el “tempo” más típico del parpadeo en esa muestra).
             </p>
             <p>
               <strong>Arritmia del parpadeo (CV):</strong>
-              coeficiente de variación de los intervalos =
-              (desviación estándar ÷ media) × 100.
-              Un CV bajo sugiere un ritmo más regular; un CV alto, más irregularidad entre parpadeos.
+              mide qué tan irregulares fueron los intervalos entre parpadeos, en porcentaje.
+              Se calcula como (dispersión de los intervalos ÷ media de los intervalos) × 100.
+              Un CV bajo sugiere un ritmo más estable; un CV alto, más irregularidad
+              (parpadeos a veces muy juntos y a veces muy separados).
             </p>
             <p>
               <strong>Parpadeos incompletos:</strong>
-              episodios en los que el ojo se cierra parcialmente (zona amarilla del umbral dinámico)
-              sin llegar al cierre completo (umbral rojo). No sustituyen al conteo de parpadeos completos;
-              aportan información de calidad del cierre palpebral.
+              cierres parciales (zona amarilla) que no llegaron al cierre completo (rojo).
+              No reemplazan al conteo de parpadeos completos; aportan información sobre
+              la calidad del cierre palpebral durante la prueba.
             </p>
-            <h3>Umbrales dinámicos (rojo y amarillo)</h3>
+
+            <h3>Calibración y umbrales (detalle clínico-técnico breve)</h3>
             <p>
-              Trabajamos con la <strong>apertura palpebral</strong> A (0 = cerrado, 1 = abierto),
-              derivada de MediaPipe. La calibración fija un ancla (slider):
-              <br />T<sub>calib</sub> = limitar( media(A en calibración) × 0.70 , 0.35 , 0.75 ).
-            </p>
-            <p>
-              Con los últimos N valores de A (ventana ≈ 20) se estima un baseline de “ojos abiertos”:
-              <br />B = percentil 75 de la ventana (si hay pocas muestras, B = 0.30).
+              Primero se pide <strong>Calibrar</strong> con la mirada hacia la cámara. Eso fija una
+              referencia personal del paciente (ancla de calibración), para que personas con
+              distinta forma de ojo o distinta apertura habitual puedan compararse en condiciones
+              más parecidas.
             </p>
             <p>
-              <strong>Umbral rojo (parpadeo completo / dinámico):</strong>
-              <br />gap = 0.052 + holgura de calentamiento
-              <br />raw = T<sub>calib</sub> + 0.25 × max(0, B − T<sub>calib</sub>)
-              <br />T<sub>rojo</sub> = max( 0.10 , min( raw , B − gap ) )
-              <br />Se cuenta parpadeo completo cuando A &lt; T<sub>rojo</sub> (flanco de entrada).
+              Después, durante la prueba, el sistema estima de forma continua el nivel típico de
+              “ojos abiertos” (baseline) usando los valores recientes de apertura. A partir de ahí:
             </p>
             <p>
-              <strong>Umbral amarillo (parpadeo intermedio / incompleto):</strong>
-              <br />T<sub>amarillo</sub> = ( B + T<sub>rojo</sub> ) / 2
-              <br />Zona intermedia: T<sub>rojo</sub> &lt; A ≤ T<sub>amarillo</sub>
-              <br />Cada entrada a esa zona suma un incompleto (sin requerir cierre total).
+              <strong>Umbral rojo (completo):</strong> se actualiza solo y se coloca por debajo del
+              nivel habitual de apertura, con un margen de seguridad. Se cuenta un parpadeo completo
+              cuando la apertura baja por debajo de esa marca (entrada al cierre).
             </p>
             <p>
-              En la gráfica final, las líneas roja y amarilla se dibujan como
-              <strong>curvas a lo largo del tiempo</strong> (no como una sola línea fija),
-              porque los umbrales se adaptan si miras arriba/abajo. Así se entiende por qué
-              un descenso de apertura no siempre cuenta como parpadeo.
+              <strong>Umbral amarillo (incompleto):</strong> se coloca a mitad de camino entre el
+              nivel habitual de apertura y el umbral rojo. La zona entre amarillo y rojo es la de
+              cierre parcial.
             </p>
             <p>
-              En el modo marcado con <strong>*</strong> puedes ver la gráfica con ambas líneas aunque
-              no hayas iniciado una prueba formal, para observar en vivo la relación entre
-              parpadeo completo e intermedio.
+              Fórmulas (para quien desee el detalle numérico): apertura A de 0 (cerrado) a 1 (abierto);
+              T<sub>calib</sub> = limitar(media de calibración × 0.70, 0.35, 0.75);
+              B ≈ percentil 75 de una ventana corta de A;
+              T<sub>rojo</sub> dinámico a partir de T<sub>calib</sub> y B;
+              T<sub>amarillo</sub> = (B + T<sub>rojo</sub>) / 2.
+            </p>
+            <p>
+              El botón <strong>*</strong> abre un modo de observación en vivo (sin prueba formal),
+              útil para enseñar cómo se mueven azul, rojo y amarillo juntos antes de registrar una
+              muestra clínica.
             </p>
           </div>
         </div>
@@ -296,7 +349,7 @@
       <section class="chart-panel" id="chartPanel">
         <div class="chart-head">
           <h2>Apertura palpebral</h2>
-          <p id="chartHint">Con cámara activa verás la señal arriba; la gráfica completa se llena en la prueba</p>
+          <p id="chartHint">La línea azul es la apertura del párpado; al terminar verá también las curvas roja y amarilla (umbrales)</p>
         </div>
         <p class="chart-legend" id="chartLegend" hidden>
           <span class="leg leg-red">Rojo = completo (curva dinámica)</span>
