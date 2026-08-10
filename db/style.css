@@ -160,6 +160,10 @@ body {
   margin-bottom: 0.65rem;
 }
 
+.tools .btn:not(.ghost) {
+  min-width: 9.5rem;
+}
+
 .check {
   display: inline-flex;
   gap: 0.4rem;

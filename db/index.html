@@ -31,7 +31,7 @@
         <p class="lede">
           Registros de médicos e intervenciones de protocolo, estilo hoja de cálculo.
         </p>
-        <p class="ver" id="appVer">v1.0</p>
+        <p class="ver" id="appVer">v1.1</p>
       </header>
 
       <section class="gate" id="gatePanel">
@@ -55,13 +55,13 @@
         </div>
 
         <div class="tools">
+          <button type="button" class="btn" id="refreshBtn">Actualizar ahora</button>
+          <button type="button" class="btn ghost" id="exportBtn">Exportar CSV</button>
+          <button type="button" class="btn ghost" id="logoutBtn">Cerrar sesión</button>
           <label class="check">
             <input type="checkbox" id="onlyComplete" checked />
             Solo intervenciones completas
           </label>
-          <button type="button" class="btn ghost" id="refreshBtn">Actualizar</button>
-          <button type="button" class="btn ghost" id="exportBtn">Exportar CSV</button>
-          <button type="button" class="btn ghost" id="logoutBtn">Cerrar sesión</button>
         </div>
 
         <p class="meta" id="statusLine">Cargando…</p>
