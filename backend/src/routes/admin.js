@@ -68,7 +68,21 @@ function cityFromLocation(locationJson) {
   return '—';
 }
 
-function flattenAnswers(answers) {
+function envVal(environment, ...keys) {
+  if (!environment || typeof environment !== 'object') return null;
+  for (const key of keys) {
+    if (environment[key] != null) return environment[key];
+  }
+  const weather = environment.weather;
+  if (weather && typeof weather === 'object') {
+    for (const key of keys) {
+      if (weather[key] != null) return weather[key];
+    }
+  }
+  return null;
+}
+
+function flattenAnswers(answers, locationJson) {
   const a = answers && typeof answers === 'object' ? answers : {};
   const osdi = a.osdi6 && typeof a.osdi6 === 'object' ? a.osdi6 : {};
   return {
@@ -80,18 +94,37 @@ function flattenAnswers(answers) {
     osdi6Hecho: a.osdi6Done ?? null,
     osdi6Total: osdi.total ?? null,
     osdi6PosibleOjoSeco: osdi.possibleDryEye ?? null,
+    osdi6Discomfort: osdi.subscales?.discomfort ?? osdi.discomfort ?? null,
+    osdi6Function: osdi.subscales?.visualFunction ?? osdi.function ?? null,
+    osdi6Environment: osdi.subscales?.environment ?? null,
+    localidadSesion: cityFromLocation(locationJson),
+    mismaLocalidad: locationJson?.sameLocality ?? null,
   };
 }
 
 function flattenExam(exam) {
   const e = exam && typeof exam === 'object' ? exam : {};
+  const tbut = e.tbut && typeof e.tbut === 'object' ? e.tbut : null;
+  const schirmer = e.schirmer && typeof e.schirmer === 'object' ? e.schirmer : null;
+  const meibFn =
+    e.meibomianFunction && typeof e.meibomianFunction === 'object'
+      ? e.meibomianFunction
+      : null;
+  const meibEx =
+    e.meibomianExpressivity && typeof e.meibomianExpressivity === 'object'
+      ? e.meibomianExpressivity
+      : null;
   return {
-    tbutOd: e.tbutOd ?? e.tbut_od ?? null,
-    tbutOs: e.tbutOs ?? e.tbut_os ?? null,
-    schirmerOd: e.schirmerOd ?? null,
-    schirmerOs: e.schirmerOs ?? null,
-    tincion: e.staining ?? e.tincion ?? null,
-    meibomio: e.meibomian ?? e.meibomio ?? null,
+    tbutOd: tbut?.odSec ?? e.tbutOd ?? null,
+    tbutOs: tbut?.osSec ?? e.tbutOs ?? null,
+    schirmerOd: schirmer?.odMm ?? e.schirmerOd ?? null,
+    schirmerOs: schirmer?.osMm ?? e.schirmerOs ?? null,
+    tincionHecha: e.staining != null,
+    meibomioFuncionOd: meibFn?.od ?? null,
+    meibomioFuncionOs: meibFn?.os ?? null,
+    meibomioExpOd: meibEx?.od ?? null,
+    meibomioExpOs: meibEx?.os ?? null,
+    plusCriteria: e.otherCriteria != null,
   };
 }
 
@@ -110,7 +143,35 @@ function flattenMeter(meter) {
   };
 }
 
-function mapResearcher(row, counts = {}) {
+function mapProtocolPayload(row) {
+  if (!row) return null;
+  const answers = flattenAnswers(row.answers_json, row.location_json);
+  const exam = flattenExam(row.exam_json);
+  const meter = flattenMeter(row.meter_json);
+  return {
+    done: true,
+    sessionId: row.id,
+    protocol: row.project_slug || 'parpadeo',
+    createdAt: row.created_at,
+    completedAt: row.completed_at,
+    status: row.completed_at ? 'completa' : 'parcial',
+    ...answers,
+    ...exam,
+    ...meter,
+    environmentTemp: envVal(
+      row.environment_json,
+      'temperatureC',
+      'temperature_2m',
+    ),
+    environmentHumidity: envVal(
+      row.environment_json,
+      'humidityPct',
+      'relative_humidity_2m',
+    ),
+  };
+}
+
+function mapResearcher(row, counts = {}, protocols = {}) {
   return {
     id: row.id,
     email: row.email,
@@ -133,11 +194,13 @@ function mapResearcher(row, counts = {}) {
       interferometria: Number(counts.interferometria || 0),
       total: Number(counts.total || 0),
     },
+    parpadeo: protocols.parpadeo || null,
+    interferometria: protocols.interferometria || null,
   };
 }
 
 function mapIntervention(row) {
-  const answers = flattenAnswers(row.answers_json);
+  const answers = flattenAnswers(row.answers_json, row.location_json);
   const exam = flattenExam(row.exam_json);
   const meter = flattenMeter(row.meter_json);
   return {
@@ -152,20 +215,37 @@ function mapIntervention(row) {
     researcherPhone: row.phone,
     researcherAge: row.age,
     researcherSpecialty: specialtyLabel(row),
-    researcherCity: cityFromLocation(row.researcher_location_json || row.location_json),
+    researcherCity: cityFromLocation(
+      row.researcher_location_json || row.location_json,
+    ),
     researcherRegisteredAt: row.researcher_created_at,
     ...answers,
     ...exam,
     ...meter,
-    environmentTemp:
-      row.environment_json?.temperatureC ??
-      row.environment_json?.temperature_2m ??
-      null,
-    environmentHumidity:
-      row.environment_json?.humidityPct ??
-      row.environment_json?.relative_humidity_2m ??
-      null,
+    environmentTemp: envVal(
+      row.environment_json,
+      'temperatureC',
+      'temperature_2m',
+    ),
+    environmentHumidity: envVal(
+      row.environment_json,
+      'humidityPct',
+      'relative_humidity_2m',
+    ),
   };
+}
+
+function pickLatestSession(sessions, slug) {
+  const list = sessions.filter((s) => (s.project_slug || 'parpadeo') === slug);
+  if (!list.length) return null;
+  const completed = list.filter((s) => s.completed_at);
+  const pool = completed.length ? completed : list;
+  pool.sort((a, b) => {
+    const ta = new Date(a.completed_at || a.created_at).getTime();
+    const tb = new Date(b.completed_at || b.created_at).getTime();
+    return tb - ta;
+  });
+  return pool[0];
 }
 
 router.use(adminLimit, adminPinRequired);
@@ -208,9 +288,24 @@ router.get('/workbook', async (_req, res) => {
        ORDER BY s.created_at DESC`,
     );
 
-    const researchers = researchersResult.rows.map((row) =>
-      mapResearcher(row, countMap.get(row.id) || {}),
-    );
+    const sessionsByResearcher = new Map();
+    for (const row of sessionsResult.rows) {
+      const list = sessionsByResearcher.get(row.researcher_id) || [];
+      list.push(row);
+      sessionsByResearcher.set(row.researcher_id, list);
+    }
+
+    const researchers = researchersResult.rows.map((row) => {
+      const sessions = sessionsByResearcher.get(row.id) || [];
+      const protocols = {
+        parpadeo: mapProtocolPayload(pickLatestSession(sessions, 'parpadeo')),
+        interferometria: mapProtocolPayload(
+          pickLatestSession(sessions, 'interferometria'),
+        ),
+      };
+      return mapResearcher(row, countMap.get(row.id) || {}, protocols);
+    });
+
     const interventions = sessionsResult.rows.map(mapIntervention);
 
     const byResearcher = new Map();

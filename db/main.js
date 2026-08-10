@@ -81,25 +81,130 @@ function renderSummary() {
   `;
 }
 
+function labelYesNo(value) {
+  if (value === "yes" || value === true) return "Sí";
+  if (value === "no" || value === false) return "No";
+  if (value == null || value === "") return "—";
+  return String(value);
+}
+
+function labelSex(value) {
+  const map = {
+    female: "Mujer",
+    male: "Hombre",
+    other: "Otro",
+    prefer_not: "Prefiere no decir",
+  };
+  return map[value] || (value == null ? "—" : String(value));
+}
+
+function labelTreatment(value) {
+  const map = {
+    ipl: "IPL",
+    thermal: "Térmico",
+    other: "Otro",
+    none: "Ninguno",
+  };
+  return map[value] || (value == null ? "—" : String(value));
+}
+
+function cell(value) {
+  return `<td>${esc(value == null || value === "" ? "—" : value)}</td>`;
+}
+
+function protocolCheck(done) {
+  return done
+    ? `<td class="check-cell"><span class="badge ok">✓ Sí</span></td>`
+    : `<td class="check-cell"><span class="badge mute">No</span></td>`;
+}
+
+function blankCells(n) {
+  return Array.from({ length: n }, () => `<td class="muted">—</td>`).join("");
+}
+
 function renderMedicos() {
   const rows = workbook?.researchers || [];
+  const parpadeoCols = 18;
+  const interferometriaCols = 4;
+
   const head = `
     <tr>
-      <th>Alta</th>
-      <th>Nombre</th>
-      <th>Email</th>
-      <th>Teléfono</th>
-      <th>Edad</th>
-      <th>Especialidad</th>
-      <th>Ciudad</th>
-      <th>Parpadeo</th>
-      <th>Completas</th>
-      <th>Interferometría</th>
-      <th>Total envíos</th>
+      <th rowspan="2">Alta</th>
+      <th rowspan="2">Nombre</th>
+      <th rowspan="2">Email</th>
+      <th rowspan="2">Teléfono</th>
+      <th rowspan="2">Edad</th>
+      <th rowspan="2">Especialidad</th>
+      <th rowspan="2">Ciudad</th>
+      <th colspan="${parpadeoCols + 1}" class="proto-parpadeo">Protocolo Parpadeo</th>
+      <th colspan="${interferometriaCols + 1}" class="proto-interf">Interferometría</th>
+    </tr>
+    <tr>
+      <th>Hecho</th>
+      <th>Estado</th>
+      <th>Fecha</th>
+      <th>Edad sujeto</th>
+      <th>Sexo</th>
+      <th>Dx ojo seco</th>
+      <th>Trat. no lubricante</th>
+      <th>Usa lubricante</th>
+      <th>OSDI-6 hecho</th>
+      <th>OSDI-6 total</th>
+      <th>OSDI posible OS</th>
+      <th>Localidad sesión</th>
+      <th>Misma localidad</th>
+      <th>BPM</th>
+      <th>Parpadeos</th>
+      <th>Incompletos</th>
+      <th>CV %</th>
+      <th>TBUT OD</th>
+      <th>TBUT OS</th>
+      <th>Hecho</th>
+      <th>Estado</th>
+      <th>Fecha</th>
+      <th>Resultados</th>
+      <th>Notas</th>
     </tr>`;
+
   const body = rows
-    .map(
-      (r) => `
+    .map((r) => {
+      const p = r.parpadeo;
+      const i = r.interferometria;
+      const parpadeoCells = p
+        ? [
+            protocolCheck(true),
+            cell(p.status),
+            cell(fmtDate(p.completedAt || p.createdAt)),
+            cell(p.sujetoEdad),
+            cell(labelSex(p.sujetoSexo)),
+            cell(labelYesNo(p.ojoSecoDx)),
+            cell(labelTreatment(p.tratamientoNoLubricante)),
+            cell(labelYesNo(p.usaLubricante)),
+            cell(labelYesNo(p.osdi6Hecho)),
+            cell(p.osdi6Total),
+            cell(labelYesNo(p.osdi6PosibleOjoSeco)),
+            cell(p.localidadSesion),
+            cell(labelYesNo(p.mismaLocalidad)),
+            cell(p.bpm),
+            cell(p.parpadeos),
+            cell(p.incompletos),
+            cell(p.arritmiaCv),
+            cell(p.tbutOd),
+            cell(p.tbutOs),
+          ].join("")
+        : protocolCheck(false) + blankCells(parpadeoCols);
+
+      const interfCells = i
+        ? [
+            protocolCheck(true),
+            cell(i.status),
+            cell(fmtDate(i.completedAt || i.createdAt)),
+            cell("Ver intervención (datos en JSON cuando el protocolo esté activo)"),
+            cell("—"),
+          ].join("")
+        : protocolCheck(false) + blankCells(interferometriaCols);
+
+      return `
     <tr>
       <td>${esc(fmtDate(r.registeredAt))}</td>
       <td>${esc(r.fullName)}</td>
@@ -108,14 +213,15 @@ function renderMedicos() {
       <td>${esc(r.age)}</td>
       <td>${esc(r.specialtyLabel)}</td>
       <td>${esc(r.city)}</td>
-      <td>${esc(r.counts.parpadeo)}</td>
-      <td>${esc(r.counts.parpadeoCompleted)}</td>
-      <td>${esc(r.counts.interferometria)}</td>
-      <td>${esc(r.counts.total)}</td>
-    </tr>`,
-    )
+      ${parpadeoCells}
+      ${interfCells}
+    </tr>`;
+    })
     .join("");
-  tableWrap.innerHTML = `<table class="data"><thead>${head}</thead><tbody>${body || `<tr><td colspan="11" class="muted">Sin médicos aún</td></tr>`}</tbody></table>`;
+
+  tableWrap.innerHTML = `<table class="data medicos-sheet"><thead>${head}</thead><tbody>${
+    body || `<tr><td colspan="30" class="muted">Sin médicos aún</td></tr>`
+  }</tbody></table>`;
 }
 
 function renderIntervenciones() {
@@ -310,19 +416,41 @@ function csvEscape(value) {
 function exportCsv() {
   let rows = [];
   if (currentView === "medicos") {
-    rows = (workbook?.researchers || []).map((r) => ({
-      alta: fmtDate(r.registeredAt),
-      nombre: r.fullName,
-      email: r.email,
-      telefono: r.phone,
-      edad: r.age,
-      especialidad: r.specialtyLabel,
-      ciudad: r.city,
-      parpadeo: r.counts.parpadeo,
-      parpadeoCompletas: r.counts.parpadeoCompleted,
-      interferometria: r.counts.interferometria,
-      total: r.counts.total,
-    }));
+    rows = (workbook?.researchers || []).map((r) => {
+      const p = r.parpadeo || {};
+      const i = r.interferometria || {};
+      return {
+        alta: fmtDate(r.registeredAt),
+        nombre: r.fullName,
+        email: r.email,
+        telefono: r.phone,
+        edad: r.age,
+        especialidad: r.specialtyLabel,
+        ciudad: r.city,
+        parpadeoHecho: p.done ? "Sí" : "No",
+        parpadeoEstado: p.status || "",
+        parpadeoFecha: fmtDate(p.completedAt || p.createdAt),
+        sujetoEdad: p.sujetoEdad ?? "",
+        sexo: labelSex(p.sujetoSexo),
+        ojoSeco: labelYesNo(p.ojoSecoDx),
+        tratamiento: labelTreatment(p.tratamientoNoLubricante),
+        lubricante: labelYesNo(p.usaLubricante),
+        osdi6Hecho: labelYesNo(p.osdi6Hecho),
+        osdi6Total: p.osdi6Total ?? "",
+        osdiPosible: labelYesNo(p.osdi6PosibleOjoSeco),
+        localidadSesion: p.localidadSesion ?? "",
+        mismaLocalidad: labelYesNo(p.mismaLocalidad),
+        bpm: p.bpm ?? "",
+        parpadeos: p.parpadeos ?? "",
+        incompletos: p.incompletos ?? "",
+        cv: p.arritmiaCv ?? "",
+        tbutOd: p.tbutOd ?? "",
+        tbutOs: p.tbutOs ?? "",
+        interferometriaHecho: i.done ? "Sí" : "No",
+        interferometriaEstado: i.status || "",
+        interferometriaFecha: fmtDate(i.completedAt || i.createdAt),
+      };
+    });
   } else {
     rows = filteredInterventions().map((row) => ({
       fecha: fmtDate(row.createdAt),
