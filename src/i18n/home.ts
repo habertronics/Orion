@@ -7,31 +7,35 @@ export const homeCopy: Record<
     subtitle: string
     guest: string
     guestHint: string
-    researcher: string
+    register: string
+    login: string
   }
 > = {
   es: {
     brand: 'Habertronic Orión',
     subtitle:
       'Sistema digital automatizado de inteligencia artificial para la cuantificación del parpadeo',
-    guest: 'Ingresar como invitado',
-    guestHint: 'Ir directo a la aplicación',
-    researcher: 'Ingresar como investigador',
+    guest: 'Ir directo a la aplicación',
+    guestHint: '(sin registro)',
+    register: 'Registrarme',
+    login: 'Login',
   },
   en: {
     brand: 'Habertronic Orión',
     subtitle:
       'Automated digital artificial intelligence system for blink quantification',
-    guest: 'Continue as guest',
-    guestHint: 'Go straight to the app',
-    researcher: 'Continue as researcher',
+    guest: 'Go straight to the app',
+    guestHint: '(no registration)',
+    register: 'Sign up',
+    login: 'Login',
   },
   pt: {
     brand: 'Habertronic Orión',
     subtitle:
       'Sistema digital automatizado de inteligência artificial para a quantificação do piscar',
-    guest: 'Entrar como convidado',
-    guestHint: 'Ir direto para o aplicativo',
-    researcher: 'Entrar como pesquisador',
+    guest: 'Ir direto para o aplicativo',
+    guestHint: '(sem cadastro)',
+    register: 'Cadastrar-me',
+    login: 'Login',
   },
 }

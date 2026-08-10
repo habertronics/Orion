@@ -64,6 +64,9 @@ function App() {
   const [exam, setExam] = useState<ParpadeoExamState | null>(null)
   const [meter, setMeter] = useState<MeterResult | null>(null)
   const [saving, setSaving] = useState(false)
+  const [authInitialView, setAuthInitialView] = useState<'register' | 'login'>(
+    'login',
+  )
 
   useEffect(() => {
     document.documentElement.lang = lang
@@ -79,7 +82,8 @@ function App() {
     setInterrogatorioSaved(false)
     setExam(null)
     setMeter(null)
-    setView('researcher-auth')
+    setAuthInitialView('login')
+    setView('home')
   }
 
   if (view === 'welcome') {
@@ -103,10 +107,11 @@ function App() {
             setView('guest-app')
             return
           }
-          if (researcherEmail) {
+          if (mode === 'login' && researcherEmail) {
             setView('researcher-hello')
             return
           }
+          setAuthInitialView(mode)
           setView('researcher-auth')
         }}
       />
@@ -115,20 +120,20 @@ function App() {
 
   if (view === 'guest-app') {
     return (
-      <main className="placeholder">
-        <p>Modo invitado</p>
-        <p>Aquí irá la app de MediaPipe cuando la integremos.</p>
-        <button type="button" onClick={() => setView('home')}>
-          Volver al inicio
-        </button>
-      </main>
+      <ParpadeometroScreen
+        lang={lang}
+        onBack={() => setView('home')}
+        onNext={() => setView('home')}
+      />
     )
   }
 
   if (view === 'researcher-auth') {
     return (
       <ResearcherAuthScreen
+        key={authInitialView}
         lang={lang}
+        initialView={authInitialView}
         onBack={() => setView('home')}
         onAuthenticated={(user) => {
           setResearcherEmail(user.email)

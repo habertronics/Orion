@@ -21,10 +21,11 @@ import {
 import { captureApproximateLocation } from '../lib/location'
 import './ResearcherAuthScreen.css'
 
-type AuthView = 'choose' | 'register' | 'login'
+type AuthView = 'register' | 'login'
 
 type ResearcherAuthScreenProps = {
   lang: Lang
+  initialView: AuthView
   onAuthenticated: (user: {
     email: string
     nickname: string | null
@@ -35,13 +36,14 @@ type ResearcherAuthScreenProps = {
 
 export function ResearcherAuthScreen({
   lang,
+  initialView,
   onAuthenticated,
   onBack,
 }: ResearcherAuthScreenProps) {
   const t = researcherCopy[lang]
   const ophthT = specialtyCopy[lang]
   const remembered = useMemo(() => getRememberedCredentials(), [])
-  const [view, setView] = useState<AuthView>('choose')
+  const view = initialView
   const [fullName, setFullName] = useState('')
   const [age, setAge] = useState('')
   const [phone, setPhone] = useState('')
@@ -261,32 +263,6 @@ export function ResearcherAuthScreen({
         </h1>
         <p className="r-auth__subtitle">{t.subtitle}</p>
       </header>
-
-      {view === 'choose' && (
-        <section className="r-auth__actions">
-          <button
-            type="button"
-            className="r-auth__choice r-auth__choice--login"
-            onClick={() => {
-              resetMessages()
-              setView('login')
-            }}
-          >
-            {t.login}
-          </button>
-          <button
-            type="button"
-            className="r-auth__choice r-auth__choice--register"
-            onClick={() => {
-              resetMessages()
-              setSuggested(suggestPassword())
-              setView('register')
-            }}
-          >
-            {t.register}
-          </button>
-        </section>
-      )}
 
       {view === 'register' && (
         <form className="r-auth__form" onSubmit={(e) => void handleRegister(e)}>
@@ -587,7 +563,7 @@ export function ResearcherAuthScreen({
             className="r-auth__link"
             onClick={() => {
               resetMessages()
-              setView('choose')
+              onBack()
             }}
           >
             {t.back}
@@ -642,7 +618,7 @@ export function ResearcherAuthScreen({
             className="r-auth__link"
             onClick={() => {
               resetMessages()
-              setView('choose')
+              onBack()
             }}
           >
             {t.back}

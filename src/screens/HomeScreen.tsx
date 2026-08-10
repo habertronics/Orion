@@ -2,7 +2,7 @@ import { homeCopy } from '../i18n/home'
 import type { Lang } from '../i18n/preferences'
 import './HomeScreen.css'
 
-export type UserMode = 'guest' | 'researcher'
+export type UserMode = 'guest' | 'register' | 'login'
 
 type HomeScreenProps = {
   lang: Lang
@@ -30,15 +30,23 @@ export function HomeScreen({ lang, onSelectMode }: HomeScreenProps) {
           onClick={() => onSelectMode('guest')}
         >
           <span className="home__btn-title">{t.guest}</span>
-          <span className="home__btn-hint">“{t.guestHint}”</span>
+          <span className="home__btn-hint">{t.guestHint}</span>
         </button>
 
         <button
           type="button"
-          className="home__btn home__btn--researcher"
-          onClick={() => onSelectMode('researcher')}
+          className="home__btn home__btn--register"
+          onClick={() => onSelectMode('register')}
         >
-          <span className="home__btn-title">{t.researcher}</span>
+          <span className="home__btn-title">{t.register}</span>
+        </button>
+
+        <button
+          type="button"
+          className="home__btn home__btn--login"
+          onClick={() => onSelectMode('login')}
+        >
+          <span className="home__btn-title">{t.login}</span>
         </button>
       </section>
     </main>

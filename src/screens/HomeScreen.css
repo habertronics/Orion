@@ -2,7 +2,8 @@
   --ink: #12232e;
   --ink-soft: #3a5260;
   --guest: #0f7a74;
-  --researcher: #163a4a;
+  --register: #163a4a;
+  --login: #2a4f63;
 
   position: relative;
   isolation: isolate;
@@ -100,9 +101,14 @@
   background: var(--guest);
 }
 
-.home__btn--researcher {
+.home__btn--register {
   min-height: 4.75rem;
-  background: var(--researcher);
+  background: var(--register);
+}
+
+.home__btn--login {
+  min-height: 4.75rem;
+  background: var(--login);
 }
 
 .home__btn:hover {
