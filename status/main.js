@@ -139,7 +139,7 @@ async function checkNetlify() {
   setLamp("netlify", state, `Alcanzable · ${opaque.ms} ms`);
 }
 
-async function checkApiStack() {
+async function checkApiStack({ forceClimate = false } = {}) {
   const simple = await timedFetch(ENDPOINTS.apiHealth, { timeoutMs: 15_000 });
   if (!simple.res || !simple.res.ok) {
     const why = simple.error?.message || (simple.res ? `HTTP ${simple.res.status}` : "sin respuesta");
@@ -152,7 +152,10 @@ async function checkApiStack() {
   const renderState = levelFromMs(simple.ms, SLOW_MS.render, true);
   setLamp("render", renderState, `Health OK · ${simple.ms} ms`);
 
-  const deep = await timedFetch(ENDPOINTS.apiDeep, { timeoutMs: 20_000 });
+  const deepUrl = forceClimate
+    ? `${ENDPOINTS.apiDeep}?fresh=1`
+    : ENDPOINTS.apiDeep;
+  const deep = await timedFetch(deepUrl, { timeoutMs: 20_000 });
   if (!deep.res) {
     setLamp("neon", "bad", `Deep health sin respuesta · ${deep.error?.message || ""}`);
     setLamp("climate", "bad", "Deep health sin respuesta");
@@ -184,7 +187,9 @@ async function checkApiStack() {
   if (climate?.ok) {
     const cached = climate.cached
       ? ` · caché ${Math.max(1, Math.round((climate.cacheAgeMs || 0) / 60000))} min`
-      : "";
+      : forceClimate || climate.forced
+        ? " · lectura ahora"
+        : "";
     const throttleNote = climate.rateLimited ? " · límite temporal Open‑Meteo" : "";
     const state = climate.rateLimited
       ? "slow"
@@ -192,9 +197,7 @@ async function checkApiStack() {
     setLamp(
       "climate",
       state,
-      climate.ok
-        ? `Servicio usable · ${climate.ms ?? "—"} ms${climate.sampleC != null ? ` · ${climate.sampleC}°C` : ""}${cached}${throttleNote}`
-        : climate.error || "Clima no responde",
+      `Servicio usable · ${climate.ms ?? "—"} ms${climate.sampleC != null ? ` · ${climate.sampleC}°C` : ""}${cached}${throttleNote}`,
     );
   } else if (climate?.rateLimited || /429/.test(String(climate?.error || ""))) {
     setLamp(
@@ -212,18 +215,18 @@ async function checkApiStack() {
   }
 }
 
-async function runChecks() {
+async function runChecks({ forceClimate = false } = {}) {
   if (checking) return;
   checking = true;
   refreshBtn.disabled = true;
   try {
-    await Promise.all([checkNetlify(), checkApiStack()]);
+    await Promise.all([checkNetlify(), checkApiStack({ forceClimate })]);
     const now = new Date();
     lastCheck.textContent = `Última comprobación: ${now.toLocaleTimeString("es-MX", {
       hour: "2-digit",
       minute: "2-digit",
       second: "2-digit",
-    })} · auto cada ${CHECK_INTERVAL_MS / 1000}s`;
+    })} · auto cada ${CHECK_INTERVAL_MS / 1000}s${forceClimate ? " · clima forzado" : ""}`;
   } finally {
     checking = false;
     refreshBtn.disabled = false;
@@ -271,7 +274,7 @@ copyPinBtn?.addEventListener("click", () => {
   void copyText(sharePin.value, "Contraseña copiada.");
 });
 
-refreshBtn.addEventListener("click", () => void runChecks());
+refreshBtn.addEventListener("click", () => void runChecks({ forceClimate: true }));
 logoutBtn.addEventListener("click", lockBoard);
 
 if (sessionStorage.getItem(SESSION_KEY) === "1") {

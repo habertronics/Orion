@@ -64,9 +64,13 @@ async function fetchClimateOnce(baseUrl, label) {
   };
 }
 
-async function checkClimate() {
+async function checkClimate({ forceFresh = false } = {}) {
   const now = Date.now();
-  if (climateCache && now - climateCache.storedAt < CLIMATE_CACHE_MS) {
+  if (
+    !forceFresh &&
+    climateCache &&
+    now - climateCache.storedAt < CLIMATE_CACHE_MS
+  ) {
     return {
       ...climateCache.result,
       cached: true,
@@ -92,7 +96,7 @@ async function checkClimate() {
       result = await fetchClimateOnce(PUBLIC_WEATHER, 'open-meteo-public');
     }
     climateCache = { storedAt: now, result };
-    return result;
+    return { ...result, forced: Boolean(forceFresh) };
   } catch (err) {
     if (err.code === 429 && climateCache?.result?.ok) {
       return {
@@ -123,8 +127,12 @@ router.get('/', (_req, res) => {
   });
 });
 
-router.get('/deep', healthDeepLimit, async (_req, res) => {
+router.get('/deep', healthDeepLimit, async (req, res) => {
   const started = Date.now();
+  const forceFresh =
+    req.query.fresh === '1' ||
+    req.query.fresh === 'true' ||
+    req.query.climate === 'fresh';
   const checks = {
     api: { ok: true, ms: 0 },
     neon: { ok: false, ms: null, error: null },
@@ -142,7 +150,7 @@ router.get('/deep', healthDeepLimit, async (_req, res) => {
   }
 
   try {
-    checks.climate = await checkClimate();
+    checks.climate = await checkClimate({ forceFresh });
   } catch (err) {
     checks.climate = {
       ok: false,
@@ -163,6 +171,7 @@ router.get('/deep', healthDeepLimit, async (_req, res) => {
     service: 'habertronic-orion-api',
     totalMs: Date.now() - started,
     checkedAt: new Date().toISOString(),
+    climateForced: forceFresh,
     checks,
   });
 });
