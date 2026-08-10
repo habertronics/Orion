@@ -265,9 +265,21 @@ function flattenExam(exam) {
     plusCols[`plus_${id}`] = plus[id] ?? null;
   }
 
+  const tbutOd = tbut.odSec ?? e.tbutOd ?? null;
+  const tbutOs = tbut.osSec ?? e.tbutOs ?? null;
+  const tbutOdN = Number(tbutOd);
+  const tbutOsN = Number(tbutOs);
+  const tbutBoth =
+    Number.isFinite(tbutOdN) && Number.isFinite(tbutOsN);
+  // 0 = OD (o empate); 1 = OS estrictamente más bajo
+  const tbutMasBajo = tbutBoth ? Math.min(tbutOdN, tbutOsN) : null;
+  const tbutMasBajoOjo = tbutBoth ? (tbutOsN < tbutOdN ? 1 : 0) : null;
+
   return {
-    tbutOd: tbut.odSec ?? e.tbutOd ?? null,
-    tbutOs: tbut.osSec ?? e.tbutOs ?? null,
+    tbutOd,
+    tbutOs,
+    tbutMasBajo,
+    tbutMasBajoOjo,
     schirmerOd: schirmer.odMm ?? e.schirmerOd ?? null,
     schirmerOs: schirmer.osMm ?? e.schirmerOs ?? null,
     ...flattenEyeStaining('tincionOd', staining.od),
