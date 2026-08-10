@@ -24,6 +24,7 @@ const blinkCountEl = document.getElementById("blinkCount");
 const timeLeftEl = document.getElementById("timeLeft");
 const apertureValueEl = document.getElementById("apertureValue");
 const chartHint = document.getElementById("chartHint");
+const appVerEl = document.getElementById("appVer");
 const lecturaBtn = document.getElementById("lecturaBtn");
 const exitLecturaBtn = document.getElementById("exitLecturaBtn");
 const readerPanel = document.getElementById("readerPanel");
@@ -48,7 +49,7 @@ const metricIncomplete = document.getElementById("metricIncomplete");
 const sparklineCanvas = document.getElementById("sparkline");
 const sparklineCtx = sparklineCanvas?.getContext("2d");
 const chartLegend = document.getElementById("chartLegend");
-const APP_VERSION = "v2.8";
+const APP_VERSION = "v2.9";
 const SENSE_POS_KEY = "habertronic-sense-chip-pos";
 const wikiTopicGrid = document.getElementById("wikiTopicGrid");
 const wikiForm = document.getElementById("wikiForm");
@@ -1625,6 +1626,7 @@ window.addEventListener("beforeunload", stopCamera);
 drawChart();
 buildActivityPickers();
 setupSenseChipDrag();
+if (appVerEl) appVerEl.textContent = APP_VERSION;
 
 // Ayuda a salir de cachés viejos de la PWA.
 if ("serviceWorker" in navigator) {

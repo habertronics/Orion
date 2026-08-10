@@ -1,0 +1,33 @@
+---
+description: Versionado visible del Parpadeómetro (vX.Y) en UI y deploys
+globs: parpadeometro/**
+alwaysApply: true
+---
+
+# Versionado del Parpadeómetro
+
+El usuario identifica si tiene la build antigua o la nueva mirando la etiqueta de versión en la cabecera del Parpadeómetro (p. ej. `v2.8`). **Mantener siempre este sistema.**
+
+## Cuándo subir versión
+
+Cada cambio **visible o funcional** en `parpadeometro/` (UI, lógica de medición, Info, gráfica, calibración, métricas, etc.) debe incrementar la versión antes de cerrar el trabajo / desplegar.
+
+- Parche / ajuste pequeño → subir el menor (p. ej. `v2.8` → `v2.9`)
+- Cambio de comportamiento importante o paquete de mejoras → puede saltar más si tiene sentido (p. ej. `v2.9` → `v3.0`), pero en general preferir semver simple `vMAJOR.MINOR` ya usado
+
+No hace falta nueva versión por cambios solo de comentarios internos o archivos que el usuario no ve.
+
+## Dónde actualizar (siempre juntos)
+
+1. `parpadeometro/main.js` — constante `APP_VERSION` (fuente de verdad, ej. `"v2.9"`)
+2. `parpadeometro/index.html` — texto del span `#appVer` / `.app-ver` (mismo string; se muestra antes de cargar el JS)
+
+Al iniciar, `main.js` escribe `APP_VERSION` en `#appVer`. Mantén ambos iguales para evitar un flash de versión vieja en el HTML.
+
+## Deploy
+
+Al publicar en Netlify, mencionar la versión en el mensaje de deploy (ej. `v2.9 …`) para alinear historial de deploys con lo que se ve en pantalla.
+
+## Recordatorio al usuario
+
+En la respuesta final, si hubo cambio en el Parpadeómetro, indicar la versión nueva (ej. “queda en **v2.9**”) para que pueda verificarla al abrir la app.
