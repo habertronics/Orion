@@ -356,6 +356,7 @@ function flattenExam(exam) {
 
 function flattenMeter(meter) {
   const m = meter && typeof meter === 'object' ? meter : {};
+  const durationMs = Number(m.durationMs);
   return {
     parpadeos: m.blinkCount ?? m.blinks ?? null,
     incompletos: m.incompleteBlinkCount ?? m.incomplete ?? null,
@@ -364,7 +365,9 @@ function flattenMeter(meter) {
     medianaIntervalo: m.medianIntervalSec ?? null,
     modaIntervalo: m.modeIntervalSec ?? null,
     arritmiaCv: m.arrhythmiaCvPct ?? null,
-    duracionMs: m.durationMs ?? null,
+    duracionSec: Number.isFinite(durationMs)
+      ? Math.round(durationMs / 1000)
+      : null,
     umbral: m.apertureThreshold ?? null,
     meterFinishedAt: m.finishedAt ?? null,
     meterJson: jsonDump(meter),
