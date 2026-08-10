@@ -2,9 +2,9 @@
  * Código de acceso del tablero de mantenimiento.
  * Cámbialo antes de compartir el enlace. No lo publiques en la home de Orión.
  */
-export const STATUS_ACCESS_PIN = "418293";
+export const STATUS_ACCESS_PIN = "6666";
 
-export const APP_VERSION = "v1.0";
+export const APP_VERSION = "v1.1";
 
 export const CHECK_INTERVAL_MS = 20_000;
 

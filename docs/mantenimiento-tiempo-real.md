@@ -30,9 +30,16 @@ Local (con `npm run dev`):
 
 ## Código de acceso
 
-El PIN por defecto está en `status/config.js` → `STATUS_ACCESS_PIN`.
+La contraseña actual está en `status/config.js` → `STATUS_ACCESS_PIN` (ahora **6666**).
 
-**Cámbialo** antes de compartir el enlace con alguien más. No lo pongas en la pantalla de inicio de Orión.
+Dentro del tablero verás:
+
+- el **enlace** + botón **Copiar enlace**
+- la **contraseña** + botón **Copiar contraseña**
+
+Así puedes mandar el link a alguien y, aparte, la contraseña: solo entrará quien la conozca.
+
+**Cámbiala** en `config.js` cuando quieras rotarla. No la pongas en la pantalla de inicio de Orión.
 
 Tras entrar, la sesión queda en el navegador (`sessionStorage`) hasta que pulses **Cerrar sesión** o cierres la pestaña.
 

@@ -16,29 +16,48 @@
           Semáforos en tiempo real: Netlify, Render, Neon y Clima. Solo personal
           autorizado.
         </p>
-        <p class="ver" id="appVer">v1.0</p>
+        <p class="ver" id="appVer">v1.1</p>
       </header>
 
       <section class="gate" id="gatePanel">
         <h2>Acceso</h2>
-        <p>Introduce el código de mantenimiento para ver el tablero.</p>
+        <p>Introduce la contraseña de mantenimiento para ver el tablero.</p>
         <form id="gateForm" class="gate-form" autocomplete="off">
-          <label for="pinInput">Código</label>
+          <label for="pinInput">Contraseña</label>
           <input
             id="pinInput"
             name="pin"
             type="password"
             inputmode="numeric"
             maxlength="32"
-            placeholder="Código de acceso"
+            placeholder="Contraseña"
             required
           />
           <button type="submit" class="btn">Entrar</button>
         </form>
-        <p class="gate-error" id="gateError" hidden>Código incorrecto</p>
+        <p class="gate-error" id="gateError" hidden>Contraseña incorrecta</p>
       </section>
 
       <section class="board" id="boardPanel" hidden>
+        <div class="share" id="sharePanel">
+          <h2>Compartir acceso</h2>
+          <p class="share-help">
+            Copia el enlace y envíalo junto con la contraseña. Quien lo abra solo
+            entrará si escribe esa misma contraseña.
+          </p>
+          <label for="shareLink">Enlace</label>
+          <div class="share-row">
+            <input id="shareLink" type="text" readonly />
+            <button type="button" class="btn" id="copyLinkBtn">Copiar enlace</button>
+          </div>
+          <label for="sharePin">Contraseña</label>
+          <div class="share-row">
+            <input id="sharePin" type="text" readonly />
+            <button type="button" class="btn ghost" id="copyPinBtn">Copiar contraseña</button>
+          </div>
+          <p class="share-feedback" id="shareFeedback" hidden></p>
+        </div>
+
         <div class="board-tools">
           <button type="button" class="btn ghost" id="refreshBtn">Actualizar ahora</button>
           <button type="button" class="btn ghost" id="logoutBtn">Cerrar sesión</button>

@@ -73,6 +73,65 @@ body {
   backdrop-filter: blur(8px);
 }
 
+.share {
+  margin-bottom: 1.15rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.share h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+}
+
+.share-help {
+  margin: 0 0 0.85rem;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.share label {
+  display: block;
+  margin: 0.55rem 0 0.3rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.share-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.45rem;
+  align-items: stretch;
+}
+
+.share-row input {
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  border-radius: 0.65rem;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+
+.share-row .btn {
+  margin-top: 0;
+  white-space: nowrap;
+}
+
+.share-feedback {
+  margin: 0.55rem 0 0;
+  color: #86efac;
+  font-size: 0.86rem;
+}
+
+@media (max-width: 560px) {
+  .share-row {
+    grid-template-columns: 1fr;
+  }
+}
+
 .gate h2 {
   margin: 0 0 0.35rem;
   font-size: 1.1rem;

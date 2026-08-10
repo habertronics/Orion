@@ -17,11 +17,57 @@ const refreshBtn = document.getElementById("refreshBtn");
 const logoutBtn = document.getElementById("logoutBtn");
 const lastCheck = document.getElementById("lastCheck");
 const appVer = document.getElementById("appVer");
+const shareLink = document.getElementById("shareLink");
+const sharePin = document.getElementById("sharePin");
+const copyLinkBtn = document.getElementById("copyLinkBtn");
+const copyPinBtn = document.getElementById("copyPinBtn");
+const shareFeedback = document.getElementById("shareFeedback");
 
 let timerId = 0;
 let checking = false;
 
 if (appVer) appVer.textContent = APP_VERSION;
+
+function statusPageUrl() {
+  const url = new URL(window.location.href);
+  url.hash = "";
+  url.search = "";
+  // Normaliza a .../status/ para compartir.
+  if (!url.pathname.endsWith("/")) {
+    if (url.pathname.endsWith("/index.html")) {
+      url.pathname = url.pathname.replace(/index\.html$/, "");
+    } else if (!url.pathname.endsWith("/status")) {
+      // keep as-is
+    } else {
+      url.pathname = `${url.pathname}/`;
+    }
+  }
+  return url.toString();
+}
+
+function fillShareFields() {
+  if (shareLink) shareLink.value = statusPageUrl();
+  if (sharePin) sharePin.value = STATUS_ACCESS_PIN;
+}
+
+function flashShare(message) {
+  if (!shareFeedback) return;
+  shareFeedback.hidden = false;
+  shareFeedback.textContent = message;
+  window.setTimeout(() => {
+    shareFeedback.hidden = true;
+  }, 2200);
+}
+
+async function copyText(value, okMessage) {
+  try {
+    await navigator.clipboard.writeText(value);
+    flashShare(okMessage);
+  } catch {
+    // Fallback: selecciona el campo para copiar a mano.
+    flashShare("No se pudo copiar solo: selecciona el texto y copia (Ctrl+C)");
+  }
+}
 
 function setLamp(key, state, detailText) {
   const card = document.querySelector(`.card[data-key="${key}"]`);
@@ -174,6 +220,7 @@ async function runChecks() {
 function startBoard() {
   gatePanel.hidden = true;
   boardPanel.hidden = false;
+  fillShareFields();
   void runChecks();
   clearInterval(timerId);
   timerId = window.setInterval(() => void runChecks(), CHECK_INTERVAL_MS);
@@ -199,6 +246,16 @@ gateForm.addEventListener("submit", (event) => {
   } else {
     gateError.hidden = false;
   }
+});
+
+copyLinkBtn?.addEventListener("click", () => {
+  fillShareFields();
+  void copyText(shareLink.value, "Enlace copiado. Ya puedes pegarlo en un mensaje.");
+});
+
+copyPinBtn?.addEventListener("click", () => {
+  fillShareFields();
+  void copyText(sharePin.value, "Contraseña copiada.");
 });
 
 refreshBtn.addEventListener("click", () => void runChecks());
