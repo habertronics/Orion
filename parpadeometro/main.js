@@ -15,6 +15,7 @@ const startCamBtn = document.getElementById("startCamBtn");
 const stopCamBtn = document.getElementById("stopCamBtn");
 const calibrateBtn = document.getElementById("calibrateBtn");
 const researchBtn = document.getElementById("researchBtn");
+const calibNote = document.getElementById("calibNote");
 const inicioBtn = document.getElementById("inicioBtn");
 const durationModal = document.getElementById("durationModal");
 const modalCloseBtn = document.getElementById("modalCloseBtn");
@@ -47,7 +48,7 @@ const metricIncomplete = document.getElementById("metricIncomplete");
 const sparklineCanvas = document.getElementById("sparkline");
 const sparklineCtx = sparklineCanvas?.getContext("2d");
 const chartLegend = document.getElementById("chartLegend");
-const APP_VERSION = "v2.5";
+const APP_VERSION = "v2.6";
 const SENSE_POS_KEY = "habertronic-sense-chip-pos";
 const wikiTopicGrid = document.getElementById("wikiTopicGrid");
 const wikiForm = document.getElementById("wikiForm");
@@ -794,22 +795,22 @@ function setResearchMode(enabled) {
     timeLeftEl.textContent = "INV";
     apertureValueEl.textContent = "—";
     chartHint.textContent =
-      "Modo investigación · gráfica en vivo (rojo=completo, amarillo=intermedio)";
+      "Modo * · gráfica en vivo (rojo=completo, amarillo=intermedio)";
     updateChartLegend(true);
     if (metricsInfoBtn) metricsInfoBtn.hidden = false;
     resultBanner.hidden = false;
     if (metricsPanel) metricsPanel.hidden = true;
-    resultTitle.textContent = "Modo investigación";
+    resultTitle.textContent = "Modo *";
     resultDetail.textContent =
       "Observa la gráfica y los umbrales sin iniciar una prueba formal. Pulsa Info para las fórmulas.";
     drawChart();
-    setStatus("Investigación activa · umbrales dinámicos en vivo");
+    setStatus("Modo * activo · umbrales dinámicos en vivo");
   } else {
     if (!testActive) {
       statsBar.hidden = true;
       updateChartLegend(false);
       chartHint.textContent =
-        "Con cámara activa verás la señal arriba; la gráfica completa se llena en la prueba o en Investigación";
+        "Con cámara activa verás la señal arriba; la gráfica completa se llena en la prueba";
       if (!lastMetrics) {
         resultBanner.hidden = true;
         if (metricsInfoBtn) {
@@ -933,30 +934,29 @@ function startCalibration() {
   calibrating = true;
   calibrationCollecting = false;
   calibrationValues = [];
+  if (calibNote) calibNote.hidden = true;
+
   calibrateBtn.disabled = true;
+  calibrateBtn.classList.add("calibrating");
   inicioBtn.disabled = true;
-  setStatus("Calibración · mantén los ojos abiertos… 2");
-  let count = 2;
+  researchBtn.disabled = true;
+
+  let count = 5;
+  calibrateBtn.textContent = String(count);
+  setStatus("Calibración · mantén los ojos abiertos con naturalidad");
+
   const tick = () => {
-    if (count > 0) {
-      setStatus(`Calibración · mantén los ojos abiertos… ${count}`);
-      count -= 1;
+    count -= 1;
+    if (count >= 1) {
+      // Últimos 3 s (3→2→1): captura real para homogenizar condiciones.
+      calibrationCollecting = count <= 3;
+      calibrateBtn.textContent = String(count);
       calibrationTimerId = window.setTimeout(tick, 1000);
       return;
     }
-    calibrationCollecting = true;
-    setStatus("Calibrando apertura… 3 s");
-    const collectUntil = performance.now() + 3000;
-    const collect = () => {
-      if (performance.now() < collectUntil && calibrating) {
-        calibrationTimerId = window.setTimeout(collect, 80);
-        return;
-      }
-      finishCalibration();
-    };
-    collect();
+    finishCalibration();
   };
-  tick();
+  calibrationTimerId = window.setTimeout(tick, 1000);
 }
 
 function finishCalibration() {
@@ -966,24 +966,36 @@ function finishCalibration() {
     clearTimeout(calibrationTimerId);
     calibrationTimerId = 0;
   }
+
+  calibrateBtn.classList.remove("calibrating");
+  calibrateBtn.textContent = "Calibrar";
+
   if (calibrationValues.length < 8) {
     setStatus("Calibración incompleta — mira a la cámara e inténtalo de nuevo");
+    if (calibNote) calibNote.hidden = true;
     if (running) {
       calibrateBtn.disabled = false;
       inicioBtn.disabled = false;
+      researchBtn.disabled = false;
     }
     return;
   }
+
   const mean =
     calibrationValues.reduce((a, b) => a + b, 0) / calibrationValues.length;
-  // Lab 11: 30% por debajo del promedio (×0.70), acotado al rango de apertura.
+  // Lab 11: 30% por debajo del promedio (×0.70), para condiciones comparables entre usuarios.
   apertureThreshold = Math.max(0.35, Math.min(0.75, mean * 0.7));
   setStatus(
-    `Calibrado · umbral ${(apertureThreshold * 100).toFixed(0)}% (media apertura ${(mean * 100).toFixed(0)}%)`,
+    `Listo · umbral ${(apertureThreshold * 100).toFixed(0)}% (condiciones homogenizadas)`,
   );
+  if (calibNote) {
+    calibNote.hidden = false;
+    calibNote.textContent = "Calibración realizada";
+  }
   if (running) {
     calibrateBtn.disabled = false;
     inicioBtn.disabled = false;
+    researchBtn.disabled = false;
   }
 }
 
@@ -1243,8 +1255,11 @@ function stopCamera() {
   stopCamBtn.disabled = true;
   inicioBtn.disabled = true;
   calibrateBtn.disabled = true;
+  calibrateBtn.classList.remove("calibrating");
+  calibrateBtn.textContent = "Calibrar";
   researchBtn.disabled = true;
   researchBtn.classList.remove("research-on");
+  if (calibNote) calibNote.hidden = true;
   lecturaBtn.disabled = true;
   bgNote.hidden = true;
   senseChip.hidden = true;

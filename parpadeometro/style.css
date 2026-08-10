@@ -770,6 +770,39 @@ body.reading-mode .reader-panel {
   font-weight: 750;
 }
 
+.research-star {
+  min-width: 2.6rem;
+  padding-left: 0.55rem;
+  padding-right: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.btn.calibrating {
+  background: #dc2626;
+  border-color: #b91c1c;
+  color: #fff;
+  font-weight: 800;
+  font-size: 1.25rem;
+  min-width: 4.5rem;
+  pointer-events: none;
+}
+
+.calib-note {
+  margin: 0.35rem 0 0;
+  padding: 0.45rem 0.7rem;
+  border-radius: 0.55rem;
+  background: rgba(22, 163, 74, 0.14);
+  border: 1px solid rgba(22, 163, 74, 0.35);
+  color: #166534;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.calib-note[hidden] {
+  display: none;
+}
+
 .top-actions {
   display: flex;
   flex-wrap: wrap;

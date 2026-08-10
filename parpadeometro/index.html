@@ -18,7 +18,7 @@
   <body>
     <div id="app">
       <header class="topbar">
-        <p class="brand">Habertronic Orión · Parpadeómetro <span class="app-ver" id="appVer">v2.5</span></p>
+        <p class="brand">Habertronic Orión · Parpadeómetro <span class="app-ver" id="appVer">v2.6</span></p>
         <div class="top-actions">
           <label class="field" for="cameraSelect">
             <span>Cámara</span>
@@ -29,7 +29,16 @@
           <button type="button" class="btn primary" id="startCamBtn">Iniciar cámara</button>
           <button type="button" class="btn ghost" id="stopCamBtn" disabled>Detener</button>
           <button type="button" class="btn ghost" id="calibrateBtn" disabled>Calibrar</button>
-          <button type="button" class="btn ghost" id="researchBtn" disabled>Investigación</button>
+          <button
+            type="button"
+            class="btn ghost research-star"
+            id="researchBtn"
+            disabled
+            aria-label="*"
+            title="*"
+          >
+            *
+          </button>
           <button type="button" class="btn accent inicio-btn" id="inicioBtn" disabled>
             <span class="inicio-main" id="inicioMain">Inicio</span>
             <span class="inicio-sub" id="inicioSub" hidden></span>
@@ -38,8 +47,9 @@
         </div>
         <p class="status" id="status">Listo para iniciar</p>
         <p class="flow-hint" id="flowHint">
-          1) Cámara → 2) Calibrar (recomendado) → 3) Inicio (elige tiempo) → 4) Actividad → 5) Inicio amarillo
+          1) Cámara → 2) Calibrar (ojos abiertos, 5…1) → 3) Inicio (elige tiempo) → 4) Actividad → 5) Inicio amarillo
         </p>
+        <p class="calib-note" id="calibNote" hidden>Calibración realizada</p>
         <canvas
           id="sparkline"
           class="sparkline"
@@ -124,7 +134,7 @@
               <br />Cada entrada a esa zona suma un incompleto (sin requerir cierre total).
             </p>
             <p>
-              En modo <strong>Investigación</strong> puedes ver la gráfica con ambas líneas aunque
+              En el modo marcado con <strong>*</strong> puedes ver la gráfica con ambas líneas aunque
               no hayas iniciado una prueba formal, para observar en vivo la relación entre
               parpadeo completo e intermedio.
             </p>
@@ -280,7 +290,7 @@
       <section class="chart-panel" id="chartPanel">
         <div class="chart-head">
           <h2>Apertura palpebral</h2>
-          <p id="chartHint">Con cámara activa verás la señal arriba; la gráfica completa se llena en la prueba o en Investigación</p>
+          <p id="chartHint">Con cámara activa verás la señal arriba; la gráfica completa se llena en la prueba</p>
         </div>
         <p class="chart-legend" id="chartLegend" hidden>
           <span class="leg leg-red">Rojo = completo</span>
