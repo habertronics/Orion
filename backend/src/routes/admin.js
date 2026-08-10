@@ -229,6 +229,46 @@ function flattenEyeStaining(prefix, eye) {
   };
 }
 
+function eyeStainingTotal(eye) {
+  const e = eye && typeof eye === 'object' ? eye : {};
+  return (
+    Number(e.conjunctivaLeft ?? 0) +
+    Number(e.cornea ?? 0) +
+    Number(e.conjunctivaRight ?? 0) +
+    Number(Boolean(e.confluentPatches)) +
+    Number(Boolean(e.pupillaryArea)) +
+    Number(Boolean(e.filaments))
+  );
+}
+
+/** Más bajo: 0 = OD, 1 = OS, 3 = iguales. */
+function bilateralLowerPair(od, os) {
+  const odN = Number(od);
+  const osN = Number(os);
+  if (!Number.isFinite(odN) || !Number.isFinite(osN)) {
+    return { value: null, eye: null };
+  }
+  const value = Math.min(odN, osN);
+  let eye = 3;
+  if (odN < osN) eye = 0;
+  else if (osN < odN) eye = 1;
+  return { value, eye };
+}
+
+/** Más alto: 0 = OD, 1 = OS, 3 = iguales. */
+function bilateralHigherPair(od, os) {
+  const odN = Number(od);
+  const osN = Number(os);
+  if (!Number.isFinite(odN) || !Number.isFinite(osN)) {
+    return { value: null, eye: null };
+  }
+  const value = Math.max(odN, osN);
+  let eye = 3;
+  if (odN > osN) eye = 0;
+  else if (osN > odN) eye = 1;
+  return { value, eye };
+}
+
 function flattenExam(exam) {
   const e = exam && typeof exam === 'object' ? exam : {};
   const tbut = e.tbut && typeof e.tbut === 'object' ? e.tbut : {};
@@ -267,27 +307,47 @@ function flattenExam(exam) {
 
   const tbutOd = tbut.odSec ?? e.tbutOd ?? null;
   const tbutOs = tbut.osSec ?? e.tbutOs ?? null;
-  const tbutOdN = Number(tbutOd);
-  const tbutOsN = Number(tbutOs);
-  const tbutBoth =
-    Number.isFinite(tbutOdN) && Number.isFinite(tbutOsN);
-  // 0 = OD (o empate); 1 = OS estrictamente más bajo
-  const tbutMasBajo = tbutBoth ? Math.min(tbutOdN, tbutOsN) : null;
-  const tbutMasBajoOjo = tbutBoth ? (tbutOsN < tbutOdN ? 1 : 0) : null;
+  const tbutLow = bilateralLowerPair(tbutOd, tbutOs);
+
+  const schirmerOd = schirmer.odMm ?? e.schirmerOd ?? null;
+  const schirmerOs = schirmer.osMm ?? e.schirmerOs ?? null;
+  const schirmerLow = bilateralLowerPair(schirmerOd, schirmerOs);
+
+  const tincionTotalOd = staining.od ? eyeStainingTotal(staining.od) : null;
+  const tincionTotalOs = staining.os ? eyeStainingTotal(staining.os) : null;
+  const tincionHigh = bilateralHigherPair(tincionTotalOd, tincionTotalOs);
+
+  const meibomioFuncionOd = meibFn.od ?? null;
+  const meibomioFuncionOs = meibFn.os ?? null;
+  const meibFnLow = bilateralLowerPair(meibomioFuncionOd, meibomioFuncionOs);
+
+  const meibomioExpOd = meibEx.od ?? null;
+  const meibomioExpOs = meibEx.os ?? null;
+  const meibExLow = bilateralLowerPair(meibomioExpOd, meibomioExpOs);
 
   return {
     tbutOd,
     tbutOs,
-    tbutMasBajo,
-    tbutMasBajoOjo,
-    schirmerOd: schirmer.odMm ?? e.schirmerOd ?? null,
-    schirmerOs: schirmer.osMm ?? e.schirmerOs ?? null,
+    tbutMasBajo: tbutLow.value,
+    tbutMasBajoOjo: tbutLow.eye,
+    schirmerOd,
+    schirmerOs,
+    schirmerMasBajo: schirmerLow.value,
+    schirmerMasBajoOjo: schirmerLow.eye,
+    tincionTotalOd,
+    tincionTotalOs,
+    tincionMayor: tincionHigh.value,
+    tincionMayorOjo: tincionHigh.eye,
     ...flattenEyeStaining('tincionOd', staining.od),
     ...flattenEyeStaining('tincionOs', staining.os),
-    meibomioFuncionOd: meibFn.od ?? null,
-    meibomioFuncionOs: meibFn.os ?? null,
-    meibomioExpOd: meibEx.od ?? null,
-    meibomioExpOs: meibEx.os ?? null,
+    meibomioFuncionOd,
+    meibomioFuncionOs,
+    meibomioFuncionMasBajo: meibFnLow.value,
+    meibomioFuncionMasBajoOjo: meibFnLow.eye,
+    meibomioExpOd,
+    meibomioExpOs,
+    meibomioExpMasBajo: meibExLow.value,
+    meibomioExpMasBajoOjo: meibExLow.eye,
     ...findingCols,
     ...plusCols,
     examJson: jsonDump(exam),

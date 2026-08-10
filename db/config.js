@@ -3,7 +3,7 @@
  */
 export const DB_ACCESS_PIN = "6666";
 
-export const APP_VERSION = "v1.11";
+export const APP_VERSION = "v1.12";
 
 export const API_BASE = "https://orion-83ct.onrender.com";
 
