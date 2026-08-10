@@ -18,7 +18,7 @@
   <body>
     <div id="app">
       <header class="topbar">
-        <p class="brand">Habertronic Orión · Parpadeómetro <span class="app-ver" id="appVer">v2.2</span></p>
+        <p class="brand">Habertronic Orión · Parpadeómetro <span class="app-ver" id="appVer">v2.3</span></p>
         <div class="top-actions">
           <label class="field" for="cameraSelect">
             <span>Cámara</span>
@@ -28,6 +28,7 @@
           </label>
           <button type="button" class="btn primary" id="startCamBtn">Iniciar cámara</button>
           <button type="button" class="btn ghost" id="stopCamBtn" disabled>Detener</button>
+          <button type="button" class="btn ghost" id="calibrateBtn" disabled>Calibrar</button>
           <button type="button" class="btn accent inicio-btn" id="inicioBtn" disabled>
             <span class="inicio-main" id="inicioMain">Inicio</span>
             <span class="inicio-sub" id="inicioSub" hidden></span>
@@ -36,8 +37,16 @@
         </div>
         <p class="status" id="status">Listo para iniciar</p>
         <p class="flow-hint" id="flowHint">
-          1) Cámara → 2) Inicio (elige tiempo, botón se pone amarillo) → 3) Actividad → 4) Inicio amarillo
+          1) Cámara → 2) Calibrar (recomendado) → 3) Inicio (elige tiempo) → 4) Actividad → 5) Inicio amarillo
         </p>
+        <canvas
+          id="sparkline"
+          class="sparkline"
+          width="900"
+          height="28"
+          aria-label="Señal de apertura en vivo"
+          hidden
+        ></canvas>
         <p class="bg-note" id="bgNote" hidden>
           Si sales a otra app, el sistema suele pausar la cámara. Para medir a la vez, usa
           <strong>Actividad</strong> (lectura, video o Tetris) dentro de esta pantalla.
@@ -45,6 +54,14 @@
         <div class="result-banner" id="resultBanner" hidden>
           <strong id="resultTitle">Prueba terminada</strong>
           <p id="resultDetail">—</p>
+          <div class="metrics" id="metricsPanel" hidden>
+            <div class="metric"><span>Parpadeos/min</span><strong id="metricBpm">—</strong></div>
+            <div class="metric"><span>Media intervalo</span><strong id="metricMean">—</strong></div>
+            <div class="metric"><span>Mediana</span><strong id="metricMedian">—</strong></div>
+            <div class="metric"><span>Moda</span><strong id="metricMode">—</strong></div>
+            <div class="metric"><span>Arritmia CV</span><strong id="metricCv">—</strong></div>
+            <div class="metric"><span>Incompletos</span><strong id="metricIncomplete">—</strong></div>
+          </div>
         </div>
       </header>
 
@@ -196,7 +213,7 @@
       <section class="chart-panel" id="chartPanel">
         <div class="chart-head">
           <h2>Apertura palpebral</h2>
-          <p id="chartHint">La gráfica se activa al iniciar una prueba</p>
+          <p id="chartHint">Con cámara activa verás la señal arriba; la gráfica completa se llena en la prueba</p>
         </div>
         <canvas id="chart" width="900" height="180" aria-label="Gráfica de apertura palpebral"></canvas>
       </section>

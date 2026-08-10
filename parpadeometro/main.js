@@ -13,6 +13,7 @@ const viewport = document.getElementById("viewport");
 const cameraSelect = document.getElementById("cameraSelect");
 const startCamBtn = document.getElementById("startCamBtn");
 const stopCamBtn = document.getElementById("stopCamBtn");
+const calibrateBtn = document.getElementById("calibrateBtn");
 const inicioBtn = document.getElementById("inicioBtn");
 const durationModal = document.getElementById("durationModal");
 const modalCloseBtn = document.getElementById("modalCloseBtn");
@@ -33,7 +34,16 @@ const inicioSub = document.getElementById("inicioSub");
 const resultBanner = document.getElementById("resultBanner");
 const resultTitle = document.getElementById("resultTitle");
 const resultDetail = document.getElementById("resultDetail");
-const APP_VERSION = "v2.2";
+const metricsPanel = document.getElementById("metricsPanel");
+const metricBpm = document.getElementById("metricBpm");
+const metricMean = document.getElementById("metricMean");
+const metricMedian = document.getElementById("metricMedian");
+const metricMode = document.getElementById("metricMode");
+const metricCv = document.getElementById("metricCv");
+const metricIncomplete = document.getElementById("metricIncomplete");
+const sparklineCanvas = document.getElementById("sparkline");
+const sparklineCtx = sparklineCanvas?.getContext("2d");
+const APP_VERSION = "v2.3";
 const SENSE_POS_KEY = "habertronic-sense-chip-pos";
 const wikiTopicGrid = document.getElementById("wikiTopicGrid");
 const wikiForm = document.getElementById("wikiForm");
@@ -50,8 +60,17 @@ const videoFileInput = document.getElementById("videoFileInput");
 const videoFallback = document.getElementById("videoFallback");
 
 const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-const BLINK_ON = 0.45;
-const BLINK_OFF = 0.28;
+
+/** Lab 11 — umbrales dinámicos (apertura ≈ EAR: mayor = más abierto). */
+const BASELINE_WINDOW = 20;
+const BASELINE_MIN_SAMPLES = 11;
+const BASELINE_PERCENTILE = 75;
+const DYNAMIC_RED_GAMMA = 0.25;
+const MIN_GAP_BASELINE_TO_RED = 0.052;
+const WARMUP_GAP_SAMPLES = 48;
+const WARMUP_GAP_EXTRA_MAX = 0.028;
+const DEFAULT_APERTURE_THRESHOLD = 0.55;
+const HYSTERESIS_OPEN = 0.04;
 
 const WIKI_TOPICS = [
   { label: "Astronomía", title: "Astronomía" },
@@ -100,9 +119,22 @@ let testActive = false;
 let testEndsAt = 0;
 let testDurationMs = 0;
 let blinkCount = 0;
+let incompleteBlinkCount = 0;
 let eyesClosed = false;
+let inIntermediateZone = false;
 let apertureHistory = [];
+let liveApertureHistory = [];
+let recentApertureWindow = [];
+let blinkTimestamps = [];
+let apertureThreshold = DEFAULT_APERTURE_THRESHOLD;
+let thrRedDyn = DEFAULT_APERTURE_THRESHOLD;
+let thrYellowDyn = DEFAULT_APERTURE_THRESHOLD + 0.08;
+let calibrating = false;
+let calibrationCollecting = false;
+let calibrationValues = [];
+let calibrationTimerId = 0;
 let audioCtx = null;
+let lastMetrics = null;
 
 function setStatus(text) {
   statusEl.textContent = text;
@@ -182,7 +214,7 @@ function armTest(seconds) {
 }
 
 function onInicioClick() {
-  if (!running || testActive) return;
+  if (!running || testActive || calibrating) return;
   ensureAudio();
   if (armedSeconds > 0) {
     startTest(armedSeconds);
@@ -607,44 +639,132 @@ function resizeChartCanvas() {
   chartCtx.setTransform(ratio, 0, 0, ratio, 0, 0);
 }
 
-function drawChart() {
-  resizeChartCanvas();
-  const w = chartCanvas.clientWidth || 900;
-  const h = chartCanvas.clientHeight || 140;
-  chartCtx.clearRect(0, 0, w, h);
+function percentile(sortedAsc, p) {
+  if (!sortedAsc.length) return 0.3;
+  const idx = Math.min(
+    sortedAsc.length - 1,
+    Math.max(0, Math.ceil((p / 100) * sortedAsc.length) - 1),
+  );
+  return sortedAsc[idx];
+}
 
-  chartCtx.strokeStyle = "rgba(14, 116, 144, 0.15)";
-  chartCtx.lineWidth = 1;
-  for (let i = 1; i <= 3; i += 1) {
-    const y = (h * i) / 4;
-    chartCtx.beginPath();
-    chartCtx.moveTo(0, y);
-    chartCtx.lineTo(w, y);
-    chartCtx.stroke();
+function computeBaseline(windowValues) {
+  if (windowValues.length < BASELINE_MIN_SAMPLES) return 0.3;
+  const sorted = [...windowValues].sort((a, b) => a - b);
+  return percentile(sorted, BASELINE_PERCENTILE);
+}
+
+function computeDynamicThresholds(windowValues, sliderThreshold) {
+  const baseline = computeBaseline(windowValues);
+  const n = windowValues.length;
+  const extra =
+    n < WARMUP_GAP_SAMPLES
+      ? ((WARMUP_GAP_SAMPLES - n) / WARMUP_GAP_SAMPLES) * WARMUP_GAP_EXTRA_MAX
+      : 0;
+  const gap = MIN_GAP_BASELINE_TO_RED + extra;
+  const raw =
+    sliderThreshold + DYNAMIC_RED_GAMMA * Math.max(0, baseline - sliderThreshold);
+  const cap = baseline - gap;
+  const thrRed = Math.max(0.1, Math.min(raw, cap));
+  const thrYellow = (baseline + thrRed) / 2;
+  return { baseline, thrRed, thrYellow };
+}
+
+function drawSeries(ctx, canvasEl, series, opts = {}) {
+  if (!ctx || !canvasEl) return;
+  const ratio = window.devicePixelRatio || 1;
+  const w = canvasEl.clientWidth || canvasEl.width || 900;
+  const h = canvasEl.clientHeight || canvasEl.height || 28;
+  canvasEl.width = Math.floor(w * ratio);
+  canvasEl.height = Math.floor(h * ratio);
+  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+
+  const pad = opts.pad ?? 3;
+  if (opts.grid) {
+    ctx.strokeStyle = "rgba(14, 116, 144, 0.15)";
+    ctx.lineWidth = 1;
+    for (let i = 1; i <= 3; i += 1) {
+      const y = (h * i) / 4;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+      ctx.stroke();
+    }
   }
 
-  if (apertureHistory.length < 2) return;
+  if (opts.showThresholds && Number.isFinite(opts.thrYellow)) {
+    const yY = h - pad - opts.thrYellow * (h - pad * 2);
+    ctx.strokeStyle = "rgba(234, 179, 8, 0.85)";
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    ctx.moveTo(0, yY);
+    ctx.lineTo(w, yY);
+    ctx.stroke();
+  }
+  if (opts.showThresholds && Number.isFinite(opts.thrRed)) {
+    const yR = h - pad - opts.thrRed * (h - pad * 2);
+    ctx.strokeStyle = "rgba(220, 38, 38, 0.85)";
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    ctx.moveTo(0, yR);
+    ctx.lineTo(w, yR);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  } else {
+    ctx.setLineDash([]);
+  }
 
-  const maxPoints = Math.max(apertureHistory.length, 2);
-  chartCtx.beginPath();
-  apertureHistory.forEach((value, index) => {
-    const x = (index / (maxPoints - 1)) * (w - 8) + 4;
-    const y = h - 8 - value * (h - 16);
-    if (index === 0) chartCtx.moveTo(x, y);
-    else chartCtx.lineTo(x, y);
+  if (series.length < 2) return;
+  const maxPoints = Math.max(series.length, 2);
+  ctx.beginPath();
+  series.forEach((value, index) => {
+    const x = (index / (maxPoints - 1)) * (w - pad * 2) + pad;
+    const y = h - pad - value * (h - pad * 2);
+    if (index === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
   });
-  chartCtx.strokeStyle = "#0891b2";
-  chartCtx.lineWidth = 2.5;
-  chartCtx.lineJoin = "round";
-  chartCtx.stroke();
+  ctx.strokeStyle = opts.color || "#0891b2";
+  ctx.lineWidth = opts.lineWidth || 2;
+  ctx.lineJoin = "round";
+  ctx.stroke();
 
-  const last = apertureHistory[apertureHistory.length - 1];
-  const lx = w - 4;
-  const ly = h - 8 - last * (h - 16);
-  chartCtx.fillStyle = "#f59e0b";
-  chartCtx.beginPath();
-  chartCtx.arc(lx, ly, 4, 0, Math.PI * 2);
-  chartCtx.fill();
+  if (opts.dot) {
+    const last = series[series.length - 1];
+    const lx = w - pad;
+    const ly = h - pad - last * (h - pad * 2);
+    ctx.fillStyle = "#f59e0b";
+    ctx.beginPath();
+    ctx.arc(lx, ly, opts.compact ? 2.2 : 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawSparkline() {
+  if (!sparklineCanvas || !sparklineCtx) return;
+  drawSeries(sparklineCtx, sparklineCanvas, liveApertureHistory, {
+    color: "#0e7490",
+    lineWidth: 1.6,
+    pad: 2,
+    thrRed: thrRedDyn,
+    thrYellow: thrYellowDyn,
+    showThresholds: true,
+    compact: true,
+    dot: true,
+  });
+}
+
+function drawChart() {
+  drawSeries(chartCtx, chartCanvas, apertureHistory, {
+    color: "#0891b2",
+    lineWidth: 2.5,
+    pad: 8,
+    grid: true,
+    thrRed: thrRedDyn,
+    thrYellow: thrYellowDyn,
+    showThresholds: true,
+    dot: true,
+  });
 }
 
 function blendshapeScore(blendshapes, name) {
@@ -652,6 +772,149 @@ function blendshapeScore(blendshapes, name) {
   if (!cats) return 0;
   const hit = cats.find((c) => c.categoryName === name);
   return hit?.score ?? 0;
+}
+
+function median(values) {
+  if (!values.length) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2
+    ? sorted[mid]
+    : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+function modeValue(values) {
+  if (!values.length) return null;
+  const freq = new Map();
+  for (const v of values) {
+    const key = Math.round(v * 100) / 100;
+    freq.set(key, (freq.get(key) || 0) + 1);
+  }
+  let best = null;
+  let bestCount = 0;
+  for (const [key, count] of freq) {
+    if (count > bestCount) {
+      best = key;
+      bestCount = count;
+    }
+  }
+  return best;
+}
+
+function calculateStatistics() {
+  const durationSec = Math.max(0.001, testDurationMs / 1000);
+  const bpm = Math.round((blinkCount * 60) / durationSec);
+  const intervals = [];
+  for (let i = 1; i < blinkTimestamps.length; i += 1) {
+    const sec = (blinkTimestamps[i] - blinkTimestamps[i - 1]) / 1000;
+    if (sec >= 0.1 && sec <= 10) intervals.push(sec);
+  }
+
+  let mean = null;
+  let med = null;
+  let mode = null;
+  let cvPct = null;
+  if (intervals.length) {
+    mean = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+    med = median(intervals);
+    mode = modeValue(intervals);
+    if (intervals.length >= 2 && mean > 0) {
+      const variance =
+        intervals.reduce((acc, v) => acc + (v - mean) ** 2, 0) /
+        (intervals.length - 1);
+      cvPct = (Math.sqrt(variance) / mean) * 100;
+    }
+  }
+
+  return {
+    blinkCount,
+    incompleteBlinkCount,
+    durationMs: testDurationMs,
+    bpm,
+    meanIntervalSec: mean,
+    medianIntervalSec: med,
+    modeIntervalSec: mode,
+    arrhythmiaCvPct: cvPct,
+  };
+}
+
+function formatSec(value) {
+  if (value == null || !Number.isFinite(value)) return "—";
+  return `${value.toFixed(2)} s`;
+}
+
+function renderMetrics(metrics) {
+  if (!metricsPanel) return;
+  metricsPanel.hidden = false;
+  metricBpm.textContent = String(metrics.bpm);
+  metricMean.textContent = formatSec(metrics.meanIntervalSec);
+  metricMedian.textContent = formatSec(metrics.medianIntervalSec);
+  metricMode.textContent = formatSec(metrics.modeIntervalSec);
+  metricCv.textContent =
+    metrics.arrhythmiaCvPct == null
+      ? "—"
+      : `${metrics.arrhythmiaCvPct.toFixed(1)} %`;
+  metricIncomplete.textContent = String(metrics.incompleteBlinkCount);
+}
+
+function startCalibration() {
+  if (!running || testActive || calibrating) return;
+  ensureAudio();
+  calibrating = true;
+  calibrationCollecting = false;
+  calibrationValues = [];
+  calibrateBtn.disabled = true;
+  inicioBtn.disabled = true;
+  setStatus("Calibración · mantén los ojos abiertos… 2");
+  let count = 2;
+  const tick = () => {
+    if (count > 0) {
+      setStatus(`Calibración · mantén los ojos abiertos… ${count}`);
+      count -= 1;
+      calibrationTimerId = window.setTimeout(tick, 1000);
+      return;
+    }
+    calibrationCollecting = true;
+    setStatus("Calibrando apertura… 3 s");
+    const collectUntil = performance.now() + 3000;
+    const collect = () => {
+      if (performance.now() < collectUntil && calibrating) {
+        calibrationTimerId = window.setTimeout(collect, 80);
+        return;
+      }
+      finishCalibration();
+    };
+    collect();
+  };
+  tick();
+}
+
+function finishCalibration() {
+  calibrating = false;
+  calibrationCollecting = false;
+  if (calibrationTimerId) {
+    clearTimeout(calibrationTimerId);
+    calibrationTimerId = 0;
+  }
+  if (calibrationValues.length < 8) {
+    setStatus("Calibración incompleta — mira a la cámara e inténtalo de nuevo");
+    if (running) {
+      calibrateBtn.disabled = false;
+      inicioBtn.disabled = false;
+    }
+    return;
+  }
+  const mean =
+    calibrationValues.reduce((a, b) => a + b, 0) / calibrationValues.length;
+  // Lab 11: 30% por debajo del promedio (×0.70), acotado al rango de apertura.
+  apertureThreshold = Math.max(0.35, Math.min(0.75, mean * 0.7));
+  setStatus(
+    `Calibrado · umbral ${(apertureThreshold * 100).toFixed(0)}% (media apertura ${(mean * 100).toFixed(0)}%)`,
+  );
+  if (running) {
+    calibrateBtn.disabled = false;
+    inicioBtn.disabled = false;
+  }
 }
 
 function processBlink(blendshapes, now) {
@@ -662,20 +925,44 @@ function processBlink(blendshapes, now) {
 
   apertureValueEl.textContent = `${Math.round(aperture * 100)}%`;
 
+  if (calibrationCollecting) {
+    calibrationValues.push(aperture);
+  }
+
+  recentApertureWindow.push(aperture);
+  if (recentApertureWindow.length > BASELINE_WINDOW) {
+    recentApertureWindow.shift();
+  }
+  const dyn = computeDynamicThresholds(recentApertureWindow, apertureThreshold);
+  thrRedDyn = dyn.thrRed;
+  thrYellowDyn = dyn.thrYellow;
+
+  liveApertureHistory.push(aperture);
+  if (liveApertureHistory.length > 90) liveApertureHistory.shift();
+  drawSparkline();
+
   if (testActive) {
     apertureHistory.push(aperture);
-    // Mantener densidad razonable en pruebas largas (~20 muestras/s * 300s).
     if (apertureHistory.length > 6000) apertureHistory.shift();
     drawChart();
 
-    if (!eyesClosed && blink >= BLINK_ON) {
+    const isFullBlink = aperture < thrRedDyn;
+    if (!eyesClosed && isFullBlink) {
       eyesClosed = true;
       blinkCount += 1;
+      blinkTimestamps.push(now);
       blinkCountEl.textContent = String(blinkCount);
       updateSenseChipLabel();
-    } else if (eyesClosed && blink <= BLINK_OFF) {
+    } else if (eyesClosed && aperture > thrRedDyn + HYSTERESIS_OPEN) {
       eyesClosed = false;
     }
+
+    const inZone =
+      !isFullBlink && aperture <= thrYellowDyn && aperture > thrRedDyn;
+    if (inZone && !inIntermediateZone) {
+      incompleteBlinkCount += 1;
+    }
+    inIntermediateZone = inZone;
 
     const remaining = testEndsAt - now;
     timeLeftEl.textContent = formatTime(remaining);
@@ -795,17 +1082,27 @@ async function startCamera() {
     startCamBtn.disabled = true;
     lecturaBtn.disabled = false;
     cameraSelect.disabled = false;
+    calibrateBtn.disabled = false;
+    if (sparklineCanvas) sparklineCanvas.hidden = false;
+    liveApertureHistory = [];
+    recentApertureWindow = [];
     resetInicioButton();
     lastDetectTs = 0;
     lastTimestampMs = 0;
     latestLandmarks = [];
-    setStatus(isMobile ? "Cámara activa (móvil)" : "Cámara activa");
+    setStatus(
+      isMobile
+        ? "Cámara activa (móvil) · Calibrar recomendado"
+        : "Cámara activa · Calibrar recomendado",
+    );
     detectLoop();
   } catch (err) {
     console.error(err);
     startCamBtn.disabled = false;
     stopCamBtn.disabled = true;
     inicioBtn.disabled = true;
+    calibrateBtn.disabled = true;
+    if (sparklineCanvas) sparklineCanvas.hidden = true;
     setStatus(err?.name === "NotAllowedError" ? "Permiso de cámara denegado" : err?.message || "No se pudo iniciar la cámara");
     lecturaBtn.disabled = true;
   }
@@ -853,9 +1150,14 @@ function stopCamera() {
   startCamBtn.disabled = false;
   stopCamBtn.disabled = true;
   inicioBtn.disabled = true;
+  calibrateBtn.disabled = true;
   lecturaBtn.disabled = true;
   bgNote.hidden = true;
   senseChip.hidden = true;
+  if (sparklineCanvas) sparklineCanvas.hidden = true;
+  liveApertureHistory = [];
+  recentApertureWindow = [];
+  calibrating = false;
   viewport.classList.remove("show-mini");
   clearTestTimer();
   resetInicioButton();
@@ -863,7 +1165,7 @@ function stopCamera() {
 }
 
 function openDurationModal() {
-  if (!running || testActive) return;
+  if (!running || testActive || calibrating) return;
   ensureAudio();
   durationModal.hidden = false;
 }
@@ -887,18 +1189,24 @@ function startTest(seconds) {
   hiddenWarningShown = false;
   clearTestTimer();
   resultBanner.hidden = true;
+  if (metricsPanel) metricsPanel.hidden = true;
+  lastMetrics = null;
 
   testActive = true;
   testDurationMs = seconds * 1000;
   testEndsAt = performance.now() + testDurationMs;
   blinkCount = 0;
+  incompleteBlinkCount = 0;
   eyesClosed = false;
+  inIntermediateZone = false;
   apertureHistory = [];
+  blinkTimestamps = [];
   blinkCountEl.textContent = "0";
   timeLeftEl.textContent = formatTime(testDurationMs);
   apertureValueEl.textContent = "—";
   statsBar.hidden = false;
-  chartHint.textContent = `Prueba de ${formatDurationLabel(seconds)} en curso`;
+  calibrateBtn.disabled = true;
+  chartHint.textContent = `Prueba de ${formatDurationLabel(seconds)} en curso · umbral dinámico activo`;
 
   armedSeconds = 0;
   inicioBtn.classList.remove("armed");
@@ -930,8 +1238,10 @@ function finishTest(playSound = true) {
   testActive = false;
   clearTestTimer();
   timeLeftEl.textContent = "0:00";
-  chartHint.textContent = `Prueba terminada · ${blinkCount} parpadeo${blinkCount === 1 ? "" : "s"}`;
-  setStatus(`Prueba terminada · ${blinkCount} parpadeos`);
+  const metrics = calculateStatistics();
+  lastMetrics = metrics;
+  chartHint.textContent = `Prueba terminada · ${blinkCount} parpadeo${blinkCount === 1 ? "" : "s"} · ${metrics.bpm} /min`;
+  setStatus(`Prueba terminada · ${blinkCount} parpadeos · CV ${metrics.arrhythmiaCvPct?.toFixed?.(1) ?? "—"}%`);
   statsBar.hidden = false;
   bgNote.hidden = true;
 
@@ -940,15 +1250,19 @@ function finishTest(playSound = true) {
   tetrisGame?.pauseForTabHide?.();
 
   resultTitle.textContent = "Prueba terminada";
-  resultDetail.textContent = `${blinkCount} parpadeo${blinkCount === 1 ? "" : "s"} registrados. Revisa la gráfica abajo.`;
+  resultDetail.textContent = `${blinkCount} parpadeo${blinkCount === 1 ? "" : "s"} · ${metrics.bpm} por minuto. Gráfica y métricas abajo.`;
   resultBanner.hidden = false;
+  renderMetrics(metrics);
 
   if (playSound) {
     ensureAudio();
     playEndBeeps();
   }
   resetInicioButton();
-  if (running) inicioBtn.disabled = false;
+  if (running) {
+    inicioBtn.disabled = false;
+    calibrateBtn.disabled = false;
+  }
   updateSenseChipLabel();
 
   // Llevar la vista al resultado/gráfica.
@@ -963,7 +1277,14 @@ function finishTest(playSound = true) {
       source: "habertronic-parpadeometro",
       type: "test-finished",
       blinkCount,
+      incompleteBlinkCount,
       durationMs: testDurationMs,
+      bpm: metrics.bpm,
+      meanIntervalSec: metrics.meanIntervalSec,
+      medianIntervalSec: metrics.medianIntervalSec,
+      modeIntervalSec: metrics.modeIntervalSec,
+      arrhythmiaCvPct: metrics.arrhythmiaCvPct,
+      apertureThreshold,
       finishedAt: new Date().toISOString(),
     },
     window.location.origin,
@@ -1035,6 +1356,7 @@ function detectLoop() {
 
 startCamBtn.addEventListener("click", () => void startCamera());
 stopCamBtn.addEventListener("click", stopCamera);
+calibrateBtn.addEventListener("click", startCalibration);
 inicioBtn.addEventListener("click", onInicioClick);
 modalCloseBtn.addEventListener("click", closeDurationModal);
 lecturaBtn.addEventListener("click", () => {

@@ -227,6 +227,22 @@ export function ParpadeoExamSummaryScreen({
                 label={t.duration}
                 value={formatDuration(meter.durationMs, lang)}
               />
+              {meter.bpm != null && (
+                <Row label="Parpadeos/min" value={String(meter.bpm)} />
+              )}
+              {meter.arrhythmiaCvPct != null && (
+                <Row
+                  label="Arritmia CV"
+                  value={`${meter.arrhythmiaCvPct.toFixed(1)} %`}
+                />
+              )}
+              {meter.incompleteBlinkCount != null &&
+                meter.incompleteBlinkCount > 0 && (
+                  <Row
+                    label="Incompletos"
+                    value={String(meter.incompleteBlinkCount)}
+                  />
+                )}
             </>
           ) : (
             <Row label={t.meterTitle} value={t.noMeter} />

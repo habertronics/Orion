@@ -49,6 +49,13 @@ export function ParpadeometroScreen({
         blinkCount?: number
         durationMs?: number
         finishedAt?: string
+        incompleteBlinkCount?: number
+        bpm?: number
+        meanIntervalSec?: number | null
+        medianIntervalSec?: number | null
+        modeIntervalSec?: number | null
+        arrhythmiaCvPct?: number | null
+        apertureThreshold?: number
       }
       if (data?.source !== 'habertronic-parpadeometro') return
       if (data.type !== 'test-finished') return
@@ -56,6 +63,22 @@ export function ParpadeometroScreen({
         blinkCount: Number(data.blinkCount) || 0,
         durationMs: Number(data.durationMs) || 0,
         finishedAt: data.finishedAt || new Date().toISOString(),
+        incompleteBlinkCount: Number(data.incompleteBlinkCount) || 0,
+        bpm: Number(data.bpm) || undefined,
+        meanIntervalSec:
+          data.meanIntervalSec == null ? null : Number(data.meanIntervalSec),
+        medianIntervalSec:
+          data.medianIntervalSec == null
+            ? null
+            : Number(data.medianIntervalSec),
+        modeIntervalSec:
+          data.modeIntervalSec == null ? null : Number(data.modeIntervalSec),
+        arrhythmiaCvPct:
+          data.arrhythmiaCvPct == null ? null : Number(data.arrhythmiaCvPct),
+        apertureThreshold:
+          data.apertureThreshold == null
+            ? undefined
+            : Number(data.apertureThreshold),
       })
     }
     window.addEventListener('message', onMessage)
