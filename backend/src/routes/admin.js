@@ -26,6 +26,32 @@ const SPECIALTY_LABELS_ES = {
   other: 'Otra',
 };
 
+const MARGIN_FINDINGS = [
+  'thickenedMargin',
+  'irregularMargin',
+  'telangiectasia',
+  'distichiasis',
+  'madarosis',
+  'malposition',
+  'mucocutaneousJunction',
+];
+const ORIFICE_FINDINGS = [
+  'pouting',
+  'capping',
+  'lossOfDefinition',
+  'vascularInvasion',
+  'orificeNarrowing',
+  'posteriorToMarx',
+];
+const PLUS_CRITERIA = [
+  'irreversibleDamage',
+  'schirmerZero',
+  'lagophthalmos',
+  'symblepharon',
+  'cornealAnesthesia',
+  'keratinization',
+];
+
 function expectedAdminPin() {
   return String(process.env.ADMIN_DASHBOARD_PIN || '6666').trim();
 }
@@ -41,20 +67,18 @@ function adminPinRequired(req, res, next) {
 }
 
 function specialtyLabel(row) {
-  if (row.ophthalmology_profile === 'general') {
-    return 'Oftalmólogo general';
-  }
+  if (row.ophthalmology_profile === 'general') return 'Oftalmólogo general';
   if (row.specialty_slug === 'other') {
     return row.specialty_other || 'Otra especialidad';
   }
   if (row.specialty_slug) {
     return SPECIALTY_LABELS_ES[row.specialty_slug] || row.specialty_slug;
   }
-  return '—';
+  return null;
 }
 
 function cityFromLocation(locationJson) {
-  if (!locationJson || typeof locationJson !== 'object') return '—';
+  if (!locationJson || typeof locationJson !== 'object') return null;
   if (locationJson.label) return String(locationJson.label);
   if (locationJson.source === 'skipped' || locationJson.declined) {
     return 'Sin localización';
@@ -63,28 +87,67 @@ function cityFromLocation(locationJson) {
     Number.isFinite(Number(locationJson.lat)) &&
     Number.isFinite(Number(locationJson.lng))
   ) {
-    return `${Number(locationJson.lat).toFixed(3)}, ${Number(locationJson.lng).toFixed(3)}`;
-  }
-  return '—';
-}
-
-function envVal(environment, ...keys) {
-  if (!environment || typeof environment !== 'object') return null;
-  for (const key of keys) {
-    if (environment[key] != null) return environment[key];
-  }
-  const weather = environment.weather;
-  if (weather && typeof weather === 'object') {
-    for (const key of keys) {
-      if (weather[key] != null) return weather[key];
-    }
+    return `${Number(locationJson.lat).toFixed(5)}, ${Number(locationJson.lng).toFixed(5)}`;
   }
   return null;
 }
 
-function flattenAnswers(answers, locationJson) {
+function jsonDump(value) {
+  if (value == null) return null;
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
+function flattenLocation(prefix, locationJson) {
+  const loc = locationJson && typeof locationJson === 'object' ? locationJson : {};
+  return {
+    [`${prefix}Source`]: loc.source ?? null,
+    [`${prefix}Label`]: loc.label ?? null,
+    [`${prefix}Lat`]: loc.lat ?? null,
+    [`${prefix}Lng`]: loc.lng ?? null,
+    [`${prefix}Accuracy`]: loc.accuracy ?? null,
+    [`${prefix}PlaceId`]: loc.placeId ?? null,
+    [`${prefix}SameLocality`]: loc.sameLocality ?? null,
+    [`${prefix}CapturedAt`]: loc.capturedAt ?? null,
+    [`${prefix}City`]: cityFromLocation(loc),
+    [`${prefix}Json`]: jsonDump(locationJson),
+  };
+}
+
+function flattenEnvironment(environment) {
+  const env = environment && typeof environment === 'object' ? environment : {};
+  const weather = env.weather && typeof env.weather === 'object' ? env.weather : {};
+  const air = env.air && typeof env.air === 'object' ? env.air : {};
+  return {
+    envSource: env.source ?? null,
+    envCapturedAt: env.capturedAt ?? null,
+    envLat: env.lat ?? null,
+    envLng: env.lng ?? null,
+    envTempC: weather.temperatureC ?? env.temperatureC ?? env.temperature_2m ?? null,
+    envHumidityPct: weather.humidityPct ?? env.humidityPct ?? env.relative_humidity_2m ?? null,
+    envPressureMsl: weather.pressureMslHpa ?? null,
+    envSurfacePressure: weather.surfacePressureHpa ?? null,
+    envUvIndex: weather.uvIndex ?? null,
+    envWindKmh: weather.windSpeedKmh ?? null,
+    envPm25: air.pm25 ?? null,
+    envPm10: air.pm10 ?? null,
+    envDust: air.dust ?? null,
+    envOzone: air.ozone ?? null,
+    envNo2: air.nitrogenDioxide ?? null,
+    envAqiEu: air.europeanAqi ?? null,
+    envAqiUs: air.usAqi ?? null,
+    envJson: jsonDump(environment),
+  };
+}
+
+function flattenAnswers(answers) {
   const a = answers && typeof answers === 'object' ? answers : {};
   const osdi = a.osdi6 && typeof a.osdi6 === 'object' ? a.osdi6 : {};
+  const subscales = osdi.subscales && typeof osdi.subscales === 'object' ? osdi.subscales : {};
+  const osdiAnswers = Array.isArray(osdi.answers) ? osdi.answers : [];
   return {
     sujetoEdad: a.age ?? null,
     sujetoSexo: a.sex ?? null,
@@ -92,39 +155,83 @@ function flattenAnswers(answers, locationJson) {
     tratamientoNoLubricante: a.nonLubeTreatment ?? null,
     usaLubricante: a.usingLubricant ?? null,
     osdi6Hecho: a.osdi6Done ?? null,
+    osdi6Q1: osdiAnswers[0] ?? null,
+    osdi6Q2: osdiAnswers[1] ?? null,
+    osdi6Q3: osdiAnswers[2] ?? null,
+    osdi6Q4: osdiAnswers[3] ?? null,
+    osdi6Q5: osdiAnswers[4] ?? null,
+    osdi6Q6: osdiAnswers[5] ?? null,
     osdi6Total: osdi.total ?? null,
     osdi6PosibleOjoSeco: osdi.possibleDryEye ?? null,
-    osdi6Discomfort: osdi.subscales?.discomfort ?? osdi.discomfort ?? null,
-    osdi6Function: osdi.subscales?.visualFunction ?? osdi.function ?? null,
-    osdi6Environment: osdi.subscales?.environment ?? null,
-    localidadSesion: cityFromLocation(locationJson),
-    mismaLocalidad: locationJson?.sameLocality ?? null,
+    osdi6Discomfort: subscales.discomfort ?? null,
+    osdi6VisualFunction: subscales.visualFunction ?? null,
+    osdi6Environmental: subscales.environmental ?? null,
+    answersJson: jsonDump(answers),
+  };
+}
+
+function flattenEyeStaining(prefix, eye) {
+  const e = eye && typeof eye === 'object' ? eye : {};
+  return {
+    [`${prefix}ConjIzq`]: e.conjunctivaLeft ?? null,
+    [`${prefix}Cornea`]: e.cornea ?? null,
+    [`${prefix}ConjDer`]: e.conjunctivaRight ?? null,
+    [`${prefix}Parches`]: e.confluentPatches ?? null,
+    [`${prefix}Pupilar`]: e.pupillaryArea ?? null,
+    [`${prefix}Filamentos`]: e.filaments ?? null,
   };
 }
 
 function flattenExam(exam) {
   const e = exam && typeof exam === 'object' ? exam : {};
-  const tbut = e.tbut && typeof e.tbut === 'object' ? e.tbut : null;
-  const schirmer = e.schirmer && typeof e.schirmer === 'object' ? e.schirmer : null;
+  const tbut = e.tbut && typeof e.tbut === 'object' ? e.tbut : {};
+  const schirmer = e.schirmer && typeof e.schirmer === 'object' ? e.schirmer : {};
+  const staining = e.staining && typeof e.staining === 'object' ? e.staining : {};
   const meibFn =
     e.meibomianFunction && typeof e.meibomianFunction === 'object'
       ? e.meibomianFunction
-      : null;
+      : {};
   const meibEx =
     e.meibomianExpressivity && typeof e.meibomianExpressivity === 'object'
       ? e.meibomianExpressivity
-      : null;
+      : {};
+  const findings =
+    e.meibomianFindings && typeof e.meibomianFindings === 'object'
+      ? e.meibomianFindings
+      : {};
+  const margin = findings.margin || {};
+  const orifices = findings.orifices || {};
+  const plus =
+    e.otherCriteria && typeof e.otherCriteria === 'object' ? e.otherCriteria : {};
+
+  const findingCols = {};
+  for (const id of MARGIN_FINDINGS) {
+    findingCols[`hallazgo_${id}_od`] = margin[id]?.od ?? null;
+    findingCols[`hallazgo_${id}_os`] = margin[id]?.os ?? null;
+  }
+  for (const id of ORIFICE_FINDINGS) {
+    findingCols[`orificio_${id}_od`] = orifices[id]?.od ?? null;
+    findingCols[`orificio_${id}_os`] = orifices[id]?.os ?? null;
+  }
+  const plusCols = {};
+  for (const id of PLUS_CRITERIA) {
+    plusCols[`plus_${id}`] = plus[id] ?? null;
+  }
+
   return {
-    tbutOd: tbut?.odSec ?? e.tbutOd ?? null,
-    tbutOs: tbut?.osSec ?? e.tbutOs ?? null,
-    schirmerOd: schirmer?.odMm ?? e.schirmerOd ?? null,
-    schirmerOs: schirmer?.osMm ?? e.schirmerOs ?? null,
-    tincionHecha: e.staining != null,
-    meibomioFuncionOd: meibFn?.od ?? null,
-    meibomioFuncionOs: meibFn?.os ?? null,
-    meibomioExpOd: meibEx?.od ?? null,
-    meibomioExpOs: meibEx?.os ?? null,
-    plusCriteria: e.otherCriteria != null,
+    tbutOd: tbut.odSec ?? e.tbutOd ?? null,
+    tbutOs: tbut.osSec ?? e.tbutOs ?? null,
+    schirmerOd: schirmer.odMm ?? e.schirmerOd ?? null,
+    schirmerOs: schirmer.osMm ?? e.schirmerOs ?? null,
+    ...flattenEyeStaining('tincionOd', staining.od),
+    ...flattenEyeStaining('tincionOs', staining.os),
+    meibomioFuncionOd: meibFn.od ?? null,
+    meibomioFuncionOs: meibFn.os ?? null,
+    meibomioExpOd: meibEx.od ?? null,
+    meibomioExpOs: meibEx.os ?? null,
+    ...findingCols,
+    ...plusCols,
+    examJson: jsonDump(exam),
   };
 }
 
@@ -140,14 +247,22 @@ function flattenMeter(meter) {
     arritmiaCv: m.arrhythmiaCvPct ?? null,
     duracionMs: m.durationMs ?? null,
     umbral: m.apertureThreshold ?? null,
+    meterFinishedAt: m.finishedAt ?? null,
+    meterJson: jsonDump(meter),
   };
 }
 
 function mapProtocolPayload(row) {
-  if (!row) return null;
-  const answers = flattenAnswers(row.answers_json, row.location_json);
-  const exam = flattenExam(row.exam_json);
-  const meter = flattenMeter(row.meter_json);
+  if (!row) {
+    return {
+      done: false,
+      sessionId: null,
+      protocol: null,
+      createdAt: null,
+      completedAt: null,
+      status: null,
+    };
+  }
   return {
     done: true,
     sessionId: row.id,
@@ -155,83 +270,72 @@ function mapProtocolPayload(row) {
     createdAt: row.created_at,
     completedAt: row.completed_at,
     status: row.completed_at ? 'completa' : 'parcial',
-    ...answers,
-    ...exam,
-    ...meter,
-    environmentTemp: envVal(
-      row.environment_json,
-      'temperatureC',
-      'temperature_2m',
-    ),
-    environmentHumidity: envVal(
-      row.environment_json,
-      'humidityPct',
-      'relative_humidity_2m',
-    ),
+    ...flattenAnswers(row.answers_json),
+    ...flattenLocation('sesionLoc', row.location_json),
+    ...flattenEnvironment(row.environment_json),
+    ...flattenExam(row.exam_json),
+    ...flattenMeter(row.meter_json),
   };
 }
 
-function mapResearcher(row, counts = {}, protocols = {}) {
+function mapResearcherCore(row, counts = {}) {
   return {
     id: row.id,
     email: row.email,
-    fullName: row.full_name || row.nickname || '—',
+    fullName: row.full_name || null,
+    nickname: row.nickname || null,
+    displayName: row.full_name || row.nickname || row.email,
     age: row.age,
     phone: row.phone,
-    nickname: row.nickname,
     registeredAt: row.created_at,
     ophthalmologyProfile: row.ophthalmology_profile,
     specialtySlug: row.specialty_slug,
     specialtyOther: row.specialty_other,
     specialtyLabel: specialtyLabel(row),
-    city: cityFromLocation(row.location_json),
     locationDeclined: Boolean(row.location_declined),
     active: Boolean(row.active),
     role: row.role,
+    ...flattenLocation('medicoLoc', row.location_json),
+    medicoLocationJson: jsonDump(row.location_json),
     counts: {
       parpadeo: Number(counts.parpadeo || 0),
       parpadeoCompleted: Number(counts.parpadeo_completed || 0),
       interferometria: Number(counts.interferometria || 0),
       total: Number(counts.total || 0),
     },
-    parpadeo: protocols.parpadeo || null,
-    interferometria: protocols.interferometria || null,
   };
 }
 
 function mapIntervention(row) {
-  const answers = flattenAnswers(row.answers_json, row.location_json);
-  const exam = flattenExam(row.exam_json);
-  const meter = flattenMeter(row.meter_json);
-  return {
+  const core = {
     sessionId: row.id,
     protocol: row.project_slug || 'parpadeo',
     createdAt: row.created_at,
     completedAt: row.completed_at,
     status: row.completed_at ? 'completa' : 'parcial',
     researcherId: row.researcher_id,
-    researcherName: row.full_name || row.nickname || '—',
+    researcherName: row.full_name || row.nickname || row.email,
     researcherEmail: row.email,
     researcherPhone: row.phone,
     researcherAge: row.age,
+    researcherNickname: row.nickname,
     researcherSpecialty: specialtyLabel(row),
-    researcherCity: cityFromLocation(
-      row.researcher_location_json || row.location_json,
-    ),
+    researcherProfile: row.ophthalmology_profile,
+    researcherSpecialtySlug: row.specialty_slug,
+    researcherSpecialtyOther: row.specialty_other,
     researcherRegisteredAt: row.researcher_created_at,
-    ...answers,
-    ...exam,
-    ...meter,
-    environmentTemp: envVal(
-      row.environment_json,
-      'temperatureC',
-      'temperature_2m',
-    ),
-    environmentHumidity: envVal(
-      row.environment_json,
-      'humidityPct',
-      'relative_humidity_2m',
-    ),
+    researcherActive: row.active,
+    researcherRole: row.role,
+    researcherLocationDeclined: row.location_declined,
+    ...flattenLocation('medicoLoc', row.researcher_location_json),
+  };
+  return {
+    ...core,
+    ...flattenAnswers(row.answers_json),
+    ...flattenLocation('sesionLoc', row.location_json),
+    ...flattenEnvironment(row.environment_json),
+    ...flattenExam(row.exam_json),
+    ...flattenMeter(row.meter_json),
   };
 }
 
@@ -246,6 +350,18 @@ function pickLatestSession(sessions, slug) {
     return tb - ta;
   });
   return pool[0];
+}
+
+function prefixObject(prefix, obj) {
+  const out = {};
+  for (const [key, value] of Object.entries(obj || {})) {
+    if (key === 'done' || key === 'counts') {
+      out[key === 'done' ? `${prefix}Done` : key] = value;
+      continue;
+    }
+    out[`${prefix}${key[0].toUpperCase()}${key.slice(1)}`] = value;
+  }
+  return out;
 }
 
 router.use(adminLimit, adminPinRequired);
@@ -281,7 +397,7 @@ router.get('/workbook', async (_req, res) => {
       `SELECT s.id, s.researcher_id, s.project_slug, s.answers_json, s.location_json,
               s.environment_json, s.exam_json, s.meter_json, s.created_at, s.completed_at,
               r.email, r.full_name, r.age, r.phone, r.nickname, r.created_at AS researcher_created_at,
-              r.ophthalmology_profile, r.specialty_slug, r.specialty_other,
+              r.ophthalmology_profile, r.specialty_slug, r.specialty_other, r.active, r.role,
               r.location_json AS researcher_location_json, r.location_declined
        FROM parpadeo_sessions s
        JOIN researchers r ON r.id = s.researcher_id
@@ -297,28 +413,33 @@ router.get('/workbook', async (_req, res) => {
 
     const researchers = researchersResult.rows.map((row) => {
       const sessions = sessionsByResearcher.get(row.id) || [];
-      const protocols = {
-        parpadeo: mapProtocolPayload(pickLatestSession(sessions, 'parpadeo')),
-        interferometria: mapProtocolPayload(
-          pickLatestSession(sessions, 'interferometria'),
-        ),
+      const parpadeo = mapProtocolPayload(pickLatestSession(sessions, 'parpadeo'));
+      const interferometria = mapProtocolPayload(
+        pickLatestSession(sessions, 'interferometria'),
+      );
+      const core = mapResearcherCore(row, countMap.get(row.id) || {});
+      return {
+        ...core,
+        parpadeo,
+        interferometria,
+        // Fila plana única: médico + últimos protocolos
+        flat: {
+          ...core,
+          ...prefixObject('parpadeo', parpadeo),
+          ...prefixObject('interf', interferometria),
+        },
       };
-      return mapResearcher(row, countMap.get(row.id) || {}, protocols);
     });
 
-    const interventions = sessionsResult.rows.map(mapIntervention);
+    const interventions = sessionsResult.rows.map((row) => {
+      const mapped = mapIntervention(row);
+      return { ...mapped, flat: mapped };
+    });
 
-    const byResearcher = new Map();
-    for (const doc of researchers) {
-      byResearcher.set(doc.id, {
-        researcher: doc,
-        interventions: [],
-      });
-    }
-    for (const item of interventions) {
-      const bucket = byResearcher.get(item.researcherId);
-      if (bucket) bucket.interventions.push(item);
-    }
+    const byResearcher = researchers.map((doc) => ({
+      researcher: doc,
+      interventions: interventions.filter((i) => i.researcherId === doc.id),
+    }));
 
     res.json({
       generatedAt: new Date().toISOString(),
@@ -330,10 +451,7 @@ router.get('/workbook', async (_req, res) => {
       },
       researchers,
       interventions,
-      grouped: [...byResearcher.values()].map((group) => ({
-        researcher: group.researcher,
-        interventions: group.interventions,
-      })),
+      grouped: byResearcher,
     });
   } catch (err) {
     console.error('Admin workbook error:', err);

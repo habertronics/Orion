@@ -246,20 +246,103 @@ table.data .muted {
   color: var(--muted);
 }
 
-table.medicos-sheet {
-  min-width: 2200px;
+table.sheet-full {
+  min-width: 4800px;
+  font-size: 0.74rem;
 }
 
-table.medicos-sheet th.proto-parpadeo {
-  background: rgba(56, 189, 248, 0.22);
-  text-align: center;
+table.sheet-full th,
+table.sheet-full td {
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-table.medicos-sheet th.proto-interf {
-  background: rgba(167, 139, 250, 0.2);
-  text-align: center;
+/* Bandas de columnas por bloque de datos */
+.band-medico {
+  background: rgba(56, 189, 248, 0.1);
+}
+.band-sesion {
+  background: rgba(125, 211, 252, 0.08);
+}
+.band-interro {
+  background: rgba(52, 211, 153, 0.1);
+}
+.band-ubic {
+  background: rgba(45, 212, 191, 0.08);
+}
+.band-amb {
+  background: rgba(251, 191, 36, 0.1);
+}
+.band-exam {
+  background: rgba(251, 146, 60, 0.1);
+}
+.band-metro {
+  background: rgba(244, 114, 182, 0.1);
+}
+.band-interf {
+  background: rgba(167, 139, 250, 0.12);
+}
+.band-raw {
+  background: rgba(148, 163, 184, 0.08);
 }
 
-.check-cell {
-  text-align: center;
+/* Tono por médico (filas) */
+.doc-tone-0 td.band-medico {
+  box-shadow: inset 4px 0 0 #38bdf8;
+}
+.doc-tone-1 td.band-medico {
+  box-shadow: inset 4px 0 0 #34d399;
+}
+.doc-tone-2 td.band-medico {
+  box-shadow: inset 4px 0 0 #fbbf24;
+}
+.doc-tone-3 td.band-medico {
+  box-shadow: inset 4px 0 0 #fb923c;
+}
+.doc-tone-4 td.band-medico {
+  box-shadow: inset 4px 0 0 #f472b6;
+}
+.doc-tone-5 td.band-medico {
+  box-shadow: inset 4px 0 0 #a78bfa;
+}
+.doc-tone-6 td.band-medico {
+  box-shadow: inset 4px 0 0 #22d3ee;
+}
+.doc-tone-7 td.band-medico {
+  box-shadow: inset 4px 0 0 #84cc16;
+}
+
+.doc-tone-0 {
+  background: rgba(56, 189, 248, 0.04);
+}
+.doc-tone-1 {
+  background: rgba(52, 211, 153, 0.04);
+}
+.doc-tone-2 {
+  background: rgba(251, 191, 36, 0.04);
+}
+.doc-tone-3 {
+  background: rgba(251, 146, 60, 0.04);
+}
+.doc-tone-4 {
+  background: rgba(244, 114, 182, 0.04);
+}
+.doc-tone-5 {
+  background: rgba(167, 139, 250, 0.04);
+}
+.doc-tone-6 {
+  background: rgba(34, 211, 238, 0.04);
+}
+.doc-tone-7 {
+  background: rgba(132, 204, 22, 0.04);
+}
+
+/* Mismo médico, intervenciones siguientes: un poco más tenue */
+tr.doc-secondary {
+  opacity: 0.92;
+  filter: brightness(0.96);
+}
+tr.doc-secondary td.band-medico {
+  opacity: 0.75;
 }
