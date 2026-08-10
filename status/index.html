@@ -39,7 +39,7 @@
           Semáforos en tiempo real: Netlify, Render, Neon y Clima. Solo personal
           autorizado.
         </p>
-        <p class="ver" id="appVer">v1.3</p>
+        <p class="ver" id="appVer">v1.4</p>
       </header>
 
       <section class="gate" id="gatePanel">
@@ -116,7 +116,7 @@
             <div class="lamp unknown" aria-hidden="true"></div>
             <div>
               <h3>Clima · Open‑Meteo</h3>
-              <p class="role">Datos ambientales</p>
+              <p class="role">¿Se puede usar ubicación / ambiente?</p>
               <p class="detail" data-detail>—</p>
             </div>
           </article>
@@ -127,9 +127,9 @@
           <p><span class="dot slow"></span> Amarillo: responde, pero lento o parcial</p>
           <p><span class="dot bad"></span> Rojo: no responde o falla crítica</p>
           <p class="note">
-            Se actualiza solo cada 30 s. El clima se cachea ~5 min en el servidor para
-            no saturar Open‑Meteo (si ves 429 / amarillo, es límite temporal, no caída de Orión).
-            Render en plan gratuito a veces tarda en “despertar”.
+            Netlify, Render y Neon se revisan cada 30 s. El clima solo se consulta de verdad
+            cada ~30 min (el resto usa caché): basta para saber si un usuario podrá usar
+            ubicación y ambiente. Open‑Meteo gratuito: hasta ~10 000 llamadas/día.
           </p>
         </aside>
       </section>

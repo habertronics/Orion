@@ -10,8 +10,8 @@ const healthDeepLimit = createRateLimiter({
   message: 'health_rate_limited',
 });
 
-/** Evita saturar Open-Meteo (HTTP 429) con el tablero de semáforos. */
-const CLIMATE_CACHE_MS = 5 * 60_000;
+/** El semáforo solo necesita saber si el clima está usable; no hace falta pegarle seguido. */
+const CLIMATE_CACHE_MS = 30 * 60_000;
 let climateCache = null;
 
 const CUSTOMER_WEATHER =

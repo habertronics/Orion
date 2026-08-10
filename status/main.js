@@ -182,9 +182,9 @@ async function checkApiStack() {
   }
 
   if (climate?.ok) {
-    const sample =
-      climate.sampleC != null ? ` · muestra ${climate.sampleC}°C` : "";
-    const cached = climate.cached ? " · caché" : "";
+    const cached = climate.cached
+      ? ` · caché ${Math.max(1, Math.round((climate.cacheAgeMs || 0) / 60000))} min`
+      : "";
     const throttleNote = climate.rateLimited ? " · límite temporal Open‑Meteo" : "";
     const state = climate.rateLimited
       ? "slow"
@@ -192,7 +192,9 @@ async function checkApiStack() {
     setLamp(
       "climate",
       state,
-      `Open‑Meteo OK · ${climate.ms ?? "—"} ms${sample}${cached}${throttleNote}`,
+      climate.ok
+        ? `Servicio usable · ${climate.ms ?? "—"} ms${climate.sampleC != null ? ` · ${climate.sampleC}°C` : ""}${cached}${throttleNote}`
+        : climate.error || "Clima no responde",
     );
   } else if (climate?.rateLimited || /429/.test(String(climate?.error || ""))) {
     setLamp(
