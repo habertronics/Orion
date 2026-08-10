@@ -4,9 +4,9 @@
  */
 export const STATUS_ACCESS_PIN = "6666";
 
-export const APP_VERSION = "v1.2";
+export const APP_VERSION = "v1.3";
 
-export const CHECK_INTERVAL_MS = 20_000;
+export const CHECK_INTERVAL_MS = 30_000;
 
 /** Umbral de latencia (ms) para semáforo amarillo. */
 export const SLOW_MS = {

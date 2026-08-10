@@ -184,10 +184,21 @@ async function checkApiStack() {
   if (climate?.ok) {
     const sample =
       climate.sampleC != null ? ` · muestra ${climate.sampleC}°C` : "";
+    const cached = climate.cached ? " · caché" : "";
+    const throttleNote = climate.rateLimited ? " · límite temporal Open‑Meteo" : "";
+    const state = climate.rateLimited
+      ? "slow"
+      : levelFromMs(climate.ms ?? deep.ms, SLOW_MS.climate, true);
     setLamp(
       "climate",
-      levelFromMs(climate.ms ?? deep.ms, SLOW_MS.climate, true),
-      `Open‑Meteo OK · ${climate.ms ?? "—"} ms${sample}`,
+      state,
+      `Open‑Meteo OK · ${climate.ms ?? "—"} ms${sample}${cached}${throttleNote}`,
+    );
+  } else if (climate?.rateLimited || /429/.test(String(climate?.error || ""))) {
+    setLamp(
+      "climate",
+      "slow",
+      "Open‑Meteo pidió pausa (HTTP 429). No es caída de Orión; reintenta en unos minutos.",
     );
   } else {
     setLamp("climate", "bad", climate?.error || "Clima no responde");
