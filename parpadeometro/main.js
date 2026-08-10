@@ -48,7 +48,7 @@ const metricIncomplete = document.getElementById("metricIncomplete");
 const sparklineCanvas = document.getElementById("sparkline");
 const sparklineCtx = sparklineCanvas?.getContext("2d");
 const chartLegend = document.getElementById("chartLegend");
-const APP_VERSION = "v2.6";
+const APP_VERSION = "v2.7";
 const SENSE_POS_KEY = "habertronic-sense-chip-pos";
 const wikiTopicGrid = document.getElementById("wikiTopicGrid");
 const wikiForm = document.getElementById("wikiForm");
@@ -128,6 +128,8 @@ let incompleteBlinkCount = 0;
 let eyesClosed = false;
 let inIntermediateZone = false;
 let apertureHistory = [];
+let thrRedHistory = [];
+let thrYellowHistory = [];
 let liveApertureHistory = [];
 let recentApertureWindow = [];
 let blinkTimestamps = [];
@@ -689,6 +691,9 @@ function drawSeries(ctx, canvasEl, series, opts = {}) {
   ctx.clearRect(0, 0, w, h);
 
   const pad = opts.pad ?? 3;
+  const plotH = h - pad * 2;
+  const toY = (value) => h - pad - value * plotH;
+
   if (opts.grid) {
     ctx.strokeStyle = "rgba(14, 116, 144, 0.15)";
     ctx.lineWidth = 1;
@@ -701,17 +706,43 @@ function drawSeries(ctx, canvasEl, series, opts = {}) {
     }
   }
 
-  if (opts.showThresholds && Number.isFinite(opts.thrYellow)) {
-    const yY = h - pad - opts.thrYellow * (h - pad * 2);
+  const maxPoints = Math.max(series.length, 2);
+  const toX = (index) => (index / (maxPoints - 1)) * (w - pad * 2) + pad;
+
+  function strokeThresholdCurve(values, color) {
+    if (!values || values.length < 2) return;
+    ctx.beginPath();
+    values.forEach((value, index) => {
+      const x = toX(Math.min(index, maxPoints - 1));
+      const y = toY(value);
+      if (index === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.6;
+    ctx.setLineDash([5, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Curvas dinámicas: cómo se movieron rojo/amarillo durante la muestra.
+  if (opts.thrYellowSeries?.length >= 2) {
+    strokeThresholdCurve(opts.thrYellowSeries, "rgba(234, 179, 8, 0.9)");
+  } else if (opts.showThresholds && Number.isFinite(opts.thrYellow)) {
+    const yY = toY(opts.thrYellow);
     ctx.strokeStyle = "rgba(234, 179, 8, 0.85)";
     ctx.setLineDash([4, 3]);
     ctx.beginPath();
     ctx.moveTo(0, yY);
     ctx.lineTo(w, yY);
     ctx.stroke();
+    ctx.setLineDash([]);
   }
-  if (opts.showThresholds && Number.isFinite(opts.thrRed)) {
-    const yR = h - pad - opts.thrRed * (h - pad * 2);
+
+  if (opts.thrRedSeries?.length >= 2) {
+    strokeThresholdCurve(opts.thrRedSeries, "rgba(220, 38, 38, 0.9)");
+  } else if (opts.showThresholds && Number.isFinite(opts.thrRed)) {
+    const yR = toY(opts.thrRed);
     ctx.strokeStyle = "rgba(220, 38, 38, 0.85)";
     ctx.setLineDash([4, 3]);
     ctx.beginPath();
@@ -719,28 +750,26 @@ function drawSeries(ctx, canvasEl, series, opts = {}) {
     ctx.lineTo(w, yR);
     ctx.stroke();
     ctx.setLineDash([]);
-  } else {
-    ctx.setLineDash([]);
   }
 
   if (series.length < 2) return;
-  const maxPoints = Math.max(series.length, 2);
   ctx.beginPath();
   series.forEach((value, index) => {
-    const x = (index / (maxPoints - 1)) * (w - pad * 2) + pad;
-    const y = h - pad - value * (h - pad * 2);
+    const x = toX(index);
+    const y = toY(value);
     if (index === 0) ctx.moveTo(x, y);
     else ctx.lineTo(x, y);
   });
   ctx.strokeStyle = opts.color || "#0891b2";
   ctx.lineWidth = opts.lineWidth || 2;
   ctx.lineJoin = "round";
+  ctx.setLineDash([]);
   ctx.stroke();
 
   if (opts.dot) {
     const last = series[series.length - 1];
     const lx = w - pad;
-    const ly = h - pad - last * (h - pad * 2);
+    const ly = toY(last);
     ctx.fillStyle = "#f59e0b";
     ctx.beginPath();
     ctx.arc(lx, ly, opts.compact ? 2.2 : 4, 0, Math.PI * 2);
@@ -786,6 +815,8 @@ function setResearchMode(enabled) {
   researchBtn?.classList.toggle("research-on", researchMode);
   if (researchMode) {
     apertureHistory = [];
+    thrRedHistory = [];
+    thrYellowHistory = [];
     researchFullCount = 0;
     researchIncompleteCount = 0;
     eyesClosed = false;
@@ -832,6 +863,8 @@ function drawChart() {
     grid: true,
     thrRed: thrRedDyn,
     thrYellow: thrYellowDyn,
+    thrRedSeries: thrRedHistory,
+    thrYellowSeries: thrYellowHistory,
     showThresholds: true,
     dot: true,
   });
@@ -1026,7 +1059,13 @@ function processBlink(blendshapes, now) {
   const tracking = testActive || researchMode;
   if (tracking) {
     apertureHistory.push(aperture);
-    if (apertureHistory.length > 6000) apertureHistory.shift();
+    thrRedHistory.push(thrRedDyn);
+    thrYellowHistory.push(thrYellowDyn);
+    if (apertureHistory.length > 6000) {
+      apertureHistory.shift();
+      thrRedHistory.shift();
+      thrYellowHistory.shift();
+    }
     drawChart();
 
     const isFullBlink = aperture < thrRedDyn;
@@ -1320,6 +1359,8 @@ function startTest(seconds) {
   eyesClosed = false;
   inIntermediateZone = false;
   apertureHistory = [];
+  thrRedHistory = [];
+  thrYellowHistory = [];
   blinkTimestamps = [];
   blinkCountEl.textContent = "0";
   timeLeftEl.textContent = formatTime(testDurationMs);

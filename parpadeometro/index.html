@@ -18,7 +18,7 @@
   <body>
     <div id="app">
       <header class="topbar">
-        <p class="brand">Habertronic Orión · Parpadeómetro <span class="app-ver" id="appVer">v2.6</span></p>
+        <p class="brand">Habertronic Orión · Parpadeómetro <span class="app-ver" id="appVer">v2.7</span></p>
         <div class="top-actions">
           <label class="field" for="cameraSelect">
             <span>Cámara</span>
@@ -132,6 +132,12 @@
               <br />T<sub>amarillo</sub> = ( B + T<sub>rojo</sub> ) / 2
               <br />Zona intermedia: T<sub>rojo</sub> &lt; A ≤ T<sub>amarillo</sub>
               <br />Cada entrada a esa zona suma un incompleto (sin requerir cierre total).
+            </p>
+            <p>
+              En la gráfica final, las líneas roja y amarilla se dibujan como
+              <strong>curvas a lo largo del tiempo</strong> (no como una sola línea fija),
+              porque los umbrales se adaptan si miras arriba/abajo. Así se entiende por qué
+              un descenso de apertura no siempre cuenta como parpadeo.
             </p>
             <p>
               En el modo marcado con <strong>*</strong> puedes ver la gráfica con ambas líneas aunque
@@ -293,8 +299,8 @@
           <p id="chartHint">Con cámara activa verás la señal arriba; la gráfica completa se llena en la prueba</p>
         </div>
         <p class="chart-legend" id="chartLegend" hidden>
-          <span class="leg leg-red">Rojo = completo</span>
-          <span class="leg leg-yellow">Amarillo = intermedio</span>
+          <span class="leg leg-red">Rojo = completo (curva dinámica)</span>
+          <span class="leg leg-yellow">Amarillo = intermedio (curva dinámica)</span>
         </p>
         <canvas id="chart" width="900" height="180" aria-label="Gráfica de apertura palpebral"></canvas>
       </section>
