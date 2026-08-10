@@ -427,6 +427,64 @@ export function createTetris(ui) {
     else if (key === "p" || key === "P") togglePause();
   }
 
+  function zoneFromPointer(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return null;
+    const x = (clientX - rect.left) / rect.width;
+    const y = (clientY - rect.top) / rect.height;
+    if (x < 0 || x > 1 || y < 0 || y > 1) return null;
+    // Orilla inferior = bajar; laterales = izq/der; centro = girar.
+    if (y > 0.7) return "down";
+    if (x < 0.28) return "left";
+    if (x > 0.72) return "right";
+    return "rotate";
+  }
+
+  function applyZone(zone) {
+    if (!running || paused || gameOver || !zone) return;
+    if (zone === "left") move(-1, 0);
+    else if (zone === "right") move(1, 0);
+    else if (zone === "down") {
+      if (!move(0, 1)) lockPiece();
+    } else if (zone === "rotate") rotate();
+  }
+
+  let touchRepeatId = 0;
+  let touchZone = null;
+
+  function clearTouchRepeat() {
+    if (touchRepeatId) {
+      clearInterval(touchRepeatId);
+      touchRepeatId = 0;
+    }
+    touchZone = null;
+  }
+
+  function onBoardPointerDown(event) {
+    if (!running || paused || gameOver) return;
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    const zone = zoneFromPointer(event.clientX, event.clientY);
+    if (!zone) return;
+    event.preventDefault();
+    canvas.setPointerCapture?.(event.pointerId);
+    touchZone = zone;
+    applyZone(zone);
+    // Mantener pulsado en orillas repite el movimiento; el giro es un toque.
+    if (zone !== "rotate") {
+      clearInterval(touchRepeatId);
+      touchRepeatId = window.setInterval(() => applyZone(touchZone), 120);
+    }
+  }
+
+  function onBoardPointerUp(event) {
+    try {
+      canvas.releasePointerCapture?.(event.pointerId);
+    } catch {
+      /* ignore */
+    }
+    clearTouchRepeat();
+  }
+
   startBtn.addEventListener("click", start);
   pauseBtn.addEventListener("click", togglePause);
   resetBtn.addEventListener("click", reset);
@@ -437,6 +495,10 @@ export function createTetris(ui) {
     if (!move(0, 1)) lockPiece();
   });
   dropBtn.addEventListener("click", hardDrop);
+  canvas.addEventListener("pointerdown", onBoardPointerDown);
+  canvas.addEventListener("pointerup", onBoardPointerUp);
+  canvas.addEventListener("pointercancel", onBoardPointerUp);
+  canvas.addEventListener("lostpointercapture", clearTouchRepeat);
   window.addEventListener("keydown", onKey);
   window.addEventListener("resize", () => {
     resize();

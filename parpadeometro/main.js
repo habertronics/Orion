@@ -49,7 +49,7 @@ const metricIncomplete = document.getElementById("metricIncomplete");
 const sparklineCanvas = document.getElementById("sparkline");
 const sparklineCtx = sparklineCanvas?.getContext("2d");
 const chartLegend = document.getElementById("chartLegend");
-const APP_VERSION = "v2.9";
+const APP_VERSION = "v3.0";
 const SENSE_POS_KEY = "habertronic-sense-chip-pos";
 const wikiTopicGrid = document.getElementById("wikiTopicGrid");
 const wikiForm = document.getElementById("wikiForm");
@@ -198,18 +198,32 @@ function playEndBeeps() {
   });
 }
 
+const DEFAULT_TEST_SECONDS = 300; // 5 minutos si se pulsa Enter sin elegir duración
+
 function formatDurationLabel(seconds) {
   if (seconds < 60) return `${seconds} segundos`;
   if (seconds === 60) return "1 minuto";
   return `${seconds / 60} minutos`;
 }
 
+function syncInicioIdleHint() {
+  if (!running || testActive || calibrating || armedSeconds > 0) return;
+  inicioMain.textContent = "Inicio";
+  inicioSub.hidden = false;
+  inicioSub.textContent = "(Enter = 5 min)";
+}
+
 function resetInicioButton() {
   armedSeconds = 0;
   inicioBtn.classList.remove("armed", "running");
   inicioMain.textContent = "Inicio";
-  inicioSub.hidden = true;
-  inicioSub.textContent = "";
+  if (running && !testActive && !calibrating) {
+    inicioSub.hidden = false;
+    inicioSub.textContent = "(Enter = 5 min)";
+  } else {
+    inicioSub.hidden = true;
+    inicioSub.textContent = "";
+  }
   inicioBtn.disabled = !running || testActive;
 }
 
@@ -217,11 +231,21 @@ function armTest(seconds) {
   armedSeconds = seconds;
   inicioBtn.classList.remove("running");
   inicioBtn.classList.add("armed");
-  inicioMain.textContent = "Inicio";
+  inicioMain.textContent = `Iniciar ${formatDurationLabel(seconds)}`;
   inicioSub.hidden = false;
-  inicioSub.textContent = formatDurationLabel(seconds);
+  inicioSub.textContent = "(iniciar con Enter)";
   inicioBtn.disabled = false;
-  setStatus(`Listo: ${formatDurationLabel(seconds)}. Ve a Actividad y luego pulsa Inicio (amarillo)`);
+  setStatus(
+    `Listo: ${formatDurationLabel(seconds)}. Ve a Actividad; pulsa Enter o el botón amarillo para empezar`,
+  );
+}
+
+function tryStartTestFromEnter() {
+  if (!running || testActive || calibrating) return false;
+  ensureAudio();
+  const seconds = armedSeconds > 0 ? armedSeconds : DEFAULT_TEST_SECONDS;
+  startTest(seconds);
+  return true;
 }
 
 function onInicioClick() {
@@ -1011,6 +1035,7 @@ function finishCalibration() {
       calibrateBtn.disabled = false;
       inicioBtn.disabled = false;
       researchBtn.disabled = false;
+      syncInicioIdleHint();
     }
     return;
   }
@@ -1030,6 +1055,7 @@ function finishCalibration() {
     calibrateBtn.disabled = false;
     inicioBtn.disabled = false;
     researchBtn.disabled = false;
+    syncInicioIdleHint();
   }
 }
 
@@ -1583,6 +1609,21 @@ document.querySelectorAll(".duration-btn").forEach((btn) => {
       armTest(seconds);
     }
   });
+});
+
+window.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" || event.repeat || event.isComposing) return;
+  const target = event.target;
+  if (target instanceof HTMLElement) {
+    const tag = target.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || target.isContentEditable) {
+      return;
+    }
+    if (target.closest("form") && tag === "BUTTON") return;
+  }
+  if (!running || testActive || calibrating) return;
+  event.preventDefault();
+  tryStartTestFromEnter();
 });
 
 cameraSelect.addEventListener("change", () => {
