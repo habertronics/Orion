@@ -57,6 +57,8 @@ export const researcherCopy: Record<
       missing_ophthalmology_profile: string
       missing_specialty: string
       missing_specialty_other: string
+      registration_blocked: string
+      rate_limited: string
       location_denied: string
       location_error: string
       server_error: string
@@ -123,6 +125,10 @@ export const researcherCopy: Record<
         'Indica si eres oftalmólogo general o con alta especialidad.',
       missing_specialty: 'Elige tu alta especialidad.',
       missing_specialty_other: 'Especifica tu especialidad en «Otra».',
+      registration_blocked:
+        'No se pudo completar el registro. Espera un momento e inténtalo de nuevo.',
+      rate_limited:
+        'Demasiados intentos. Espera unos minutos e inténtalo otra vez.',
       location_denied: 'Permiso de ubicación denegado.',
       location_error: 'No se pudo obtener la ubicación. Prueba con la ciudad.',
       server_error: 'No se pudo conectar con el servidor. Intenta de nuevo.',
@@ -189,6 +195,9 @@ export const researcherCopy: Record<
         'Indicate if you are a general ophthalmologist or have a subspecialty.',
       missing_specialty: 'Choose your subspecialty.',
       missing_specialty_other: 'Specify your specialty under “Other”.',
+      registration_blocked:
+        'Registration could not be completed. Wait a moment and try again.',
+      rate_limited: 'Too many attempts. Wait a few minutes and try again.',
       location_denied: 'Location permission denied.',
       location_error: 'Could not get location. Try typing the city.',
       server_error: 'Could not reach the server. Please try again.',
@@ -254,6 +263,10 @@ export const researcherCopy: Record<
         'Indique se é oftalmologista geral ou com alta especialidade.',
       missing_specialty: 'Escolha sua alta especialidade.',
       missing_specialty_other: 'Especifique sua especialidade em «Outra».',
+      registration_blocked:
+        'Não foi possível concluir o cadastro. Aguarde um momento e tente de novo.',
+      rate_limited:
+        'Muitas tentativas. Aguarde alguns minutos e tente novamente.',
       location_denied: 'Permissão de localização negada.',
       location_error: 'Não foi possível obter a localização. Tente a cidade.',
       server_error: 'Não foi possível conectar ao servidor. Tente de novo.',

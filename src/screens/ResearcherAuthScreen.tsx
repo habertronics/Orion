@@ -70,6 +70,8 @@ export function ResearcherAuthScreen({
   const [locationMessage, setLocationMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [honeypot, setHoneypot] = useState('')
+  const formStartedAt = useMemo(() => Date.now(), [])
 
   function resetMessages() {
     setError(null)
@@ -207,6 +209,8 @@ export function ResearcherAuthScreen({
         ophthalmologyProfile === 'specialty' && specialtySlug === 'other'
           ? specialtyOther.trim()
           : null,
+      website: honeypot,
+      formStartedAt,
     })
     setBusy(false)
     if (!result.ok) {
@@ -266,6 +270,18 @@ export function ResearcherAuthScreen({
 
       {view === 'register' && (
         <form className="r-auth__form" onSubmit={(e) => void handleRegister(e)}>
+          <label className="r-auth__hp" aria-hidden="true">
+            <span>Website</span>
+            <input
+              type="text"
+              name="website"
+              tabIndex={-1}
+              autoComplete="off"
+              value={honeypot}
+              onChange={(e) => setHoneypot(e.target.value)}
+            />
+          </label>
+
           <label className="r-auth__field">
             <span>{t.fullName}</span>
             <input

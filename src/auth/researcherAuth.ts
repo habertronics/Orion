@@ -39,6 +39,8 @@ export type AuthErrorCode =
   | 'missing_ophthalmology_profile'
   | 'missing_specialty'
   | 'missing_specialty_other'
+  | 'registration_blocked'
+  | 'rate_limited'
   | 'server_error'
   | 'network_error'
 
@@ -175,6 +177,8 @@ const AUTH_ERROR_CODES: AuthErrorCode[] = [
   'missing_ophthalmology_profile',
   'missing_specialty',
   'missing_specialty_other',
+  'registration_blocked',
+  'rate_limited',
   'server_error',
 ]
 
@@ -199,6 +203,8 @@ async function authRequest(input: {
   ophthalmologyProfile?: 'general' | 'specialty'
   specialtySlug?: string | null
   specialtyOther?: string | null
+  website?: string
+  formStartedAt?: number
 }): Promise<AuthOk | { ok: false; error: AuthErrorCode }> {
   const normalized = normalizeEmail(input.email)
 
@@ -275,6 +281,8 @@ async function authRequest(input: {
         input.specialtySlug === 'other'
           ? String(input.specialtyOther || '').trim()
           : null
+      body.website = String(input.website || '')
+      body.formStartedAt = input.formStartedAt ?? Date.now()
     }
 
     const response = await fetch(`${getApiUrl()}${input.path}`, {
@@ -328,6 +336,8 @@ export async function registerResearcher(input: {
   ophthalmologyProfile: 'general' | 'specialty'
   specialtySlug: string | null
   specialtyOther: string | null
+  website?: string
+  formStartedAt: number
 }): Promise<AuthResult> {
   const result = await authRequest({
     path: '/api/auth/register',
@@ -343,6 +353,8 @@ export async function registerResearcher(input: {
     ophthalmologyProfile: input.ophthalmologyProfile,
     specialtySlug: input.specialtySlug,
     specialtyOther: input.specialtyOther,
+    website: input.website,
+    formStartedAt: input.formStartedAt,
   })
   if (!result.ok) return result
 

@@ -3,8 +3,23 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { query } = require('../db');
 const { authRequired } = require('../middleware/auth');
+const { createRateLimiter } = require('../middleware/rateLimit');
 
 const router = express.Router();
+
+const registerRateLimit = createRateLimiter({
+  windowMs: 60 * 60 * 1000,
+  max: 8,
+  message: 'rate_limited',
+});
+
+const loginRateLimit = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  message: 'rate_limited',
+});
+
+const MIN_REGISTER_MS = 4000;
 
 function normalizeEmail(email) {
   return String(email || '').trim().toLowerCase();
@@ -138,6 +153,21 @@ function displayName(researcher) {
   return researcher.full_name || researcher.nickname || researcher.email;
 }
 
+function isBotSubmission(body) {
+  const honeypot = String(body.website || body.companyUrl || '').trim();
+  if (honeypot) return true;
+
+  const startedAt = Number(body.formStartedAt);
+  if (!Number.isFinite(startedAt)) return true;
+
+  const elapsed = Date.now() - startedAt;
+  if (elapsed < MIN_REGISTER_MS || elapsed > 24 * 60 * 60 * 1000) {
+    return true;
+  }
+
+  return false;
+}
+
 async function enrollInActiveProjects(researcherId) {
   await query(
     `INSERT INTO project_members (project_id, researcher_id, status)
@@ -188,7 +218,11 @@ function userPayload(researcher) {
   };
 }
 
-router.post('/register', async (req, res) => {
+router.post('/register', registerRateLimit, async (req, res) => {
+  if (isBotSubmission(req.body)) {
+    return res.status(400).json({ error: 'registration_blocked' });
+  }
+
   const email = normalizeEmail(req.body.email);
   const password = String(req.body.password || '');
   const fullName = normalizeFullName(req.body.fullName);
@@ -273,7 +307,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
-router.post('/login', async (req, res) => {
+router.post('/login', loginRateLimit, async (req, res) => {
   const email = normalizeEmail(req.body.email);
   const password = String(req.body.password || '');
 
