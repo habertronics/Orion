@@ -4,7 +4,7 @@
  */
 export const STATUS_ACCESS_PIN = "6666";
 
-export const APP_VERSION = "v1.1";
+export const APP_VERSION = "v1.2";
 
 export const CHECK_INTERVAL_MS = 20_000;
 

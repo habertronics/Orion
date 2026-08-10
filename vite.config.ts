@@ -20,7 +20,16 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'parpadeometro/icons/icon.svg'],
+      includeAssets: [
+        'favicon.svg',
+        'apple-touch-icon.png',
+        'parpadeometro/icons/icon.svg',
+        'status/icons/icon.svg',
+        'status/icons/icon-192.png',
+        'status/icons/icon-512.png',
+        'status/icons/apple-touch-icon.png',
+        'status/manifest.webmanifest',
+      ],
       manifest: {
         name: 'Habertronic Orión',
         short_name: 'Orión',

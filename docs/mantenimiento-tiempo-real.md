@@ -28,6 +28,20 @@ Local (con `npm run dev`):
 
 [http://localhost:5173/status/](http://localhost:5173/status/)
 
+## Instalar en el celular (PWA propia)
+
+Esta app tiene **nombre e ícono distintos** a Orión clínico:
+
+- Nombre: **Orión Estado del sistema**
+- Ícono: semáforo (rojo / amarillo / verde)
+- Manifiesto: `/status/manifest.webmanifest` (alcance solo `/status/`)
+
+Si ya tenías un acceso directo viejo que abría Orión, bórralo e instala de nuevo desde:
+
+[https://habertronic-orion.netlify.app/status/](https://habertronic-orion.netlify.app/status/)
+
+→ En el navegador: **Añadir a pantalla de inicio** / **Instalar aplicación**.
+
 ## Código de acceso
 
 La contraseña actual está en `status/config.js` → `STATUS_ACCESS_PIN` (ahora **6666**).

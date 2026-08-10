@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Orión Estado del sistema">
+  <rect width="512" height="512" rx="96" fill="#102832"/>
+  <rect x="186" y="72" width="140" height="368" rx="48" fill="#0b1c24"/>
+  <circle cx="256" cy="148" r="42" fill="#ef4444"/>
+  <circle cx="256" cy="256" r="42" fill="#eab308"/>
+  <circle cx="256" cy="364" r="42" fill="#22c55e"/>
+  <circle cx="256" cy="148" r="18" fill="#fecaca" opacity="0.55"/>
+  <circle cx="256" cy="256" r="18" fill="#fef08a" opacity="0.55"/>
+  <circle cx="256" cy="364" r="18" fill="#bbf7d0" opacity="0.55"/>
+</svg>
