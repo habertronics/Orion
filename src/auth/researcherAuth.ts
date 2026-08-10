@@ -15,12 +15,27 @@ export type RememberedCredentials = {
   password: string
 }
 
+export type ResearcherLocationPayload =
+  | {
+      source: 'device' | 'geocoded'
+      lat: number
+      lng: number
+      accuracy: number
+      capturedAt: string
+      label?: string
+      placeId?: number
+    }
+
 export type AuthErrorCode =
   | 'invalid_email'
   | 'email_taken'
   | 'invalid_credentials'
   | 'missing_password'
   | 'missing_nickname'
+  | 'missing_full_name'
+  | 'invalid_age'
+  | 'invalid_phone'
+  | 'missing_location'
   | 'server_error'
   | 'network_error'
 
@@ -144,14 +159,60 @@ type AuthOk = {
   token: string
 }
 
+const AUTH_ERROR_CODES: AuthErrorCode[] = [
+  'invalid_email',
+  'email_taken',
+  'invalid_credentials',
+  'missing_password',
+  'missing_nickname',
+  'missing_full_name',
+  'invalid_age',
+  'invalid_phone',
+  'missing_location',
+  'server_error',
+]
+
+function asAuthError(code: string | undefined): AuthErrorCode {
+  if (code && AUTH_ERROR_CODES.includes(code as AuthErrorCode)) {
+    return code as AuthErrorCode
+  }
+  return 'server_error'
+}
+
 async function authRequest(input: {
   path: '/api/auth/register' | '/api/auth/login'
   email: string
   password: string
   useNickname?: boolean
   nickname?: string
+  fullName?: string
+  age?: number
+  phone?: string
+  locationDeclined?: boolean
+  location?: ResearcherLocationPayload | null
 }): Promise<AuthOk | { ok: false; error: AuthErrorCode }> {
   const normalized = normalizeEmail(input.email)
+
+  if (input.path === '/api/auth/register') {
+    if (!String(input.fullName || '').trim()) {
+      return { ok: false, error: 'missing_full_name' }
+    }
+    if (
+      input.age === undefined ||
+      !Number.isInteger(input.age) ||
+      input.age < 1 ||
+      input.age > 120
+    ) {
+      return { ok: false, error: 'invalid_age' }
+    }
+    const phoneDigits = String(input.phone || '').replace(/\D/g, '')
+    if (phoneDigits.length < 7 || phoneDigits.length > 15) {
+      return { ok: false, error: 'invalid_phone' }
+    }
+    if (!input.locationDeclined && !input.location) {
+      return { ok: false, error: 'missing_location' }
+    }
+  }
 
   if (!normalized.includes('@') || normalized.length < 5) {
     return { ok: false, error: 'invalid_email' }
@@ -169,8 +230,15 @@ async function authRequest(input: {
       password: input.password,
     }
     if (input.path === '/api/auth/register') {
+      body.fullName = String(input.fullName || '').trim()
+      body.age = input.age
+      body.phone = String(input.phone || '').trim()
       body.useNickname = Boolean(input.useNickname)
-      body.nickname = input.useNickname ? String(input.nickname || '').trim() : null
+      body.nickname = input.useNickname
+        ? String(input.nickname || '').trim()
+        : null
+      body.locationDeclined = Boolean(input.locationDeclined)
+      body.location = input.locationDeclined ? null : input.location
     }
 
     const response = await fetch(`${getApiUrl()}${input.path}`, {
@@ -190,18 +258,7 @@ async function authRequest(input: {
     }
 
     if (!response.ok) {
-      const code = data.error
-      if (
-        code === 'invalid_email' ||
-        code === 'email_taken' ||
-        code === 'invalid_credentials' ||
-        code === 'missing_password' ||
-        code === 'missing_nickname' ||
-        code === 'server_error'
-      ) {
-        return { ok: false, error: code }
-      }
-      return { ok: false, error: 'server_error' }
+      return { ok: false, error: asAuthError(data.error) }
     }
 
     if (!data.token || !data.user?.email) {
@@ -227,6 +284,11 @@ export async function registerResearcher(input: {
   remember: boolean
   useNickname: boolean
   nickname: string
+  fullName: string
+  age: number
+  phone: string
+  locationDeclined: boolean
+  location: ResearcherLocationPayload | null
 }): Promise<AuthResult> {
   const result = await authRequest({
     path: '/api/auth/register',
@@ -234,6 +296,11 @@ export async function registerResearcher(input: {
     password: input.password,
     useNickname: input.useNickname,
     nickname: input.nickname,
+    fullName: input.fullName,
+    age: input.age,
+    phone: input.phone,
+    locationDeclined: input.locationDeclined,
+    location: input.location,
   })
   if (!result.ok) return result
 

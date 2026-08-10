@@ -6,7 +6,12 @@ CREATE TABLE IF NOT EXISTS researchers (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email         VARCHAR(255) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
+  full_name     VARCHAR(200),
+  age           INTEGER,
+  phone         VARCHAR(40),
   nickname      VARCHAR(80),
+  location_declined BOOLEAN NOT NULL DEFAULT FALSE,
+  location_json JSONB,
   role          VARCHAR(30) NOT NULL DEFAULT 'researcher',
   active        BOOLEAN NOT NULL DEFAULT TRUE,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()

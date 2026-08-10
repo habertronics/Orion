@@ -40,13 +40,16 @@ export async function searchPlaces(
   q: string,
   lang: string,
 ): Promise<PlaceSuggestion[]> {
-  const token = getToken()
-  if (!token || q.trim().length < 2) return []
+  if (q.trim().length < 2) return []
 
   try {
+    const headers: HeadersInit = {}
+    const token = getToken()
+    if (token) headers.Authorization = `Bearer ${token}`
+
     const response = await fetch(
       `${getApiUrl()}/api/environment/places?q=${encodeURIComponent(q)}&lang=${encodeURIComponent(lang)}`,
-      { headers: { Authorization: `Bearer ${token}` } },
+      { headers },
     )
     if (!response.ok) return []
     const data = (await response.json()) as { places?: PlaceSuggestion[] }

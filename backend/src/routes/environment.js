@@ -5,7 +5,7 @@ const { searchPlaces } = require('../services/geocoding');
 
 const router = express.Router();
 
-router.get('/places', authRequired, async (req, res) => {
+router.get('/places', async (req, res) => {
   const q = String(req.query.q || '');
   const language = String(req.query.lang || 'es');
 

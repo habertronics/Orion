@@ -15,12 +15,70 @@ function normalizeNickname(value) {
   return nick.length ? nick.slice(0, 80) : null;
 }
 
+function normalizeFullName(value) {
+  const name = String(value || '').trim().replace(/\s+/g, ' ');
+  return name.length ? name.slice(0, 200) : null;
+}
+
+function normalizePhone(value) {
+  const phone = String(value || '').trim();
+  return phone.length ? phone.slice(0, 40) : null;
+}
+
+function parseAge(value) {
+  const age = Number(value);
+  if (!Number.isInteger(age)) return null;
+  if (age < 1 || age > 120) return null;
+  return age;
+}
+
 function isValidEmail(email) {
   return email.includes('@') && email.length >= 5;
 }
 
+function isValidPhone(phone) {
+  const digits = String(phone || '').replace(/\D/g, '');
+  return digits.length >= 7 && digits.length <= 15;
+}
+
+function normalizeLocation(body) {
+  const declined = Boolean(body.locationDeclined);
+  if (declined) {
+    return { declined: true, location: null };
+  }
+
+  const location = body.location;
+  if (!location || typeof location !== 'object') {
+    return { declined: false, location: null, error: 'missing_location' };
+  }
+
+  if (location.source === 'device' || location.source === 'geocoded') {
+    const lat = Number(location.lat);
+    const lng = Number(location.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      return { declined: false, location: null, error: 'missing_location' };
+    }
+    return {
+      declined: false,
+      location: {
+        source: location.source,
+        lat: Number(lat.toFixed(3)),
+        lng: Number(lng.toFixed(3)),
+        accuracy: Number.isFinite(Number(location.accuracy))
+          ? Math.round(Number(location.accuracy))
+          : null,
+        capturedAt: location.capturedAt || new Date().toISOString(),
+        label: location.label ? String(location.label).slice(0, 200) : undefined,
+        placeId: location.placeId ?? undefined,
+      },
+    };
+  }
+
+  return { declined: false, location: null, error: 'missing_location' };
+}
+
 function displayName(researcher) {
-  return researcher.nickname || researcher.email;
+  return researcher.full_name || researcher.nickname || researcher.email;
 }
 
 async function enrollInActiveProjects(researcherId) {
@@ -66,6 +124,7 @@ function userPayload(researcher) {
   return {
     id: researcher.id,
     email: researcher.email,
+    fullName: researcher.full_name || null,
     nickname: researcher.nickname || null,
     displayName: displayName(researcher),
     role: researcher.role || 'researcher',
@@ -75,9 +134,22 @@ function userPayload(researcher) {
 router.post('/register', async (req, res) => {
   const email = normalizeEmail(req.body.email);
   const password = String(req.body.password || '');
+  const fullName = normalizeFullName(req.body.fullName);
+  const age = parseAge(req.body.age);
+  const phone = normalizePhone(req.body.phone);
   const useNickname = Boolean(req.body.useNickname);
   const nickname = useNickname ? normalizeNickname(req.body.nickname) : null;
+  const locationInfo = normalizeLocation(req.body);
 
+  if (!fullName) {
+    return res.status(400).json({ error: 'missing_full_name' });
+  }
+  if (age === null) {
+    return res.status(400).json({ error: 'invalid_age' });
+  }
+  if (!phone || !isValidPhone(phone)) {
+    return res.status(400).json({ error: 'invalid_phone' });
+  }
   if (!isValidEmail(email)) {
     return res.status(400).json({ error: 'invalid_email' });
   }
@@ -86,6 +158,9 @@ router.post('/register', async (req, res) => {
   }
   if (useNickname && !nickname) {
     return res.status(400).json({ error: 'missing_nickname' });
+  }
+  if (locationInfo.error) {
+    return res.status(400).json({ error: locationInfo.error });
   }
 
   try {
@@ -99,10 +174,21 @@ router.post('/register', async (req, res) => {
 
     const passwordHash = await bcrypt.hash(password, 10);
     const inserted = await query(
-      `INSERT INTO researchers (email, password_hash, nickname)
-       VALUES ($1, $2, $3)
-       RETURNING id, email, nickname, role, created_at`,
-      [email, passwordHash, nickname],
+      `INSERT INTO researchers
+        (email, password_hash, full_name, age, phone, nickname,
+         location_declined, location_json)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb)
+       RETURNING id, email, full_name, nickname, role, created_at`,
+      [
+        email,
+        passwordHash,
+        fullName,
+        age,
+        phone,
+        nickname,
+        locationInfo.declined,
+        locationInfo.location ? JSON.stringify(locationInfo.location) : null,
+      ],
     );
 
     const researcher = inserted.rows[0];
@@ -135,7 +221,7 @@ router.post('/login', async (req, res) => {
 
   try {
     const result = await query(
-      `SELECT id, email, nickname, role, password_hash, active
+      `SELECT id, email, full_name, nickname, role, password_hash, active
        FROM researchers WHERE email = $1`,
       [email],
     );
@@ -179,7 +265,7 @@ router.post('/login', async (req, res) => {
 router.get('/me', authRequired, async (req, res) => {
   try {
     const result = await query(
-      `SELECT id, email, nickname, role, created_at
+      `SELECT id, email, full_name, nickname, role, created_at
        FROM researchers
        WHERE id = $1 AND active = TRUE`,
       [req.user.id],
