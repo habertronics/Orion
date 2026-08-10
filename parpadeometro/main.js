@@ -14,6 +14,7 @@ const cameraSelect = document.getElementById("cameraSelect");
 const startCamBtn = document.getElementById("startCamBtn");
 const stopCamBtn = document.getElementById("stopCamBtn");
 const calibrateBtn = document.getElementById("calibrateBtn");
+const researchBtn = document.getElementById("researchBtn");
 const inicioBtn = document.getElementById("inicioBtn");
 const durationModal = document.getElementById("durationModal");
 const modalCloseBtn = document.getElementById("modalCloseBtn");
@@ -45,7 +46,8 @@ const metricCv = document.getElementById("metricCv");
 const metricIncomplete = document.getElementById("metricIncomplete");
 const sparklineCanvas = document.getElementById("sparkline");
 const sparklineCtx = sparklineCanvas?.getContext("2d");
-const APP_VERSION = "v2.4";
+const chartLegend = document.getElementById("chartLegend");
+const APP_VERSION = "v2.5";
 const SENSE_POS_KEY = "habertronic-sense-chip-pos";
 const wikiTopicGrid = document.getElementById("wikiTopicGrid");
 const wikiForm = document.getElementById("wikiForm");
@@ -135,6 +137,9 @@ let calibrating = false;
 let calibrationCollecting = false;
 let calibrationValues = [];
 let calibrationTimerId = 0;
+let researchMode = false;
+let researchFullCount = 0;
+let researchIncompleteCount = 0;
 let audioCtx = null;
 let lastMetrics = null;
 
@@ -770,6 +775,54 @@ function drawSparkline() {
   });
 }
 
+function updateChartLegend(visible) {
+  if (chartLegend) chartLegend.hidden = !visible;
+}
+
+function setResearchMode(enabled) {
+  if (!running && enabled) return;
+  researchMode = Boolean(enabled);
+  researchBtn?.classList.toggle("research-on", researchMode);
+  if (researchMode) {
+    apertureHistory = [];
+    researchFullCount = 0;
+    researchIncompleteCount = 0;
+    eyesClosed = false;
+    inIntermediateZone = false;
+    statsBar.hidden = false;
+    blinkCountEl.textContent = "0";
+    timeLeftEl.textContent = "INV";
+    apertureValueEl.textContent = "—";
+    chartHint.textContent =
+      "Modo investigación · gráfica en vivo (rojo=completo, amarillo=intermedio)";
+    updateChartLegend(true);
+    if (metricsInfoBtn) metricsInfoBtn.hidden = false;
+    resultBanner.hidden = false;
+    if (metricsPanel) metricsPanel.hidden = true;
+    resultTitle.textContent = "Modo investigación";
+    resultDetail.textContent =
+      "Observa la gráfica y los umbrales sin iniciar una prueba formal. Pulsa Info para las fórmulas.";
+    drawChart();
+    setStatus("Investigación activa · umbrales dinámicos en vivo");
+  } else {
+    if (!testActive) {
+      statsBar.hidden = true;
+      updateChartLegend(false);
+      chartHint.textContent =
+        "Con cámara activa verás la señal arriba; la gráfica completa se llena en la prueba o en Investigación";
+      if (!lastMetrics) {
+        resultBanner.hidden = true;
+        if (metricsInfoBtn) {
+          metricsInfoBtn.hidden = true;
+          metricsInfoBtn.textContent = "Info";
+        }
+        if (metricsInfoPanel) metricsInfoPanel.hidden = true;
+      }
+    }
+    setStatus(running ? "Cámara activa" : "Detenido");
+  }
+}
+
 function drawChart() {
   drawSeries(chartCtx, chartCanvas, apertureHistory, {
     color: "#0891b2",
@@ -958,7 +1011,8 @@ function processBlink(blendshapes, now) {
   if (liveApertureHistory.length > 90) liveApertureHistory.shift();
   drawSparkline();
 
-  if (testActive) {
+  const tracking = testActive || researchMode;
+  if (tracking) {
     apertureHistory.push(aperture);
     if (apertureHistory.length > 6000) apertureHistory.shift();
     drawChart();
@@ -966,10 +1020,15 @@ function processBlink(blendshapes, now) {
     const isFullBlink = aperture < thrRedDyn;
     if (!eyesClosed && isFullBlink) {
       eyesClosed = true;
-      blinkCount += 1;
-      blinkTimestamps.push(now);
-      blinkCountEl.textContent = String(blinkCount);
-      updateSenseChipLabel();
+      if (testActive) {
+        blinkCount += 1;
+        blinkTimestamps.push(now);
+        blinkCountEl.textContent = String(blinkCount);
+        updateSenseChipLabel();
+      } else if (researchMode) {
+        researchFullCount += 1;
+        blinkCountEl.textContent = String(researchFullCount);
+      }
     } else if (eyesClosed && aperture > thrRedDyn + HYSTERESIS_OPEN) {
       eyesClosed = false;
     }
@@ -977,14 +1036,27 @@ function processBlink(blendshapes, now) {
     const inZone =
       !isFullBlink && aperture <= thrYellowDyn && aperture > thrRedDyn;
     if (inZone && !inIntermediateZone) {
-      incompleteBlinkCount += 1;
+      if (testActive) incompleteBlinkCount += 1;
+      else if (researchMode) {
+        researchIncompleteCount += 1;
+        if (metricIncomplete) {
+          // vista rápida en el detalle
+        }
+      }
     }
     inIntermediateZone = inZone;
 
-    const remaining = testEndsAt - now;
-    timeLeftEl.textContent = formatTime(remaining);
-    if (remaining <= 0) {
-      finishTest();
+    if (researchMode && !testActive) {
+      timeLeftEl.textContent = "INV";
+      resultDetail.textContent = `Completos: ${researchFullCount} · Incompletos: ${researchIncompleteCount} · Tᵣojo=${(thrRedDyn * 100).toFixed(0)}% · Tₐmarillo=${(thrYellowDyn * 100).toFixed(0)}%`;
+    }
+
+    if (testActive) {
+      const remaining = testEndsAt - now;
+      timeLeftEl.textContent = formatTime(remaining);
+      if (remaining <= 0) {
+        finishTest();
+      }
     }
   }
 
@@ -1100,6 +1172,7 @@ async function startCamera() {
     lecturaBtn.disabled = false;
     cameraSelect.disabled = false;
     calibrateBtn.disabled = false;
+    researchBtn.disabled = false;
     if (sparklineCanvas) sparklineCanvas.hidden = false;
     liveApertureHistory = [];
     recentApertureWindow = [];
@@ -1119,6 +1192,7 @@ async function startCamera() {
     stopCamBtn.disabled = true;
     inicioBtn.disabled = true;
     calibrateBtn.disabled = true;
+    researchBtn.disabled = true;
     if (sparklineCanvas) sparklineCanvas.hidden = true;
     setStatus(err?.name === "NotAllowedError" ? "Permiso de cámara denegado" : err?.message || "No se pudo iniciar la cámara");
     lecturaBtn.disabled = true;
@@ -1153,6 +1227,7 @@ async function switchCamera(deviceId) {
 
 function stopCamera() {
   if (testActive) finishTest(false);
+  if (researchMode) setResearchMode(false);
   if (readingMode) setReadingMode(false);
   running = false;
   switchingCamera = false;
@@ -1168,6 +1243,8 @@ function stopCamera() {
   stopCamBtn.disabled = true;
   inicioBtn.disabled = true;
   calibrateBtn.disabled = true;
+  researchBtn.disabled = true;
+  researchBtn.classList.remove("research-on");
   lecturaBtn.disabled = true;
   bgNote.hidden = true;
   senseChip.hidden = true;
@@ -1175,6 +1252,7 @@ function stopCamera() {
   liveApertureHistory = [];
   recentApertureWindow = [];
   calibrating = false;
+  updateChartLegend(false);
   viewport.classList.remove("show-mini");
   clearTestTimer();
   resetInicioButton();
@@ -1214,6 +1292,11 @@ function startTest(seconds) {
   if (metricsInfoPanel) metricsInfoPanel.hidden = true;
   lastMetrics = null;
 
+  if (researchMode) {
+    researchMode = false;
+    researchBtn.classList.remove("research-on");
+  }
+
   testActive = true;
   testDurationMs = seconds * 1000;
   testEndsAt = performance.now() + testDurationMs;
@@ -1228,7 +1311,9 @@ function startTest(seconds) {
   apertureValueEl.textContent = "—";
   statsBar.hidden = false;
   calibrateBtn.disabled = true;
+  researchBtn.disabled = true;
   chartHint.textContent = `Prueba de ${formatDurationLabel(seconds)} en curso · umbral dinámico activo`;
+  updateChartLegend(true);
 
   armedSeconds = 0;
   inicioBtn.classList.remove("armed");
@@ -1284,6 +1369,7 @@ function finishTest(playSound = true) {
   if (running) {
     inicioBtn.disabled = false;
     calibrateBtn.disabled = false;
+    researchBtn.disabled = false;
   }
   updateSenseChipLabel();
 
@@ -1379,6 +1465,10 @@ function detectLoop() {
 startCamBtn.addEventListener("click", () => void startCamera());
 stopCamBtn.addEventListener("click", stopCamera);
 calibrateBtn.addEventListener("click", startCalibration);
+researchBtn.addEventListener("click", () => {
+  if (!running || testActive || calibrating) return;
+  setResearchMode(!researchMode);
+});
 inicioBtn.addEventListener("click", onInicioClick);
 metricsInfoBtn?.addEventListener("click", () => {
   if (!metricsInfoPanel) return;

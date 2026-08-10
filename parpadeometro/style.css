@@ -730,6 +730,46 @@ body.reading-mode .reader-panel {
   display: none;
 }
 
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem 1rem;
+  margin: 0 0 0.45rem;
+  font-size: 0.78rem;
+  font-weight: 650;
+  color: var(--muted);
+}
+
+.chart-legend[hidden] {
+  display: none;
+}
+
+.leg-red::before,
+.leg-yellow::before {
+  content: "";
+  display: inline-block;
+  width: 0.85rem;
+  height: 0;
+  border-top: 2px dashed;
+  margin-right: 0.35rem;
+  vertical-align: middle;
+}
+
+.leg-red::before {
+  border-color: #dc2626;
+}
+
+.leg-yellow::before {
+  border-color: #eab308;
+}
+
+.btn.research-on {
+  background: rgba(15, 122, 116, 0.16);
+  border-color: rgba(15, 122, 116, 0.45);
+  color: #0f7a74;
+  font-weight: 750;
+}
+
 .top-actions {
   display: flex;
   flex-wrap: wrap;

@@ -18,7 +18,7 @@
   <body>
     <div id="app">
       <header class="topbar">
-        <p class="brand">Habertronic Orión · Parpadeómetro <span class="app-ver" id="appVer">v2.4</span></p>
+        <p class="brand">Habertronic Orión · Parpadeómetro <span class="app-ver" id="appVer">v2.5</span></p>
         <div class="top-actions">
           <label class="field" for="cameraSelect">
             <span>Cámara</span>
@@ -29,6 +29,7 @@
           <button type="button" class="btn primary" id="startCamBtn">Iniciar cámara</button>
           <button type="button" class="btn ghost" id="stopCamBtn" disabled>Detener</button>
           <button type="button" class="btn ghost" id="calibrateBtn" disabled>Calibrar</button>
+          <button type="button" class="btn ghost" id="researchBtn" disabled>Investigación</button>
           <button type="button" class="btn accent inicio-btn" id="inicioBtn" disabled>
             <span class="inicio-main" id="inicioMain">Inicio</span>
             <span class="inicio-sub" id="inicioSub" hidden></span>
@@ -98,6 +99,34 @@
               episodios en los que el ojo se cierra parcialmente (zona amarilla del umbral dinámico)
               sin llegar al cierre completo (umbral rojo). No sustituyen al conteo de parpadeos completos;
               aportan información de calidad del cierre palpebral.
+            </p>
+            <h3>Umbrales dinámicos (rojo y amarillo)</h3>
+            <p>
+              Trabajamos con la <strong>apertura palpebral</strong> A (0 = cerrado, 1 = abierto),
+              derivada de MediaPipe. La calibración fija un ancla (slider):
+              <br />T<sub>calib</sub> = limitar( media(A en calibración) × 0.70 , 0.35 , 0.75 ).
+            </p>
+            <p>
+              Con los últimos N valores de A (ventana ≈ 20) se estima un baseline de “ojos abiertos”:
+              <br />B = percentil 75 de la ventana (si hay pocas muestras, B = 0.30).
+            </p>
+            <p>
+              <strong>Umbral rojo (parpadeo completo / dinámico):</strong>
+              <br />gap = 0.052 + holgura de calentamiento
+              <br />raw = T<sub>calib</sub> + 0.25 × max(0, B − T<sub>calib</sub>)
+              <br />T<sub>rojo</sub> = max( 0.10 , min( raw , B − gap ) )
+              <br />Se cuenta parpadeo completo cuando A &lt; T<sub>rojo</sub> (flanco de entrada).
+            </p>
+            <p>
+              <strong>Umbral amarillo (parpadeo intermedio / incompleto):</strong>
+              <br />T<sub>amarillo</sub> = ( B + T<sub>rojo</sub> ) / 2
+              <br />Zona intermedia: T<sub>rojo</sub> &lt; A ≤ T<sub>amarillo</sub>
+              <br />Cada entrada a esa zona suma un incompleto (sin requerir cierre total).
+            </p>
+            <p>
+              En modo <strong>Investigación</strong> puedes ver la gráfica con ambas líneas aunque
+              no hayas iniciado una prueba formal, para observar en vivo la relación entre
+              parpadeo completo e intermedio.
             </p>
           </div>
         </div>
@@ -251,8 +280,12 @@
       <section class="chart-panel" id="chartPanel">
         <div class="chart-head">
           <h2>Apertura palpebral</h2>
-          <p id="chartHint">Con cámara activa verás la señal arriba; la gráfica completa se llena en la prueba</p>
+          <p id="chartHint">Con cámara activa verás la señal arriba; la gráfica completa se llena en la prueba o en Investigación</p>
         </div>
+        <p class="chart-legend" id="chartLegend" hidden>
+          <span class="leg leg-red">Rojo = completo</span>
+          <span class="leg leg-yellow">Amarillo = intermedio</span>
+        </p>
         <canvas id="chart" width="900" height="180" aria-label="Gráfica de apertura palpebral"></canvas>
       </section>
     </div>
