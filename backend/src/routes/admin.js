@@ -68,13 +68,19 @@ function adminPinRequired(req, res, next) {
 
 function specialtyLabel(row) {
   if (row.ophthalmology_profile === 'general') return 'Oftalmólogo general';
-  if (row.specialty_slug === 'other') {
-    return row.specialty_other || 'Otra especialidad';
-  }
+  if (row.specialty_slug === 'other') return 'Otra';
   if (row.specialty_slug) {
     return SPECIALTY_LABELS_ES[row.specialty_slug] || row.specialty_slug;
   }
   return null;
+}
+
+/** Texto libre solo si eligió «Otra». */
+function specialtyOtherText(row) {
+  if (row.ophthalmology_profile !== 'specialty') return null;
+  if (row.specialty_slug !== 'other') return null;
+  const text = String(row.specialty_other || '').trim();
+  return text || null;
 }
 
 function cityFromLocation(locationJson) {
@@ -332,7 +338,7 @@ function mapResearcherCore(row, counts = {}) {
     registeredAt: row.created_at,
     ophthalmologyProfile: row.ophthalmology_profile,
     specialtySlug: row.specialty_slug,
-    specialtyOther: row.specialty_other,
+    specialtyOther: specialtyOtherText(row),
     specialtyLabel: specialtyLabel(row),
     locationDeclined: Boolean(row.location_declined),
     active: Boolean(row.active),
@@ -367,7 +373,7 @@ function mapIntervention(row) {
     researcherSpecialty: specialtyLabel(row),
     researcherProfile: row.ophthalmology_profile,
     researcherSpecialtySlug: row.specialty_slug,
-    researcherSpecialtyOther: row.specialty_other,
+    researcherSpecialtyOther: specialtyOtherText(row),
     researcherRegisteredAt: row.researcher_created_at,
     researcherActive: row.active,
     researcherRole: row.role,

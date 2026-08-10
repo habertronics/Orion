@@ -97,6 +97,12 @@ function formatCell(value, key = "", data = null) {
       return "";
     }
   }
+  if (
+    (k.includes("specialtyother") || k.endsWith("specialtyother")) &&
+    (value == null || value === "")
+  ) {
+    return "";
+  }
   if (value == null || value === "") return "—";
   if (k.includes("osdi6hecho") || k.includes("osdi6done")) {
     if (value === true || value === "yes") return "Sí (realizado)";
@@ -129,6 +135,7 @@ function formatCell(value, key = "", data = null) {
   if (value === "prefer_not") return "Prefiere no decir";
   if (value === "general") return "Oftalmólogo general";
   if (value === "specialty") return "Alta especialidad";
+  if (value === "other") return "Otra";
   if (value === "ipl") return "IPL";
   if (value === "thermal") return "Térmico";
   if (value === "none") return "Ninguno";
