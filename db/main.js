@@ -54,10 +54,19 @@ function getPath(obj, path) {
 
 function formatCell(value, key = "") {
   if (value == null || value === "") return "—";
+  const k = key.toLowerCase();
+  if (k.includes("osdi6hecho") || k.includes("osdi6done")) {
+    if (value === true || value === "yes") return "Sí (realizado)";
+    if (value === false || value === "no") return "No (no realizado)";
+  }
+  if (k.includes("osdi6posibleojoseco") || k.includes("possibledryeye")) {
+    if (value === true) return "Sí (posible ojo seco)";
+    if (value === false) return "No (poco probable)";
+  }
   if (typeof value === "boolean") return value ? "Sí" : "No";
   if (
-    key.toLowerCase().includes("at") ||
-    key.toLowerCase().includes("fecha") ||
+    k.includes("at") ||
+    k.includes("fecha") ||
     key.endsWith("At") ||
     key === "registeredAt" ||
     key === "createdAt" ||

@@ -148,13 +148,17 @@ function flattenAnswers(answers) {
   const osdi = a.osdi6 && typeof a.osdi6 === 'object' ? a.osdi6 : {};
   const subscales = osdi.subscales && typeof osdi.subscales === 'object' ? osdi.subscales : {};
   const osdiAnswers = Array.isArray(osdi.answers) ? osdi.answers : [];
+  // OSDI-6 es binocular (ambos ojos). "Hecho" = se completó el cuestionario.
+  const osdi6Hecho =
+    a.osdi6Done === true ||
+    (osdi.total != null && osdiAnswers.length === 6);
   return {
     sujetoEdad: a.age ?? null,
     sujetoSexo: a.sex ?? null,
     ojoSecoDx: a.dryEyeDiagnosis ?? null,
     tratamientoNoLubricante: a.nonLubeTreatment ?? null,
     usaLubricante: a.usingLubricant ?? null,
-    osdi6Hecho: a.osdi6Done ?? null,
+    osdi6Hecho,
     osdi6Q1: osdiAnswers[0] ?? null,
     osdi6Q2: osdiAnswers[1] ?? null,
     osdi6Q3: osdiAnswers[2] ?? null,
