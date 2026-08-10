@@ -52,9 +52,32 @@ function getPath(obj, path) {
   return path.split(".").reduce((acc, key) => (acc == null ? null : acc[key]), obj);
 }
 
-function formatCell(value, key = "") {
-  if (value == null || value === "") return "—";
+function isLocationDetailKey(key = "") {
   const k = key.toLowerCase();
+  return (
+    k.includes("locsource") ||
+    k.includes("loccountry") ||
+    k.includes("locstate") ||
+    k.includes("loclocality") ||
+    k.includes("loclabel") ||
+    k.includes("loclat") ||
+    k.includes("loclng") ||
+    k.includes("locaccuracy") ||
+    k.includes("loccity") ||
+    k.includes("loccapturedat") ||
+    k.includes("locplaceid")
+  );
+}
+
+function formatCell(value, key = "") {
+  const k = key.toLowerCase();
+  if (k.includes("locprovided") || k.endsWith("provided")) {
+    return value === true ? "✓" : "✗";
+  }
+  if (isLocationDetailKey(key) && (value == null || value === "")) {
+    return "";
+  }
+  if (value == null || value === "") return "—";
   if (k.includes("osdi6hecho") || k.includes("osdi6done")) {
     if (value === true || value === "yes") return "Sí (realizado)";
     if (value === false || value === "no") return "No (no realizado)";
@@ -76,6 +99,9 @@ function formatCell(value, key = "") {
   ) {
     if (typeof value === "string" && value.includes("T")) return fmtDate(value);
   }
+  if (value === "device") return "Dispositivo (GPS)";
+  if (value === "geocoded") return "Ciudad buscada";
+  if (value === "skipped") return "Omitido";
   if (value === "yes") return "Sí";
   if (value === "no") return "No";
   if (value === "female") return "Mujer";
@@ -136,7 +162,16 @@ function buildRow(columns, data, color = {}) {
     .map((c) => {
       const raw = getPath(data, c.key);
       const text = formatCell(raw, c.key);
-      return `<td class="${BANDS[c.band]?.className || ""}">${esc(text)}</td>`;
+      const band = BANDS[c.band]?.className || "";
+      const k = c.key.toLowerCase();
+      if (k.includes("locprovided") || k.endsWith("provided")) {
+        const on = raw === true;
+        return `<td class="${band} loc-flag ${on ? "is-on" : "is-off"}">${on ? "✓" : "✗"}</td>`;
+      }
+      if (isLocationDetailKey(c.key) && (raw == null || raw === "")) {
+        return `<td class="${band} loc-empty"></td>`;
+      }
+      return `<td class="${band}">${esc(text)}</td>`;
     })
     .join("");
   return `<tr class="paint-row paint-${mode}" style="${style}">${cells}</tr>`;

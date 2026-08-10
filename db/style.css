@@ -335,3 +335,22 @@ table.sheet-full tbody tr.paint-row td.band-interf {
 table.sheet-full tbody tr.paint-row td:first-child {
   box-shadow: inset 6px 0 0 hsl(var(--row-h) 70% 55%);
 }
+
+table.sheet-full tbody tr.paint-row td.loc-flag {
+  text-align: center;
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+
+table.sheet-full tbody tr.paint-row td.loc-flag.is-on {
+  color: #4ade80;
+}
+
+table.sheet-full tbody tr.paint-row td.loc-flag.is-off {
+  color: #f87171;
+}
+
+table.sheet-full tbody tr.paint-row td.loc-empty {
+  background: hsl(var(--row-h) calc(var(--row-s) * 1%) calc(var(--row-l) * 1%) / 0.25);
+  color: transparent;
+}

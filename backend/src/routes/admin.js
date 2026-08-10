@@ -87,7 +87,7 @@ function cityFromLocation(locationJson) {
   if (parts.length) return parts.join(', ');
   if (locationJson.label) return String(locationJson.label);
   if (locationJson.source === 'skipped' || locationJson.declined) {
-    return 'Sin localización';
+    return null;
   }
   if (
     Number.isFinite(Number(locationJson.lat)) &&
@@ -96,6 +96,13 @@ function cityFromLocation(locationJson) {
     return `${Number(locationJson.lat).toFixed(5)}, ${Number(locationJson.lng).toFixed(5)}`;
   }
   return null;
+}
+
+function hasProvidedLocation(locationJson, declined = false) {
+  if (declined) return false;
+  if (!locationJson || typeof locationJson !== 'object') return false;
+  if (locationJson.source === 'skipped' || locationJson.declined) return false;
+  return locationJson.source === 'device' || locationJson.source === 'geocoded';
 }
 
 function jsonDump(value) {
@@ -107,9 +114,30 @@ function jsonDump(value) {
   }
 }
 
-function flattenLocation(prefix, locationJson) {
-  const loc = locationJson && typeof locationJson === 'object' ? locationJson : {};
+function flattenLocation(prefix, locationJson, { declined = false } = {}) {
+  const loc =
+    locationJson && typeof locationJson === 'object' ? locationJson : {};
+  const provided = hasProvidedLocation(loc, declined);
+  if (!provided) {
+    return {
+      [`${prefix}Provided`]: false,
+      [`${prefix}Source`]: null,
+      [`${prefix}Country`]: null,
+      [`${prefix}State`]: null,
+      [`${prefix}Locality`]: null,
+      [`${prefix}Label`]: null,
+      [`${prefix}Lat`]: null,
+      [`${prefix}Lng`]: null,
+      [`${prefix}Accuracy`]: null,
+      [`${prefix}PlaceId`]: null,
+      [`${prefix}SameLocality`]: loc.sameLocality ?? null,
+      [`${prefix}CapturedAt`]: null,
+      [`${prefix}City`]: null,
+      [`${prefix}Json`]: jsonDump(locationJson),
+    };
+  }
   return {
+    [`${prefix}Provided`]: true,
     [`${prefix}Source`]: loc.source ?? null,
     [`${prefix}Country`]: loc.country ?? null,
     [`${prefix}State`]: loc.state ?? null,
@@ -309,7 +337,9 @@ function mapResearcherCore(row, counts = {}) {
     locationDeclined: Boolean(row.location_declined),
     active: Boolean(row.active),
     role: row.role,
-    ...flattenLocation('medicoLoc', row.location_json),
+    ...flattenLocation('medicoLoc', row.location_json, {
+      declined: Boolean(row.location_declined),
+    }),
     medicoLocationJson: jsonDump(row.location_json),
     counts: {
       parpadeo: Number(counts.parpadeo || 0),
@@ -342,7 +372,9 @@ function mapIntervention(row) {
     researcherActive: row.active,
     researcherRole: row.role,
     researcherLocationDeclined: row.location_declined,
-    ...flattenLocation('medicoLoc', row.researcher_location_json),
+    ...flattenLocation('medicoLoc', row.researcher_location_json, {
+      declined: Boolean(row.location_declined),
+    }),
   };
   return {
     ...core,
