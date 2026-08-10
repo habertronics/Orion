@@ -35,6 +35,8 @@ const resultBanner = document.getElementById("resultBanner");
 const resultTitle = document.getElementById("resultTitle");
 const resultDetail = document.getElementById("resultDetail");
 const metricsPanel = document.getElementById("metricsPanel");
+const metricsInfoBtn = document.getElementById("metricsInfoBtn");
+const metricsInfoPanel = document.getElementById("metricsInfoPanel");
 const metricBpm = document.getElementById("metricBpm");
 const metricMean = document.getElementById("metricMean");
 const metricMedian = document.getElementById("metricMedian");
@@ -43,7 +45,7 @@ const metricCv = document.getElementById("metricCv");
 const metricIncomplete = document.getElementById("metricIncomplete");
 const sparklineCanvas = document.getElementById("sparkline");
 const sparklineCtx = sparklineCanvas?.getContext("2d");
-const APP_VERSION = "v2.3";
+const APP_VERSION = "v2.4";
 const SENSE_POS_KEY = "habertronic-sense-chip-pos";
 const wikiTopicGrid = document.getElementById("wikiTopicGrid");
 const wikiForm = document.getElementById("wikiForm");
@@ -740,15 +742,29 @@ function drawSeries(ctx, canvasEl, series, opts = {}) {
   }
 }
 
+function sparklineDisplaySeries(series) {
+  if (series.length < 2) return series.map(() => 0.5);
+  let min = Infinity;
+  let max = -Infinity;
+  for (const v of series) {
+    if (v < min) min = v;
+    if (v > max) max = v;
+  }
+  // Amplifica el rango local para que se note el sensado dentro del renglón.
+  const span = Math.max(0.02, max - min);
+  return series.map((v) => {
+    const t = (v - min) / span;
+    return 0.1 + t * 0.8;
+  });
+}
+
 function drawSparkline() {
   if (!sparklineCanvas || !sparklineCtx) return;
-  drawSeries(sparklineCtx, sparklineCanvas, liveApertureHistory, {
+  drawSeries(sparklineCtx, sparklineCanvas, sparklineDisplaySeries(liveApertureHistory), {
     color: "#0e7490",
-    lineWidth: 1.6,
+    lineWidth: 1.8,
     pad: 2,
-    thrRed: thrRedDyn,
-    thrYellow: thrYellowDyn,
-    showThresholds: true,
+    showThresholds: false,
     compact: true,
     dot: true,
   });
@@ -846,6 +862,7 @@ function formatSec(value) {
 function renderMetrics(metrics) {
   if (!metricsPanel) return;
   metricsPanel.hidden = false;
+  if (metricsInfoBtn) metricsInfoBtn.hidden = false;
   metricBpm.textContent = String(metrics.bpm);
   metricMean.textContent = formatSec(metrics.meanIntervalSec);
   metricMedian.textContent = formatSec(metrics.medianIntervalSec);
@@ -1190,6 +1207,11 @@ function startTest(seconds) {
   clearTestTimer();
   resultBanner.hidden = true;
   if (metricsPanel) metricsPanel.hidden = true;
+  if (metricsInfoBtn) {
+    metricsInfoBtn.hidden = true;
+    metricsInfoBtn.textContent = "Info";
+  }
+  if (metricsInfoPanel) metricsInfoPanel.hidden = true;
   lastMetrics = null;
 
   testActive = true;
@@ -1358,6 +1380,15 @@ startCamBtn.addEventListener("click", () => void startCamera());
 stopCamBtn.addEventListener("click", stopCamera);
 calibrateBtn.addEventListener("click", startCalibration);
 inicioBtn.addEventListener("click", onInicioClick);
+metricsInfoBtn?.addEventListener("click", () => {
+  if (!metricsInfoPanel) return;
+  const open = metricsInfoPanel.hidden;
+  metricsInfoPanel.hidden = !open;
+  metricsInfoBtn.textContent = open ? "Ocultar info" : "Info";
+  if (open) {
+    metricsInfoPanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+});
 modalCloseBtn.addEventListener("click", closeDurationModal);
 lecturaBtn.addEventListener("click", () => {
   if (!running) return;

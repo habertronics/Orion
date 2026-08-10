@@ -18,7 +18,7 @@
   <body>
     <div id="app">
       <header class="topbar">
-        <p class="brand">Habertronic Orión · Parpadeómetro <span class="app-ver" id="appVer">v2.3</span></p>
+        <p class="brand">Habertronic Orión · Parpadeómetro <span class="app-ver" id="appVer">v2.4</span></p>
         <div class="top-actions">
           <label class="field" for="cameraSelect">
             <span>Cámara</span>
@@ -61,6 +61,44 @@
             <div class="metric"><span>Moda</span><strong id="metricMode">—</strong></div>
             <div class="metric"><span>Arritmia CV</span><strong id="metricCv">—</strong></div>
             <div class="metric"><span>Incompletos</span><strong id="metricIncomplete">—</strong></div>
+          </div>
+          <button type="button" class="btn ghost compact metrics-info-btn" id="metricsInfoBtn" hidden>
+            Info
+          </button>
+          <div class="metrics-info" id="metricsInfoPanel" hidden>
+            <h3>Cómo leer estas métricas</h3>
+            <p>
+              <strong>Parpadeos por minuto (BPM):</strong>
+              se calcula como (número de parpadeos completos × 60) ÷ duración de la prueba en segundos.
+              Ejemplo: 20 parpadeos en 60 s = 20/min.
+            </p>
+            <p>
+              <strong>Media del intervalo:</strong>
+              promedio del tiempo (en segundos) entre un parpadeo completo y el siguiente.
+              Indica cada cuánto parpadeas “en promedio”.
+            </p>
+            <p>
+              <strong>Mediana:</strong>
+              el valor central de esos intervalos ordenados. Es menos sensible a un intervalo muy raro
+              (muy corto o muy largo) que la media.
+            </p>
+            <p>
+              <strong>Moda:</strong>
+              el intervalo que más se repite (redondeado a centésimas de segundo). Muestra el ritmo
+              “típico” de tu parpadeo.
+            </p>
+            <p>
+              <strong>Arritmia del parpadeo (CV):</strong>
+              coeficiente de variación de los intervalos =
+              (desviación estándar ÷ media) × 100.
+              Un CV bajo sugiere un ritmo más regular; un CV alto, más irregularidad entre parpadeos.
+            </p>
+            <p>
+              <strong>Parpadeos incompletos:</strong>
+              episodios en los que el ojo se cierra parcialmente (zona amarilla del umbral dinámico)
+              sin llegar al cierre completo (umbral rojo). No sustituyen al conteo de parpadeos completos;
+              aportan información de calidad del cierre palpebral.
+            </p>
           </div>
         </div>
       </header>
