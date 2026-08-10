@@ -69,13 +69,33 @@ function isLocationDetailKey(key = "") {
   );
 }
 
-function formatCell(value, key = "") {
+function locationProvided(data, key) {
+  const raw = getPath(data, key);
+  if (raw === true || raw === false) return raw;
+  // Compatibilidad si el API aún no manda *Provided
+  const base = key.replace(/Provided$/i, "");
+  const source = getPath(data, `${base}Source`);
+  return source === "device" || source === "geocoded";
+}
+
+function formatCell(value, key = "", data = null) {
   const k = key.toLowerCase();
   if (k.includes("locprovided") || k.endsWith("provided")) {
-    return value === true ? "✓" : "✗";
+    const on = data ? locationProvided(data, key) : value === true;
+    return on ? "✓" : "✗";
   }
-  if (isLocationDetailKey(key) && (value == null || value === "")) {
-    return "";
+  if (isLocationDetailKey(key)) {
+    if (data) {
+      const providedKey = key.replace(
+        /(Source|Country|State|Locality|Label|Lat|Lng|Accuracy|City|CapturedAt|PlaceId)$/i,
+        "Provided",
+      );
+      if (!locationProvided(data, providedKey) && (value == null || value === "")) {
+        return "";
+      }
+    } else if (value == null || value === "") {
+      return "";
+    }
   }
   if (value == null || value === "") return "—";
   if (k.includes("osdi6hecho") || k.includes("osdi6done")) {
@@ -161,15 +181,21 @@ function buildRow(columns, data, color = {}) {
   const cells = columns
     .map((c) => {
       const raw = getPath(data, c.key);
-      const text = formatCell(raw, c.key);
+      const text = formatCell(raw, c.key, data);
       const band = BANDS[c.band]?.className || "";
       const k = c.key.toLowerCase();
       if (k.includes("locprovided") || k.endsWith("provided")) {
-        const on = raw === true;
+        const on = locationProvided(data, c.key);
         return `<td class="${band} loc-flag ${on ? "is-on" : "is-off"}">${on ? "✓" : "✗"}</td>`;
       }
-      if (isLocationDetailKey(c.key) && (raw == null || raw === "")) {
-        return `<td class="${band} loc-empty"></td>`;
+      if (isLocationDetailKey(c.key)) {
+        const providedKey = c.key.replace(
+          /(Source|Country|State|Locality|Label|Lat|Lng|Accuracy|City|CapturedAt|PlaceId)$/i,
+          "Provided",
+        );
+        if (!locationProvided(data, providedKey) && (raw == null || raw === "")) {
+          return `<td class="${band} loc-empty"></td>`;
+        }
       }
       return `<td class="${band}">${esc(text)}</td>`;
     })
@@ -351,7 +377,7 @@ function exportCsv() {
   const lines = [
     columns.map((c) => csvEscape(c.label)).join(","),
     ...rows.map((row) =>
-      columns.map((c) => csvEscape(formatCell(getPath(row, c.key), c.key))).join(","),
+      columns.map((c) => csvEscape(formatCell(getPath(row, c.key), c.key, row))).join(","),
     ),
   ];
   const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
