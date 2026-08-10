@@ -12,6 +12,9 @@ CREATE TABLE IF NOT EXISTS researchers (
   nickname      VARCHAR(80),
   location_declined BOOLEAN NOT NULL DEFAULT FALSE,
   location_json JSONB,
+  ophthalmology_profile VARCHAR(20),
+  specialty_slug VARCHAR(40),
+  specialty_other VARCHAR(120),
   role          VARCHAR(30) NOT NULL DEFAULT 'researcher',
   active        BOOLEAN NOT NULL DEFAULT TRUE,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()

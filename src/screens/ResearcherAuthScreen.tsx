@@ -7,6 +7,12 @@ import {
   type ResearcherLocationPayload,
 } from '../auth/researcherAuth'
 import { researcherCopy } from '../i18n/researcher'
+import {
+  SPECIALTY_IDS,
+  specialtyCopy,
+  type OphthalmologyProfile,
+  type SpecialtyId,
+} from '../i18n/ophthalmologyProfile'
 import type { Lang } from '../i18n/preferences'
 import {
   searchPlaces,
@@ -33,12 +39,17 @@ export function ResearcherAuthScreen({
   onBack,
 }: ResearcherAuthScreenProps) {
   const t = researcherCopy[lang]
+  const ophthT = specialtyCopy[lang]
   const remembered = useMemo(() => getRememberedCredentials(), [])
   const [view, setView] = useState<AuthView>('choose')
   const [fullName, setFullName] = useState('')
   const [age, setAge] = useState('')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState(remembered?.email ?? '')
+  const [ophthalmologyProfile, setOphthalmologyProfile] =
+    useState<OphthalmologyProfile | null>(null)
+  const [specialtySlug, setSpecialtySlug] = useState<SpecialtyId | null>(null)
+  const [specialtyOther, setSpecialtyOther] = useState('')
   const [suggested, setSuggested] = useState(() => suggestPassword())
   const [useOwnPassword, setUseOwnPassword] = useState(false)
   const [ownPassword, setOwnPassword] = useState('')
@@ -153,6 +164,22 @@ export function ResearcherAuthScreen({
     const password = useOwnPassword ? ownPassword : suggested
     const ageNumber = Number(age)
 
+    if (!ophthalmologyProfile) {
+      setError(t.errors.missing_ophthalmology_profile)
+      return
+    }
+    if (ophthalmologyProfile === 'specialty' && !specialtySlug) {
+      setError(t.errors.missing_specialty)
+      return
+    }
+    if (
+      ophthalmologyProfile === 'specialty' &&
+      specialtySlug === 'other' &&
+      !specialtyOther.trim()
+    ) {
+      setError(t.errors.missing_specialty_other)
+      return
+    }
     if (!locationDeclined && !location) {
       setError(t.errors.missing_location)
       return
@@ -171,6 +198,13 @@ export function ResearcherAuthScreen({
       phone,
       locationDeclined,
       location: locationDeclined ? null : location,
+      ophthalmologyProfile,
+      specialtySlug:
+        ophthalmologyProfile === 'specialty' ? specialtySlug : null,
+      specialtyOther:
+        ophthalmologyProfile === 'specialty' && specialtySlug === 'other'
+          ? specialtyOther.trim()
+          : null,
     })
     setBusy(false)
     if (!result.ok) {
@@ -206,7 +240,13 @@ export function ResearcherAuthScreen({
   }
 
   const locationReady = locationDeclined || Boolean(location)
-  const canSubmitRegister = !busy && !locationBusy && locationReady
+  const specialtyReady =
+    ophthalmologyProfile === 'general' ||
+    (ophthalmologyProfile === 'specialty' &&
+      Boolean(specialtySlug) &&
+      (specialtySlug !== 'other' || Boolean(specialtyOther.trim())))
+  const canSubmitRegister =
+    !busy && !locationBusy && locationReady && specialtyReady
 
   return (
     <main className="r-auth" aria-labelledby="r-auth-brand">
@@ -302,6 +342,84 @@ export function ResearcherAuthScreen({
               required
             />
           </label>
+
+          <section
+            className="r-auth__ophth"
+            aria-labelledby="r-auth-ophth-title"
+          >
+            <h2 id="r-auth-ophth-title" className="r-auth__city-title">
+              {ophthT.sectionTitle}
+            </h2>
+
+            <label className="r-auth__check">
+              <input
+                type="radio"
+                name="ophthalmology-profile"
+                checked={ophthalmologyProfile === 'general'}
+                onChange={() => {
+                  setOphthalmologyProfile('general')
+                  setSpecialtySlug(null)
+                  setSpecialtyOther('')
+                }}
+              />
+              <span>{ophthT.general}</span>
+            </label>
+
+            <label className="r-auth__check">
+              <input
+                type="radio"
+                name="ophthalmology-profile"
+                checked={ophthalmologyProfile === 'specialty'}
+                onChange={() => setOphthalmologyProfile('specialty')}
+              />
+              <span>{ophthT.specialty}</span>
+            </label>
+
+            {ophthalmologyProfile === 'specialty' && (
+              <div className="r-auth__specialty">
+                <p className="r-auth__city-hint">{ophthT.chooseSpecialty}</p>
+                <div
+                  className="r-auth__specialty-grid"
+                  role="radiogroup"
+                  aria-label={ophthT.chooseSpecialty}
+                >
+                  {SPECIALTY_IDS.map((id) => (
+                    <label
+                      key={id}
+                      className={
+                        specialtySlug === id
+                          ? 'r-auth__specialty-option r-auth__specialty-option--on'
+                          : 'r-auth__specialty-option'
+                      }
+                    >
+                      <input
+                        type="radio"
+                        name="specialty-slug"
+                        checked={specialtySlug === id}
+                        onChange={() => {
+                          setSpecialtySlug(id)
+                          if (id !== 'other') setSpecialtyOther('')
+                        }}
+                      />
+                      <span>{ophthT.items[id]}</span>
+                    </label>
+                  ))}
+                </div>
+                {specialtySlug === 'other' && (
+                  <label className="r-auth__field">
+                    <span>{ophthT.items.other}</span>
+                    <input
+                      type="text"
+                      placeholder={ophthT.otherPlaceholder}
+                      value={specialtyOther}
+                      onChange={(e) => setSpecialtyOther(e.target.value)}
+                      required
+                    />
+                  </label>
+                )}
+              </div>
+            )}
+          </section>
 
           <label className="r-auth__check">
             <input

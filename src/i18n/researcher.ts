@@ -54,6 +54,9 @@ export const researcherCopy: Record<
       invalid_age: string
       invalid_phone: string
       missing_location: string
+      missing_ophthalmology_profile: string
+      missing_specialty: string
+      missing_specialty_other: string
       location_denied: string
       location_error: string
       server_error: string
@@ -116,6 +119,10 @@ export const researcherCopy: Record<
       invalid_phone: 'Indica un teléfono válido.',
       missing_location:
         'Elige GPS, una ciudad, o marca «No quiero dar localización».',
+      missing_ophthalmology_profile:
+        'Indica si eres oftalmólogo general o con alta especialidad.',
+      missing_specialty: 'Elige tu alta especialidad.',
+      missing_specialty_other: 'Especifica tu especialidad en «Otra».',
       location_denied: 'Permiso de ubicación denegado.',
       location_error: 'No se pudo obtener la ubicación. Prueba con la ciudad.',
       server_error: 'No se pudo conectar con el servidor. Intenta de nuevo.',
@@ -178,6 +185,10 @@ export const researcherCopy: Record<
       invalid_phone: 'Please enter a valid phone number.',
       missing_location:
         'Choose GPS, a city, or check “I do not want to share my location”.',
+      missing_ophthalmology_profile:
+        'Indicate if you are a general ophthalmologist or have a subspecialty.',
+      missing_specialty: 'Choose your subspecialty.',
+      missing_specialty_other: 'Specify your specialty under “Other”.',
       location_denied: 'Location permission denied.',
       location_error: 'Could not get location. Try typing the city.',
       server_error: 'Could not reach the server. Please try again.',
@@ -239,6 +250,10 @@ export const researcherCopy: Record<
       invalid_phone: 'Informe um telefone válido.',
       missing_location:
         'Escolha GPS, uma cidade, ou marque «Não quero informar localização».',
+      missing_ophthalmology_profile:
+        'Indique se é oftalmologista geral ou com alta especialidade.',
+      missing_specialty: 'Escolha sua alta especialidade.',
+      missing_specialty_other: 'Especifique sua especialidade em «Outra».',
       location_denied: 'Permissão de localização negada.',
       location_error: 'Não foi possível obter a localização. Tente a cidade.',
       server_error: 'Não foi possível conectar ao servidor. Tente de novo.',

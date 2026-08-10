@@ -36,6 +36,9 @@ export type AuthErrorCode =
   | 'invalid_age'
   | 'invalid_phone'
   | 'missing_location'
+  | 'missing_ophthalmology_profile'
+  | 'missing_specialty'
+  | 'missing_specialty_other'
   | 'server_error'
   | 'network_error'
 
@@ -169,6 +172,9 @@ const AUTH_ERROR_CODES: AuthErrorCode[] = [
   'invalid_age',
   'invalid_phone',
   'missing_location',
+  'missing_ophthalmology_profile',
+  'missing_specialty',
+  'missing_specialty_other',
   'server_error',
 ]
 
@@ -190,6 +196,9 @@ async function authRequest(input: {
   phone?: string
   locationDeclined?: boolean
   location?: ResearcherLocationPayload | null
+  ophthalmologyProfile?: 'general' | 'specialty'
+  specialtySlug?: string | null
+  specialtyOther?: string | null
 }): Promise<AuthOk | { ok: false; error: AuthErrorCode }> {
   const normalized = normalizeEmail(input.email)
 
@@ -208,6 +217,23 @@ async function authRequest(input: {
     const phoneDigits = String(input.phone || '').replace(/\D/g, '')
     if (phoneDigits.length < 7 || phoneDigits.length > 15) {
       return { ok: false, error: 'invalid_phone' }
+    }
+    if (
+      input.ophthalmologyProfile !== 'general' &&
+      input.ophthalmologyProfile !== 'specialty'
+    ) {
+      return { ok: false, error: 'missing_ophthalmology_profile' }
+    }
+    if (input.ophthalmologyProfile === 'specialty') {
+      if (!input.specialtySlug) {
+        return { ok: false, error: 'missing_specialty' }
+      }
+      if (
+        input.specialtySlug === 'other' &&
+        !String(input.specialtyOther || '').trim()
+      ) {
+        return { ok: false, error: 'missing_specialty_other' }
+      }
     }
     if (!input.locationDeclined && !input.location) {
       return { ok: false, error: 'missing_location' }
@@ -239,6 +265,16 @@ async function authRequest(input: {
         : null
       body.locationDeclined = Boolean(input.locationDeclined)
       body.location = input.locationDeclined ? null : input.location
+      body.ophthalmologyProfile = input.ophthalmologyProfile
+      body.specialtySlug =
+        input.ophthalmologyProfile === 'specialty'
+          ? input.specialtySlug
+          : null
+      body.specialtyOther =
+        input.ophthalmologyProfile === 'specialty' &&
+        input.specialtySlug === 'other'
+          ? String(input.specialtyOther || '').trim()
+          : null
     }
 
     const response = await fetch(`${getApiUrl()}${input.path}`, {
@@ -289,6 +325,9 @@ export async function registerResearcher(input: {
   phone: string
   locationDeclined: boolean
   location: ResearcherLocationPayload | null
+  ophthalmologyProfile: 'general' | 'specialty'
+  specialtySlug: string | null
+  specialtyOther: string | null
 }): Promise<AuthResult> {
   const result = await authRequest({
     path: '/api/auth/register',
@@ -301,6 +340,9 @@ export async function registerResearcher(input: {
     phone: input.phone,
     locationDeclined: input.locationDeclined,
     location: input.location,
+    ophthalmologyProfile: input.ophthalmologyProfile,
+    specialtySlug: input.specialtySlug,
+    specialtyOther: input.specialtyOther,
   })
   if (!result.ok) return result
 

@@ -41,6 +41,63 @@ function isValidPhone(phone) {
   return digits.length >= 7 && digits.length <= 15;
 }
 
+const SPECIALTY_SLUGS = new Set([
+  'cornea',
+  'refractive',
+  'cataract',
+  'glaucoma',
+  'retina',
+  'uvea',
+  'pediatric',
+  'oculoplastics',
+  'neuro',
+  'oncology',
+  'lowVision',
+  'pathology',
+  'other',
+]);
+
+function normalizeOphthalmology(body) {
+  const profile = String(body.ophthalmologyProfile || '').trim();
+  if (profile !== 'general' && profile !== 'specialty') {
+    return { error: 'missing_ophthalmology_profile' };
+  }
+
+  if (profile === 'general') {
+    return {
+      ophthalmologyProfile: 'general',
+      specialtySlug: null,
+      specialtyOther: null,
+    };
+  }
+
+  const specialtySlug = String(body.specialtySlug || '').trim();
+  if (!SPECIALTY_SLUGS.has(specialtySlug)) {
+    return { error: 'missing_specialty' };
+  }
+
+  if (specialtySlug === 'other') {
+    const specialtyOther = String(body.specialtyOther || '')
+      .trim()
+      .replace(/\s+/g, ' ')
+      .slice(0, 120);
+    if (!specialtyOther) {
+      return { error: 'missing_specialty_other' };
+    }
+    return {
+      ophthalmologyProfile: 'specialty',
+      specialtySlug,
+      specialtyOther,
+    };
+  }
+
+  return {
+    ophthalmologyProfile: 'specialty',
+    specialtySlug,
+    specialtyOther: null,
+  };
+}
+
 function normalizeLocation(body) {
   const declined = Boolean(body.locationDeclined);
   if (declined) {
@@ -140,6 +197,7 @@ router.post('/register', async (req, res) => {
   const useNickname = Boolean(req.body.useNickname);
   const nickname = useNickname ? normalizeNickname(req.body.nickname) : null;
   const locationInfo = normalizeLocation(req.body);
+  const ophthalmology = normalizeOphthalmology(req.body);
 
   if (!fullName) {
     return res.status(400).json({ error: 'missing_full_name' });
@@ -159,6 +217,9 @@ router.post('/register', async (req, res) => {
   if (useNickname && !nickname) {
     return res.status(400).json({ error: 'missing_nickname' });
   }
+  if (ophthalmology.error) {
+    return res.status(400).json({ error: ophthalmology.error });
+  }
   if (locationInfo.error) {
     return res.status(400).json({ error: locationInfo.error });
   }
@@ -176,8 +237,9 @@ router.post('/register', async (req, res) => {
     const inserted = await query(
       `INSERT INTO researchers
         (email, password_hash, full_name, age, phone, nickname,
-         location_declined, location_json)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb)
+         location_declined, location_json,
+         ophthalmology_profile, specialty_slug, specialty_other)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9, $10, $11)
        RETURNING id, email, full_name, nickname, role, created_at`,
       [
         email,
@@ -188,6 +250,9 @@ router.post('/register', async (req, res) => {
         nickname,
         locationInfo.declined,
         locationInfo.location ? JSON.stringify(locationInfo.location) : null,
+        ophthalmology.ophthalmologyProfile,
+        ophthalmology.specialtySlug,
+        ophthalmology.specialtyOther,
       ],
     );
 
