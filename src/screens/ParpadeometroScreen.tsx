@@ -8,15 +8,18 @@ type ParpadeometroScreenProps = {
   lang: Lang
   onBack: () => void
   onNext: (meter: MeterResult | null) => void
+  /** Abre el Parpadeómetro IA al entrar (modo sin registro). */
+  autoStart?: boolean
 }
 
 export function ParpadeometroScreen({
   lang,
   onBack,
   onNext,
+  autoStart = false,
 }: ParpadeometroScreenProps) {
   const t = parpadeometroCopy[lang]
-  const [running, setRunning] = useState(false)
+  const [running, setRunning] = useState(autoStart)
   const [meter, setMeter] = useState<MeterResult | null>(null)
 
   async function launchMeter() {
@@ -31,6 +34,11 @@ export function ParpadeometroScreen({
     }
     setRunning(true)
   }
+
+  useEffect(() => {
+    if (!autoStart) return
+    void launchMeter()
+  }, [autoStart])
 
   useEffect(() => {
     function onMessage(event: MessageEvent) {
@@ -60,9 +68,15 @@ export function ParpadeometroScreen({
         <button
           type="button"
           className="p-meter-run__exit"
-          onClick={() => setRunning(false)}
+          onClick={() => {
+            if (autoStart) {
+              onBack()
+              return
+            }
+            setRunning(false)
+          }}
         >
-          {t.exitMeter}
+          {autoStart ? t.back : t.exitMeter}
         </button>
         <iframe
           className="p-meter-run__frame"
@@ -71,13 +85,15 @@ export function ParpadeometroScreen({
           allow="camera *; microphone *; fullscreen *; autoplay; clipboard-write"
           allowFullScreen
         />
-        <button
-          type="button"
-          className="p-meter-run__next"
-          onClick={() => onNext(meter)}
-        >
-          {t.next}
-        </button>
+        {!autoStart && (
+          <button
+            type="button"
+            className="p-meter-run__next"
+            onClick={() => onNext(meter)}
+          >
+            {t.next}
+          </button>
+        )}
       </div>
     )
   }

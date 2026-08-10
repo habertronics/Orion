@@ -122,6 +122,7 @@ function App() {
     return (
       <ParpadeometroScreen
         lang={lang}
+        autoStart
         onBack={() => setView('home')}
         onNext={() => setView('home')}
       />
