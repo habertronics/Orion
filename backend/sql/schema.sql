@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS researchers (
   password_hash VARCHAR(255) NOT NULL,
   full_name     VARCHAR(200),
   age           INTEGER,
+  sex           VARCHAR(10),
   phone         VARCHAR(40),
   nickname      VARCHAR(80),
   location_declined BOOLEAN NOT NULL DEFAULT FALSE,

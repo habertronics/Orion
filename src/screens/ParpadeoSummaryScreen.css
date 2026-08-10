@@ -55,6 +55,13 @@
   font-weight: 650;
 }
 
+.p-sum__pending {
+  color: #9a6700;
+  font-family: var(--font-ui);
+  font-weight: 650;
+  line-height: 1.35;
+}
+
 .p-sum__err {
   color: var(--err);
   font-family: var(--font-ui);
@@ -135,7 +142,24 @@
   cursor: pointer;
 }
 
+.p-sum__next--ok {
+  background: var(--ok);
+  opacity: 1;
+  cursor: default;
+}
+
+.p-sum__next--pending {
+  background: #9a6700;
+  opacity: 1;
+  cursor: default;
+}
+
 .p-sum__next:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.p-sum__next--ok:disabled,
+.p-sum__next--pending:disabled {
+  opacity: 1;
 }

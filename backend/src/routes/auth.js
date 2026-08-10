@@ -47,6 +47,13 @@ function parseAge(value) {
   return age;
 }
 
+/** Solo hombre / mujer (male | female). */
+function parseSex(value) {
+  const sex = String(value || '').trim().toLowerCase();
+  if (sex === 'male' || sex === 'female') return sex;
+  return null;
+}
+
 function isValidEmail(email) {
   return email.includes('@') && email.length >= 5;
 }
@@ -142,6 +149,16 @@ function normalizeLocation(body) {
         capturedAt: location.capturedAt || new Date().toISOString(),
         label: location.label ? String(location.label).slice(0, 200) : undefined,
         placeId: location.placeId ?? undefined,
+        country: location.country
+          ? String(location.country).slice(0, 120)
+          : undefined,
+        state: location.state ? String(location.state).slice(0, 120) : undefined,
+        locality: location.locality
+          ? String(location.locality).slice(0, 160)
+          : undefined,
+        countryCode: location.countryCode
+          ? String(location.countryCode).slice(0, 8)
+          : undefined,
       },
     };
   }
@@ -227,6 +244,7 @@ router.post('/register', registerRateLimit, async (req, res) => {
   const password = String(req.body.password || '');
   const fullName = normalizeFullName(req.body.fullName);
   const age = parseAge(req.body.age);
+  const sex = parseSex(req.body.sex);
   const phone = normalizePhone(req.body.phone);
   const useNickname = Boolean(req.body.useNickname);
   const nickname = useNickname ? normalizeNickname(req.body.nickname) : null;
@@ -238,6 +256,9 @@ router.post('/register', registerRateLimit, async (req, res) => {
   }
   if (age === null) {
     return res.status(400).json({ error: 'invalid_age' });
+  }
+  if (!sex) {
+    return res.status(400).json({ error: 'missing_sex' });
   }
   if (!phone || !isValidPhone(phone)) {
     return res.status(400).json({ error: 'invalid_phone' });
@@ -270,16 +291,17 @@ router.post('/register', registerRateLimit, async (req, res) => {
     const passwordHash = await bcrypt.hash(password, 10);
     const inserted = await query(
       `INSERT INTO researchers
-        (email, password_hash, full_name, age, phone, nickname,
+        (email, password_hash, full_name, age, sex, phone, nickname,
          location_declined, location_json,
          ophthalmology_profile, specialty_slug, specialty_other)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9, $10, $11)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10, $11, $12)
        RETURNING id, email, full_name, nickname, role, created_at`,
       [
         email,
         passwordHash,
         fullName,
         age,
+        sex,
         phone,
         nickname,
         locationInfo.declined,

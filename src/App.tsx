@@ -21,6 +21,11 @@ import {
   saveParpadeoComplete,
   saveParpadeoInterrogatorio,
 } from './lib/parpadeoApi'
+import {
+  enqueueParpadeoComplete,
+  flushPendingUploads,
+  isNetworkUploadFailure,
+} from './lib/protocolUploadQueue'
 import type { MeterResult } from './lib/parpadeoMeter'
 import {
   completeWelcome,
@@ -71,6 +76,15 @@ function App() {
   useEffect(() => {
     document.documentElement.lang = lang
   }, [lang])
+
+  useEffect(() => {
+    void flushPendingUploads()
+    function onOnline() {
+      void flushPendingUploads()
+    }
+    window.addEventListener('online', onOnline)
+    return () => window.removeEventListener('online', onOnline)
+  }, [])
 
   function logout() {
     clearSession()
@@ -250,13 +264,14 @@ function App() {
         canUpload={Boolean(researcherEmail && interrogatorio)}
         onBack={() => setView('protocol-parpadeometro')}
         onUpload={async () => {
-          if (!interrogatorio) return false
-          const saved = await saveParpadeoComplete({
-            interrogatorio,
-            exam,
-            meter,
-          })
-          return Boolean(saved)
+          if (!interrogatorio) return { ok: false, reason: 'guest' }
+          const payload = { interrogatorio, exam, meter }
+          const result = await saveParpadeoComplete(payload)
+          if (result.ok) return result
+          if (isNetworkUploadFailure(result)) {
+            enqueueParpadeoComplete(payload)
+          }
+          return result
         }}
       />
     )

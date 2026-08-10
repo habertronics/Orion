@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import {
   getRememberedCredentials,
   loginResearcher,
@@ -15,10 +15,18 @@ import {
 } from '../i18n/ophthalmologyProfile'
 import type { Lang } from '../i18n/preferences'
 import {
+  placeFromSuggestion,
+  reverseGeocodePlace,
   searchPlaces,
   type PlaceSuggestion,
 } from '../lib/environment'
 import { captureApproximateLocation } from '../lib/location'
+import {
+  DEFAULT_PHONE_COUNTRY_ISO,
+  buildInternationalPhone,
+  filterPhoneCountries,
+  findPhoneCountry,
+} from '../lib/phoneCountries'
 import './ResearcherAuthScreen.css'
 
 type AuthView = 'register' | 'login'
@@ -46,7 +54,12 @@ export function ResearcherAuthScreen({
   const view = initialView
   const [fullName, setFullName] = useState('')
   const [age, setAge] = useState('')
-  const [phone, setPhone] = useState('')
+  const [sex, setSex] = useState<'male' | 'female' | null>(null)
+  const [phoneCountryIso, setPhoneCountryIso] = useState(DEFAULT_PHONE_COUNTRY_ISO)
+  const [phoneLocal, setPhoneLocal] = useState('')
+  const [phoneCountryOpen, setPhoneCountryOpen] = useState(false)
+  const [phoneCountryQuery, setPhoneCountryQuery] = useState('')
+  const phoneCountryRef = useRef<HTMLDivElement | null>(null)
   const [email, setEmail] = useState(remembered?.email ?? '')
   const [ophthalmologyProfile, setOphthalmologyProfile] =
     useState<OphthalmologyProfile | null>(null)
@@ -108,6 +121,24 @@ export function ResearcherAuthScreen({
     }
   }, [cityQuery, lang, locationDeclined, view])
 
+  useEffect(() => {
+    if (!phoneCountryOpen) return
+    function onPointerDown(event: MouseEvent) {
+      if (!phoneCountryRef.current?.contains(event.target as Node)) {
+        setPhoneCountryOpen(false)
+        setPhoneCountryQuery('')
+      }
+    }
+    document.addEventListener('mousedown', onPointerDown)
+    return () => document.removeEventListener('mousedown', onPointerDown)
+  }, [phoneCountryOpen])
+
+  const phoneCountry = findPhoneCountry(phoneCountryIso)
+  const phoneCountryOptions = useMemo(
+    () => filterPhoneCountries(phoneCountryQuery, lang),
+    [phoneCountryQuery, lang],
+  )
+
   function declineLocation(checked: boolean) {
     setLocationDeclined(checked)
     setLocationMessage(null)
@@ -123,9 +154,9 @@ export function ResearcherAuthScreen({
     setLocationBusy(true)
     setLocationMessage(t.cityGpsCapturing)
     const result = await captureApproximateLocation()
-    setLocationBusy(false)
 
     if (!result.ok) {
+      setLocationBusy(false)
       setLocation(null)
       setLocationMessage(
         result.error === 'denied'
@@ -135,12 +166,24 @@ export function ResearcherAuthScreen({
       return
     }
 
+    const place = await reverseGeocodePlace(
+      result.location.lat,
+      result.location.lng,
+      lang,
+    )
+    setLocationBusy(false)
+
     setLocation({
       source: 'device',
       lat: result.location.lat,
       lng: result.location.lng,
       accuracy: result.location.accuracy,
       capturedAt: result.location.capturedAt,
+      country: place?.country ?? null,
+      state: place?.state ?? null,
+      locality: place?.locality ?? null,
+      countryCode: place?.countryCode ?? null,
+      label: place?.label ?? undefined,
     })
     setCityQuery('')
     setPlaces([])
@@ -151,14 +194,18 @@ export function ResearcherAuthScreen({
     setLocationDeclined(false)
     setCityQuery(place.label)
     setPlaces([])
+    const resolved = placeFromSuggestion(place)
     setLocation({
       source: 'geocoded',
       lat: Number(place.latitude.toFixed(3)),
       lng: Number(place.longitude.toFixed(3)),
       accuracy: 5000,
       capturedAt: new Date().toISOString(),
-      label: place.label,
+      label: resolved.label ?? place.label,
       placeId: place.id,
+      country: resolved.country,
+      state: resolved.state,
+      locality: resolved.locality,
     })
     setLocationMessage(null)
   }
@@ -167,9 +214,18 @@ export function ResearcherAuthScreen({
     event.preventDefault()
     const password = useOwnPassword ? ownPassword : suggested
     const ageNumber = Number(age)
+    const phone = buildInternationalPhone(phoneCountry.dial, phoneLocal)
 
     if (!ophthalmologyProfile) {
       setError(t.errors.missing_ophthalmology_profile)
+      return
+    }
+    if (!sex) {
+      setError(t.errors.missing_sex)
+      return
+    }
+    if (!phone) {
+      setError(t.errors.invalid_phone)
       return
     }
     if (ophthalmologyProfile === 'specialty' && !specialtySlug) {
@@ -199,6 +255,7 @@ export function ResearcherAuthScreen({
       nickname,
       fullName,
       age: ageNumber,
+      sex,
       phone,
       locationDeclined,
       location: locationDeclined ? null : location,
@@ -252,7 +309,7 @@ export function ResearcherAuthScreen({
       Boolean(specialtySlug) &&
       (specialtySlug !== 'other' || Boolean(specialtyOther.trim())))
   const canSubmitRegister =
-    !busy && !locationBusy && locationReady && specialtyReady
+    !busy && !locationBusy && locationReady && specialtyReady && Boolean(sex)
 
   return (
     <main className="r-auth" aria-labelledby="r-auth-brand">
@@ -308,18 +365,106 @@ export function ResearcherAuthScreen({
                 required
               />
             </label>
-            <label className="r-auth__field">
-              <span>{t.phone}</span>
+            <fieldset className="r-auth__field r-auth__sex">
+              <legend>{t.sex}</legend>
+              <div className="r-auth__sex-options" role="radiogroup" aria-label={t.sex}>
+                <label className="r-auth__check">
+                  <input
+                    type="radio"
+                    name="researcher-sex"
+                    checked={sex === 'male'}
+                    onChange={() => setSex('male')}
+                    required
+                  />
+                  <span>{t.sexMale}</span>
+                </label>
+                <label className="r-auth__check">
+                  <input
+                    type="radio"
+                    name="researcher-sex"
+                    checked={sex === 'female'}
+                    onChange={() => setSex('female')}
+                  />
+                  <span>{t.sexFemale}</span>
+                </label>
+              </div>
+            </fieldset>
+          </div>
+
+          <div className="r-auth__field">
+            <span>{t.phone}</span>
+            <div className="r-auth__phone">
+              <div className="r-auth__phone-country" ref={phoneCountryRef}>
+                <button
+                  type="button"
+                  className="r-auth__phone-code"
+                  aria-label={t.phoneCountry}
+                  aria-expanded={phoneCountryOpen}
+                  onClick={() => {
+                    setPhoneCountryOpen((open) => !open)
+                    setPhoneCountryQuery('')
+                  }}
+                >
+                  <span className="r-auth__phone-flag">{phoneCountry.flag}</span>
+                  <span>+{phoneCountry.dial}</span>
+                  <span className="r-auth__phone-caret" aria-hidden="true">
+                    ▾
+                  </span>
+                </button>
+                {phoneCountryOpen && (
+                  <div className="r-auth__phone-menu" role="listbox">
+                    <input
+                      type="search"
+                      className="r-auth__phone-search"
+                      autoComplete="off"
+                      placeholder={t.phoneCountrySearch}
+                      value={phoneCountryQuery}
+                      onChange={(e) => setPhoneCountryQuery(e.target.value)}
+                      autoFocus
+                    />
+                    <ul className="r-auth__phone-list">
+                      {phoneCountryOptions.map((country) => (
+                        <li key={`${country.iso}-${country.dial}`}>
+                          <button
+                            type="button"
+                            className={
+                              country.iso === phoneCountryIso
+                                ? 'r-auth__phone-option is-selected'
+                                : 'r-auth__phone-option'
+                            }
+                            role="option"
+                            aria-selected={country.iso === phoneCountryIso}
+                            onClick={() => {
+                              setPhoneCountryIso(country.iso)
+                              setPhoneCountryOpen(false)
+                              setPhoneCountryQuery('')
+                            }}
+                          >
+                            <span>{country.flag}</span>
+                            <span className="r-auth__phone-option-name">
+                              {country.names[lang]}
+                            </span>
+                            <span className="r-auth__phone-option-dial">
+                              +{country.dial}
+                            </span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
               <input
                 type="tel"
-                autoComplete="tel"
+                className="r-auth__phone-local"
+                autoComplete="tel-national"
                 inputMode="tel"
-                placeholder={t.phonePlaceholder}
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                placeholder={t.phoneLocalPlaceholder}
+                value={phoneLocal}
+                onChange={(e) => setPhoneLocal(e.target.value)}
                 required
               />
-            </label>
+            </div>
           </div>
 
           <label className="r-auth__field">
@@ -489,10 +634,25 @@ export function ResearcherAuthScreen({
             </button>
 
             {location?.source === 'device' && (
-              <p className="r-auth__city-ok">
-                {t.cityGpsSelected}: ≈ {location.lat}, {location.lng}
-                {location.accuracy ? ` · ±${location.accuracy} m` : ''}
-              </p>
+              <div className="r-auth__place-grid">
+                <p className="r-auth__city-ok">{t.cityGpsSelected}</p>
+                <p className="r-auth__place-row">
+                  <span>{t.placeCountry}</span>
+                  <strong>{location.country || '—'}</strong>
+                </p>
+                <p className="r-auth__place-row">
+                  <span>{t.placeState}</span>
+                  <strong>{location.state || '—'}</strong>
+                </p>
+                <p className="r-auth__place-row">
+                  <span>{t.placeLocality}</span>
+                  <strong>{location.locality || '—'}</strong>
+                </p>
+                <p className="r-auth__city-hint">
+                  ≈ {location.lat}, {location.lng}
+                  {location.accuracy ? ` · ±${location.accuracy} m` : ''}
+                </p>
+              </div>
             )}
 
             <label className="r-auth__field">
@@ -536,9 +696,23 @@ export function ResearcherAuthScreen({
             )}
 
             {location?.source === 'geocoded' && location.label && (
-              <p className="r-auth__city-ok">
-                {t.citySelected}: {location.label}
-              </p>
+              <div className="r-auth__place-grid">
+                <p className="r-auth__city-ok">
+                  {t.citySelected}: {location.label}
+                </p>
+                <p className="r-auth__place-row">
+                  <span>{t.placeCountry}</span>
+                  <strong>{location.country || '—'}</strong>
+                </p>
+                <p className="r-auth__place-row">
+                  <span>{t.placeState}</span>
+                  <strong>{location.state || '—'}</strong>
+                </p>
+                <p className="r-auth__place-row">
+                  <span>{t.placeLocality}</span>
+                  <strong>{location.locality || '—'}</strong>
+                </p>
+              </div>
             )}
 
             {locationMessage && (

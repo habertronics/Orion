@@ -12,7 +12,13 @@ export const researcherCopy: Record<
     fullNamePlaceholder: string
     age: string
     agePlaceholder: string
+    sex: string
+    sexMale: string
+    sexFemale: string
     phone: string
+    phoneCountry: string
+    phoneCountrySearch: string
+    phoneLocalPlaceholder: string
     phonePlaceholder: string
     email: string
     emailPlaceholder: string
@@ -33,6 +39,9 @@ export const researcherCopy: Record<
     citySearching: string
     citySelected: string
     cityGpsSelected: string
+    placeCountry: string
+    placeState: string
+    placeLocality: string
     declineLocation: string
     remember: string
     submitRegister: string
@@ -52,6 +61,7 @@ export const researcherCopy: Record<
       missing_nickname: string
       missing_full_name: string
       invalid_age: string
+      missing_sex: string
       invalid_phone: string
       missing_location: string
       missing_ophthalmology_profile: string
@@ -77,7 +87,13 @@ export const researcherCopy: Record<
     fullNamePlaceholder: 'Nombre y apellidos',
     age: 'Edad',
     agePlaceholder: 'Años',
+    sex: 'Sexo',
+    sexMale: 'Hombre',
+    sexFemale: 'Mujer',
     phone: 'Teléfono',
+    phoneCountry: 'Clave del país',
+    phoneCountrySearch: 'Buscar país o clave…',
+    phoneLocalPlaceholder: 'Número sin clave de país',
     phonePlaceholder: 'Con lada, si aplica',
     email: 'Correo electrónico',
     emailPlaceholder: 'tu@correo.com',
@@ -92,13 +108,16 @@ export const researcherCopy: Record<
     cityHint:
       'Puedes obtener la ubicación automáticamente por GPS (exactitud aproximada, normalmente no mejor que ~500 m) o escribir tu ciudad y elegirla de la lista.',
     cityGpsButton: 'Obtener ubicación por GPS',
-    cityGpsCapturing: 'Obteniendo ubicación…',
+    cityGpsCapturing: 'Obteniendo ubicación y resolviendo país/estado…',
     cityLabel: 'Escribe tu ciudad',
     cityPlaceholder: 'Ej. San Luis Potosí',
     cityEmpty: 'Escribe al menos 2 letras para ver opciones.',
     citySearching: 'Buscando ciudades…',
     citySelected: 'Ciudad seleccionada',
     cityGpsSelected: 'Ubicación GPS registrada',
+    placeCountry: 'País',
+    placeState: 'Estado',
+    placeLocality: 'Comunidad',
     declineLocation: 'No quiero dar localización',
     remember: 'Recordarme (guardar usuario y contraseña)',
     submitRegister: 'Registrarme',
@@ -118,6 +137,7 @@ export const researcherCopy: Record<
       missing_nickname: 'Escribe un nickname.',
       missing_full_name: 'Escribe tu nombre completo.',
       invalid_age: 'Indica una edad válida.',
+      missing_sex: 'Indica tu sexo (Hombre o Mujer).',
       invalid_phone: 'Indica un teléfono válido.',
       missing_location:
         'Elige GPS, una ciudad, o marca «No quiero dar localización».',
@@ -147,7 +167,13 @@ export const researcherCopy: Record<
     fullNamePlaceholder: 'First and last name',
     age: 'Age',
     agePlaceholder: 'Years',
+    sex: 'Sex',
+    sexMale: 'Male',
+    sexFemale: 'Female',
     phone: 'Phone',
+    phoneCountry: 'Country code',
+    phoneCountrySearch: 'Search country or code…',
+    phoneLocalPlaceholder: 'Number without country code',
     phonePlaceholder: 'Include area code if needed',
     email: 'Email',
     emailPlaceholder: 'you@email.com',
@@ -162,13 +188,16 @@ export const researcherCopy: Record<
     cityHint:
       'You can get location automatically via GPS (approximate accuracy, usually no better than ~500 m) or type your city and pick it from the list.',
     cityGpsButton: 'Get location via GPS',
-    cityGpsCapturing: 'Getting location…',
+    cityGpsCapturing: 'Getting location and resolving country/state…',
     cityLabel: 'Type your city',
     cityPlaceholder: 'E.g. San Luis Potosi',
     cityEmpty: 'Type at least 2 letters to see options.',
     citySearching: 'Searching cities…',
     citySelected: 'City selected',
     cityGpsSelected: 'GPS location recorded',
+    placeCountry: 'Country',
+    placeState: 'State / region',
+    placeLocality: 'Community',
     declineLocation: 'I do not want to share my location',
     remember: 'Remember me (save username and password)',
     submitRegister: 'Sign up',
@@ -188,6 +217,7 @@ export const researcherCopy: Record<
       missing_nickname: 'Please enter a nickname.',
       missing_full_name: 'Please enter your full name.',
       invalid_age: 'Please enter a valid age.',
+      missing_sex: 'Please select your sex (Male or Female).',
       invalid_phone: 'Please enter a valid phone number.',
       missing_location:
         'Choose GPS, a city, or check “I do not want to share my location”.',
@@ -215,7 +245,13 @@ export const researcherCopy: Record<
     fullNamePlaceholder: 'Nome e sobrenome',
     age: 'Idade',
     agePlaceholder: 'Anos',
+    sex: 'Sexo',
+    sexMale: 'Homem',
+    sexFemale: 'Mulher',
     phone: 'Telefone',
+    phoneCountry: 'Código do país',
+    phoneCountrySearch: 'Buscar país ou código…',
+    phoneLocalPlaceholder: 'Número sem código do país',
     phonePlaceholder: 'Com DDD, se aplicável',
     email: 'E-mail',
     emailPlaceholder: 'seu@email.com',
@@ -230,13 +266,16 @@ export const researcherCopy: Record<
     cityHint:
       'Você pode obter a localização automaticamente por GPS (exatidão aproximada, normalmente não melhor que ~500 m) ou digitar sua cidade e escolhê-la na lista.',
     cityGpsButton: 'Obter localização por GPS',
-    cityGpsCapturing: 'Obtendo localização…',
+    cityGpsCapturing: 'Obtendo localização e resolvendo país/estado…',
     cityLabel: 'Digite sua cidade',
     cityPlaceholder: 'Ex. San Luis Potosí',
     cityEmpty: 'Digite pelo menos 2 letras para ver opções.',
     citySearching: 'Buscando cidades…',
     citySelected: 'Cidade selecionada',
     cityGpsSelected: 'Localização GPS registrada',
+    placeCountry: 'País',
+    placeState: 'Estado',
+    placeLocality: 'Comunidade',
     declineLocation: 'Não quero informar localização',
     remember: 'Lembrar-me (salvar usuário e senha)',
     submitRegister: 'Cadastrar',
@@ -256,6 +295,7 @@ export const researcherCopy: Record<
       missing_nickname: 'Digite um nickname.',
       missing_full_name: 'Digite seu nome completo.',
       invalid_age: 'Informe uma idade válida.',
+      missing_sex: 'Indique seu sexo (Homem ou Mulher).',
       invalid_phone: 'Informe um telefone válido.',
       missing_location:
         'Escolha GPS, uma cidade, ou marque «Não quero informar localização».',

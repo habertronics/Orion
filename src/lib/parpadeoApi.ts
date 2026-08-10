@@ -4,6 +4,13 @@ import type { ParpadeoExamState } from '../i18n/parpadeoExam'
 import type { ParpadeoInterrogatorioState } from '../i18n/parpadeoInterrogatorio'
 import type { MeterResult } from './parpadeoMeter'
 
+export type ProtocolUploadResult =
+  | { ok: true; id: string }
+  | {
+      ok: false
+      reason: 'guest' | 'offline' | 'network' | 'auth' | 'server'
+    }
+
 export async function saveParpadeoInterrogatorio(
   data: ParpadeoInterrogatorioState,
 ): Promise<{ id: string } | null> {
@@ -45,9 +52,12 @@ export async function saveParpadeoComplete(data: {
   interrogatorio: ParpadeoInterrogatorioState
   exam: ParpadeoExamState | null
   meter: MeterResult | null
-}): Promise<{ id: string } | null> {
+}): Promise<ProtocolUploadResult> {
   const token = getToken()
-  if (!token) return null
+  if (!token) return { ok: false, reason: 'guest' }
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    return { ok: false, reason: 'offline' }
+  }
 
   const answers = {
     age: data.interrogatorio.age,
@@ -74,10 +84,14 @@ export async function saveParpadeoComplete(data: {
         meter: data.meter,
       }),
     })
-    if (!response.ok) return null
+    if (response.status === 401 || response.status === 403) {
+      return { ok: false, reason: 'auth' }
+    }
+    if (!response.ok) return { ok: false, reason: 'server' }
     const json = (await response.json()) as { id?: string }
-    return json.id ? { id: json.id } : null
+    if (!json.id) return { ok: false, reason: 'server' }
+    return { ok: true, id: json.id }
   } catch {
-    return null
+    return { ok: false, reason: 'network' }
   }
 }

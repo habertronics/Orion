@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { examCopy } from '../i18n/parpadeoExam'
 import {
   findingsCopy,
@@ -10,6 +10,11 @@ import { eyeStainingTotal } from '../i18n/parpadeoStaining'
 import type { ParpadeoExamState } from '../i18n/parpadeoExam'
 import type { Lang } from '../i18n/preferences'
 import type { MeterResult } from '../lib/parpadeoMeter'
+import type { ProtocolUploadResult } from '../lib/parpadeoApi'
+import {
+  hasPendingParpadeoUpload,
+  UPLOAD_FLUSHED_EVENT,
+} from '../lib/protocolUploadQueue'
 import './ParpadeoSummaryScreen.css'
 
 const copy: Record<
@@ -22,7 +27,10 @@ const copy: Record<
     noMeter: string
     upload: string
     uploading: string
+    uploadSuccess: string
     uploaded: string
+    pendingAnnounce: string
+    pendingButton: string
     uploadError: string
     guestHint: string
     back: string
@@ -36,7 +44,11 @@ const copy: Record<
     noMeter: 'Sin prueba de parpadeómetro registrada',
     upload: 'Mandar toda la información a base de datos remota',
     uploading: 'Enviando…',
-    uploaded: 'Información guardada en Neon.',
+    uploadSuccess: 'Transferencia exitosa de datos',
+    uploaded: 'Información guardada en la base de datos.',
+    pendingAnnounce:
+      'En cuanto se restablezca la red se mandarán los datos.',
+    pendingButton: 'Esperando red…',
     uploadError: 'No se pudo guardar. Revisa la API o inicia sesión de nuevo.',
     guestHint: 'Para guardar en la nube debes entrar como investigador.',
     back: 'Volver',
@@ -49,7 +61,11 @@ const copy: Record<
     noMeter: 'No blinkometer test recorded',
     upload: 'Send all information to the remote database',
     uploading: 'Sending…',
-    uploaded: 'Information saved to Neon.',
+    uploadSuccess: 'Successful data transfer',
+    uploaded: 'Information saved to the database.',
+    pendingAnnounce:
+      'As soon as the network is restored, the data will be sent.',
+    pendingButton: 'Waiting for network…',
     uploadError: 'Could not save. Check the API or sign in again.',
     guestHint: 'Sign in as a researcher to save to the cloud.',
     back: 'Back',
@@ -62,7 +78,11 @@ const copy: Record<
     noMeter: 'Sem teste de parpadeômetro registrado',
     upload: 'Enviar toda a informação para a base de dados remota',
     uploading: 'Enviando…',
-    uploaded: 'Informação salva no Neon.',
+    uploadSuccess: 'Transferência de dados bem-sucedida',
+    uploaded: 'Informação salva na base de dados.',
+    pendingAnnounce:
+      'Assim que a rede for restabelecida, os dados serão enviados.',
+    pendingButton: 'Aguardando rede…',
     uploadError: 'Não foi possível salvar. Revise a API ou entre de novo.',
     guestHint: 'Entre como pesquisador para salvar na nuvem.',
     back: 'Voltar',
@@ -93,13 +113,15 @@ function eyeLabel(od: boolean, os: boolean): string {
   return '—'
 }
 
+type UploadStatus = 'idle' | 'busy' | 'ok' | 'pending' | 'err'
+
 type ParpadeoExamSummaryScreenProps = {
   lang: Lang
   exam: ParpadeoExamState | null
   meter: MeterResult | null
   canUpload: boolean
   onBack: () => void
-  onUpload: () => Promise<boolean>
+  onUpload: () => Promise<ProtocolUploadResult>
 }
 
 export function ParpadeoExamSummaryScreen({
@@ -114,13 +136,44 @@ export function ParpadeoExamSummaryScreen({
   const examT = examCopy[lang]
   const findT = findingsCopy[lang]
   const plusT = plusCopy[lang]
-  const [status, setStatus] = useState<'idle' | 'busy' | 'ok' | 'err'>('idle')
+  const [status, setStatus] = useState<UploadStatus>(() =>
+    hasPendingParpadeoUpload() ? 'pending' : 'idle',
+  )
+
+  useEffect(() => {
+    function onFlushed(event: Event) {
+      const detail = (event as CustomEvent<{ protocol?: string; ok?: boolean }>)
+        .detail
+      if (detail?.protocol !== 'parpadeo') return
+      if (detail.ok) setStatus('ok')
+      else if (hasPendingParpadeoUpload()) setStatus('pending')
+    }
+    window.addEventListener(UPLOAD_FLUSHED_EVENT, onFlushed)
+    return () => window.removeEventListener(UPLOAD_FLUSHED_EVENT, onFlushed)
+  }, [])
 
   async function upload() {
     setStatus('busy')
-    const ok = await onUpload()
-    setStatus(ok ? 'ok' : 'err')
+    const result = await onUpload()
+    if (result.ok) {
+      setStatus('ok')
+      return
+    }
+    if (result.reason === 'offline' || result.reason === 'network') {
+      setStatus('pending')
+      return
+    }
+    setStatus('err')
   }
+
+  const buttonLabel =
+    status === 'busy'
+      ? t.uploading
+      : status === 'ok'
+        ? t.uploadSuccess
+        : status === 'pending'
+          ? t.pendingButton
+          : t.upload
 
   return (
     <main className="p-sum">
@@ -132,6 +185,11 @@ export function ParpadeoExamSummaryScreen({
         <h1 className="p-sum__brand">{examT.brand}</h1>
         <h2 className="p-sum__title">{t.title}</h2>
         {status === 'ok' && <p className="p-sum__ok">{t.uploaded}</p>}
+        {status === 'pending' && (
+          <p className="p-sum__pending" role="status">
+            {t.pendingAnnounce}
+          </p>
+        )}
         {status === 'err' && <p className="p-sum__err">{t.uploadError}</p>}
         {!canUpload && <p className="p-sum__err">{t.guestHint}</p>}
       </header>
@@ -252,11 +310,22 @@ export function ParpadeoExamSummaryScreen({
 
       <button
         type="button"
-        className="p-sum__next"
-        disabled={!canUpload || status === 'busy' || status === 'ok'}
+        className={
+          status === 'ok'
+            ? 'p-sum__next p-sum__next--ok'
+            : status === 'pending'
+              ? 'p-sum__next p-sum__next--pending'
+              : 'p-sum__next'
+        }
+        disabled={
+          !canUpload ||
+          status === 'busy' ||
+          status === 'ok' ||
+          status === 'pending'
+        }
         onClick={() => void upload()}
       >
-        {status === 'busy' ? t.uploading : t.upload}
+        {buttonLabel}
       </button>
     </main>
   )

@@ -211,11 +211,10 @@ table.data th {
 }
 
 table.data tr:hover td {
-  background: rgba(56, 189, 248, 0.06);
+  filter: brightness(1.08);
 }
 
 table.data .group-head td {
-  background: rgba(56, 189, 248, 0.12);
   font-weight: 700;
 }
 
@@ -258,91 +257,81 @@ table.sheet-full td {
   text-overflow: ellipsis;
 }
 
-/* Bandas de columnas por bloque de datos */
-.band-medico {
-  background: rgba(56, 189, 248, 0.1);
+/* Encabezados: bandas de columna (bloques de datos) */
+thead .band-medico {
+  background: #0c4a6e;
 }
-.band-sesion {
-  background: rgba(125, 211, 252, 0.08);
+thead .band-sesion {
+  background: #155e75;
 }
-.band-interro {
-  background: rgba(52, 211, 153, 0.1);
+thead .band-interro {
+  background: #065f46;
 }
-.band-ubic {
-  background: rgba(45, 212, 191, 0.08);
+thead .band-ubic {
+  background: #115e59;
 }
-.band-amb {
-  background: rgba(251, 191, 36, 0.1);
+thead .band-amb {
+  background: #854d0e;
 }
-.band-exam {
-  background: rgba(251, 146, 60, 0.1);
+thead .band-exam {
+  background: #9a3412;
 }
-.band-metro {
-  background: rgba(244, 114, 182, 0.1);
+thead .band-metro {
+  background: #9d174d;
 }
-.band-interf {
-  background: rgba(167, 139, 250, 0.12);
+thead .band-interf {
+  background: #5b21b6;
 }
-.band-raw {
-  background: rgba(148, 163, 184, 0.08);
-}
-
-/* Tono por médico (filas) */
-.doc-tone-0 td.band-medico {
-  box-shadow: inset 4px 0 0 #38bdf8;
-}
-.doc-tone-1 td.band-medico {
-  box-shadow: inset 4px 0 0 #34d399;
-}
-.doc-tone-2 td.band-medico {
-  box-shadow: inset 4px 0 0 #fbbf24;
-}
-.doc-tone-3 td.band-medico {
-  box-shadow: inset 4px 0 0 #fb923c;
-}
-.doc-tone-4 td.band-medico {
-  box-shadow: inset 4px 0 0 #f472b6;
-}
-.doc-tone-5 td.band-medico {
-  box-shadow: inset 4px 0 0 #a78bfa;
-}
-.doc-tone-6 td.band-medico {
-  box-shadow: inset 4px 0 0 #22d3ee;
-}
-.doc-tone-7 td.band-medico {
-  box-shadow: inset 4px 0 0 #84cc16;
+thead .band-raw {
+  background: #334155;
 }
 
-.doc-tone-0 {
-  background: rgba(56, 189, 248, 0.04);
-}
-.doc-tone-1 {
-  background: rgba(52, 211, 153, 0.04);
-}
-.doc-tone-2 {
-  background: rgba(251, 191, 36, 0.04);
-}
-.doc-tone-3 {
-  background: rgba(251, 146, 60, 0.04);
-}
-.doc-tone-4 {
-  background: rgba(244, 114, 182, 0.04);
-}
-.doc-tone-5 {
-  background: rgba(167, 139, 250, 0.04);
-}
-.doc-tone-6 {
-  background: rgba(34, 211, 238, 0.04);
-}
-.doc-tone-7 {
-  background: rgba(132, 204, 22, 0.04);
+/*
+  Filas: color completo para seguir la línea.
+  --row-h / --row-s / --row-l vienen del JS.
+*/
+table.sheet-full tbody tr.paint-row td {
+  background: hsl(var(--row-h) calc(var(--row-s) * 1%) calc(var(--row-l) * 1%) / 0.88);
+  border-bottom-color: hsl(var(--row-h) 45% 45% / 0.45);
 }
 
-/* Mismo médico, intervenciones siguientes: un poco más tenue */
-tr.doc-secondary {
-  opacity: 0.92;
-  filter: brightness(0.96);
+/* Matiz suave por tipo de columna encima del color de fila */
+table.sheet-full tbody tr.paint-row td.band-medico {
+  background: color-mix(
+    in srgb,
+    hsl(var(--row-h) calc(var(--row-s) * 1%) calc(var(--row-l) * 1%) / 0.85) 82%,
+    #38bdf8 18%
+  );
 }
-tr.doc-secondary td.band-medico {
-  opacity: 0.75;
+table.sheet-full tbody tr.paint-row td.band-interro {
+  background: color-mix(
+    in srgb,
+    hsl(var(--row-h) calc(var(--row-s) * 1%) calc(var(--row-l) * 1%) / 0.85) 82%,
+    #34d399 18%
+  );
+}
+table.sheet-full tbody tr.paint-row td.band-exam {
+  background: color-mix(
+    in srgb,
+    hsl(var(--row-h) calc(var(--row-s) * 1%) calc(var(--row-l) * 1%) / 0.85) 82%,
+    #fb923c 18%
+  );
+}
+table.sheet-full tbody tr.paint-row td.band-metro {
+  background: color-mix(
+    in srgb,
+    hsl(var(--row-h) calc(var(--row-s) * 1%) calc(var(--row-l) * 1%) / 0.85) 82%,
+    #f472b6 18%
+  );
+}
+table.sheet-full tbody tr.paint-row td.band-interf {
+  background: color-mix(
+    in srgb,
+    hsl(var(--row-h) calc(var(--row-s) * 1%) calc(var(--row-l) * 1%) / 0.85) 82%,
+    #a78bfa 18%
+  );
+}
+
+table.sheet-full tbody tr.paint-row td:first-child {
+  box-shadow: inset 6px 0 0 hsl(var(--row-h) 70% 55%);
 }

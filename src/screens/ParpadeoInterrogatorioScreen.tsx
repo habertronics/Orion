@@ -13,6 +13,8 @@ import type { Lang } from '../i18n/preferences'
 import { captureApproximateLocation } from '../lib/location'
 import {
   fetchEnvironmentSnapshot,
+  placeFromSuggestion,
+  reverseGeocodePlace,
   searchPlaces,
   type PlaceSuggestion,
 } from '../lib/environment'
@@ -174,10 +176,10 @@ export function ParpadeoInterrogatorioScreen({
       return
     }
 
-    const environment = await fetchEnvironmentSnapshot(
-      result.location.lat,
-      result.location.lng,
-    )
+    const [environment, place] = await Promise.all([
+      fetchEnvironmentSnapshot(result.location.lat, result.location.lng),
+      reverseGeocodePlace(result.location.lat, result.location.lng, lang),
+    ])
 
     setLocationBusy(false)
 
@@ -193,12 +195,15 @@ export function ParpadeoInterrogatorioScreen({
         ...result.location,
         source: 'device',
         sameLocality: true,
-        label: undefined,
+        country: place?.country ?? null,
+        state: place?.state ?? null,
+        locality: place?.locality ?? null,
+        countryCode: place?.countryCode ?? null,
+        label: place?.label ?? undefined,
       },
       environment,
     }))
     setLocationMessage(null)
-    setOpen(null)
   }
 
   async function acceptGeocodedPlace(place: PlaceSuggestion) {
@@ -209,6 +214,7 @@ export function ParpadeoInterrogatorioScreen({
 
     const lat = Number(place.latitude.toFixed(3))
     const lng = Number(place.longitude.toFixed(3))
+    const resolved = placeFromSuggestion(place)
     const environment = await fetchEnvironmentSnapshot(lat, lng)
 
     setLocationBusy(false)
@@ -228,13 +234,15 @@ export function ParpadeoInterrogatorioScreen({
         capturedAt: new Date().toISOString(),
         source: 'geocoded',
         sameLocality: false,
-        label: place.label,
+        label: resolved.label ?? place.label,
         placeId: place.id,
+        country: resolved.country,
+        state: resolved.state,
+        locality: resolved.locality,
       },
       environment,
     }))
     setLocationMessage(null)
-    setOpen(null)
   }
 
   function skipLocation() {
@@ -618,73 +626,134 @@ export function ParpadeoInterrogatorioScreen({
               <>
                 <h3>{t.locationTitle}</h3>
                 <p className="p-int__dialog-hint">{t.locationSameQuestion}</p>
-                <p className="p-int__dialog-hint">{t.locationSameHint}</p>
 
-                <div className="p-int__options">
-                  <button
-                    type="button"
-                    className={`p-int__option${
-                      sameLocality === 'yes' ? ' is-selected' : ''
-                    }`}
-                    onClick={() => {
-                      setSameLocality('yes')
-                      setLocationMessage(null)
-                      setPlaces([])
-                    }}
-                  >
-                    {t.yes}
-                  </button>
-                  <button
-                    type="button"
-                    className={`p-int__option${
-                      sameLocality === 'no' ? ' is-selected' : ''
-                    }`}
-                    onClick={() => {
-                      setSameLocality('no')
-                      setLocationMessage(null)
-                    }}
-                  >
-                    {t.no}
-                  </button>
-                </div>
+                {sameLocality === null && (
+                  <>
+                    <p className="p-int__dialog-hint">{t.locationSameHint}</p>
+                    <div className="p-int__options">
+                      <button
+                        type="button"
+                        className="p-int__option"
+                        onClick={() => {
+                          setSameLocality('yes')
+                          setLocationMessage(null)
+                          setPlaces([])
+                        }}
+                      >
+                        {t.yes}
+                      </button>
+                      <button
+                        type="button"
+                        className="p-int__option"
+                        onClick={() => {
+                          setSameLocality('no')
+                          setLocationMessage(null)
+                        }}
+                      >
+                        {t.no}
+                      </button>
+                    </div>
+                  </>
+                )}
 
                 {sameLocality === 'yes' && (
                   <div className="p-int__location-branch">
+                    <p className="p-int__location-answered">
+                      {t.locationAnsweredYes}
+                    </p>
+                    <button
+                      type="button"
+                      className="p-int__location-change"
+                      disabled={locationBusy}
+                      onClick={() => {
+                        setSameLocality(null)
+                        setLocationMessage(null)
+                      }}
+                    >
+                      {t.locationChangeAnswer}
+                    </button>
                     <p className="p-int__dialog-hint">{t.locationGpsBody}</p>
-                    {state.location?.source === 'device' && state.environment && (
-                      <p className="p-int__coords">
-                        ≈ {state.location.lat}, {state.location.lng} ·{' '}
-                        {state.environment.weather.temperatureC ?? '—'}°C ·{' '}
-                        {state.environment.weather.humidityPct ?? '—'}% HR · UV{' '}
-                        {state.environment.weather.uvIndex ?? '—'}
-                      </p>
-                    )}
+                    {state.location?.source === 'device' &&
+                      state.environment &&
+                      isLocationStepComplete(state) && (
+                        <>
+                          <div className="p-int__place-grid" aria-live="polite">
+                            <p className="p-int__place-row">
+                              <span>{t.locationCountry}</span>
+                              <strong>{state.location.country || '—'}</strong>
+                            </p>
+                            <p className="p-int__place-row">
+                              <span>{t.locationState}</span>
+                              <strong>{state.location.state || '—'}</strong>
+                            </p>
+                            <p className="p-int__place-row">
+                              <span>{t.locationLocality}</span>
+                              <strong>{state.location.locality || '—'}</strong>
+                            </p>
+                          </div>
+                          <p className="p-int__coords">
+                            ≈ {state.location.lat}, {state.location.lng} ·{' '}
+                            {state.environment.weather.temperatureC ?? '—'}°C ·{' '}
+                            {state.environment.weather.humidityPct ?? '—'}% HR ·
+                            UV {state.environment.weather.uvIndex ?? '—'}
+                          </p>
+                          <button
+                            type="button"
+                            className="p-int__confirm"
+                            onClick={() => setOpen(null)}
+                          >
+                            ✓ {t.locationReady}
+                          </button>
+                        </>
+                      )}
                     {locationMessage && (
                       <p className="p-int__msg">{locationMessage}</p>
                     )}
-                    <div className="p-int__location-actions">
-                      <button
-                        type="button"
-                        className="p-int__confirm"
-                        disabled={locationBusy}
-                        onClick={() => void acceptSameLocalityGps()}
-                      >
-                        ✓ {t.locationAccept}
-                      </button>
-                      <button
-                        type="button"
-                        className="p-int__skip"
-                        disabled={locationBusy}
-                        onClick={skipLocation}
-                      >
-                        {t.locationSkip}
-                      </button>
-                    </div>
+                    {!(
+                      state.location?.source === 'device' &&
+                      state.environment &&
+                      isLocationStepComplete(state)
+                    ) && (
+                      <div className="p-int__location-stack">
+                        <button
+                          type="button"
+                          className="p-int__confirm"
+                          disabled={locationBusy}
+                          onClick={() => void acceptSameLocalityGps()}
+                        >
+                          ✓ {t.locationAccept}
+                        </button>
+                        <button
+                          type="button"
+                          className="p-int__skip p-int__skip--secondary"
+                          disabled={locationBusy}
+                          onClick={skipLocation}
+                        >
+                          {t.locationSkip}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
 
                 {sameLocality === 'no' && (
                   <div className="p-int__location-branch">
+                    <p className="p-int__location-answered">
+                      {t.locationAnsweredNo}
+                    </p>
+                    <button
+                      type="button"
+                      className="p-int__location-change"
+                      disabled={locationBusy}
+                      onClick={() => {
+                        setSameLocality(null)
+                        setLocationMessage(null)
+                        setCityQuery('')
+                        setPlaces([])
+                      }}
+                    >
+                      {t.locationChangeAnswer}
+                    </button>
                     <p className="p-int__dialog-hint">{t.locationCityHint}</p>
                     <label className="p-int__field">
                       <span>{t.locationCityTitle}</span>
@@ -724,25 +793,55 @@ export function ParpadeoInterrogatorioScreen({
                     )}
 
                     {state.location?.source === 'geocoded' &&
-                      state.location.label &&
-                      state.environment && (
-                        <p className="p-int__coords">
-                          {t.locationPlaceSelected}: {state.location.label} ·{' '}
-                          {state.environment.weather.temperatureC ?? '—'}°C ·{' '}
-                          {state.environment.weather.humidityPct ?? '—'}% HR
-                        </p>
+                      state.environment &&
+                      isLocationStepComplete(state) && (
+                        <>
+                          <div className="p-int__place-grid" aria-live="polite">
+                            <p className="p-int__place-row">
+                              <span>{t.locationCountry}</span>
+                              <strong>{state.location.country || '—'}</strong>
+                            </p>
+                            <p className="p-int__place-row">
+                              <span>{t.locationState}</span>
+                              <strong>{state.location.state || '—'}</strong>
+                            </p>
+                            <p className="p-int__place-row">
+                              <span>{t.locationLocality}</span>
+                              <strong>{state.location.locality || '—'}</strong>
+                            </p>
+                          </div>
+                          <p className="p-int__coords">
+                            {t.locationPlaceSelected}:{' '}
+                            {state.location.label || '—'} ·{' '}
+                            {state.environment.weather.temperatureC ?? '—'}°C ·{' '}
+                            {state.environment.weather.humidityPct ?? '—'}% HR
+                          </p>
+                          <button
+                            type="button"
+                            className="p-int__confirm"
+                            onClick={() => setOpen(null)}
+                          >
+                            ✓ {t.locationReady}
+                          </button>
+                        </>
                       )}
                     {locationMessage && (
                       <p className="p-int__msg">{locationMessage}</p>
                     )}
-                    <button
-                      type="button"
-                      className="p-int__skip"
-                      disabled={locationBusy}
-                      onClick={skipLocation}
-                    >
-                      {t.locationSkip}
-                    </button>
+                    {!(
+                      state.location?.source === 'geocoded' &&
+                      state.environment &&
+                      isLocationStepComplete(state)
+                    ) && (
+                      <button
+                        type="button"
+                        className="p-int__skip p-int__skip--secondary"
+                        disabled={locationBusy}
+                        onClick={skipLocation}
+                      >
+                        {t.locationSkip}
+                      </button>
+                    )}
                   </div>
                 )}
               </>

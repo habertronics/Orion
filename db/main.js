@@ -91,19 +91,145 @@ function formatCell(value, key = "") {
   return String(value);
 }
 
-function doctorTone(id) {
+/** Tonos bien separados para seguir la fila completa. */
+const HUES = [199, 158, 42, 18, 328, 268, 187, 118, 350, 78, 230, 290];
+
+function hashTone(id, mod = HUES.length) {
   if (!id) return 0;
   let hash = 0;
-  for (let i = 0; i < id.length; i += 1) {
-    hash = (hash + id.charCodeAt(i) * (i + 1)) % 8;
+  const text = String(id);
+  for (let i = 0; i < text.length; i += 1) {
+    hash = (hash + text.charCodeAt(i) * (i + 1)) % mod;
   }
   return hash;
+}
+
+function hueForDoctor(id) {
+  return HUES[hashTone(id)];
+}
+
+/** Color estable por intervención (no cambia al filtrar). */
+function hueForCase(id, fallbackIndex = 0) {
+  if (id) return HUES[hashTone(id)];
+  return HUES[fallbackIndex % HUES.length];
+}
+
+function buildHeader(columns) {
+  return `<tr>${columns
+    .map(
+      (c) =>
+        `<th class="${BANDS[c.band]?.className || ""}" title="${esc(c.key)}">${esc(c.label)}</th>`,
+    )
+    .join("")}</tr>`;
+}
+
+/**
+ * @param {{ hue: number, lightness?: number, saturation?: number, mode?: string }} color
+ */
+function buildRow(columns, data, color = {}) {
+  const hue = Number.isFinite(color.hue) ? color.hue : 200;
+  const lightness = color.lightness ?? 26;
+  const saturation = color.saturation ?? 42;
+  const mode = color.mode || "row";
+  const style = `--row-h:${hue};--row-l:${lightness};--row-s:${saturation}`;
+  const cells = columns
+    .map((c) => {
+      const raw = getPath(data, c.key);
+      const text = formatCell(raw, c.key);
+      return `<td class="${BANDS[c.band]?.className || ""}">${esc(text)}</td>`;
+    })
+    .join("");
+  return `<tr class="paint-row paint-${mode}" style="${style}">${cells}</tr>`;
+}
+
+function renderTable(columns, rowHtml) {
+  tableWrap.innerHTML = `
+    <table class="data sheet-full">
+      <thead>${buildHeader(columns)}</thead>
+      <tbody>${rowHtml || `<tr><td colspan="${columns.length}" class="muted">Sin datos</td></tr>`}</tbody>
+    </table>`;
+}
+
+function renderMedicos() {
+  const rows = workbook?.researchers || [];
+  const html = rows
+    .map((r) =>
+      buildRow(MEDICOS_COLUMNS, r.flat || r, {
+        hue: hueForDoctor(r.id),
+        lightness: 28,
+        saturation: 48,
+        mode: "medico",
+      }),
+    )
+    .join("");
+  renderTable(MEDICOS_COLUMNS, html);
 }
 
 function filteredInterventions() {
   const rows = workbook?.interventions || [];
   if (onlyComplete?.checked) return rows.filter((row) => row.status === "completa");
   return rows;
+}
+
+function renderIntervenciones() {
+  const rows = filteredInterventions();
+  const html = rows
+    .map((row, index) =>
+      buildRow(INTERVENCION_COLUMNS, row.flat || row, {
+        hue: hueForCase(row.id || row.sessionId, index),
+        lightness: 27,
+        saturation: 48,
+        mode: "caso",
+      }),
+    )
+    .join("");
+  renderTable(INTERVENCION_COLUMNS, html);
+}
+
+function renderAgrupado() {
+  const only = onlyComplete?.checked;
+  const groups = workbook?.grouped || [];
+  const chunks = [];
+  // Tonos del mismo color: más intenso → más claro
+  const shades = [22, 28, 34, 40, 46, 52];
+
+  for (const group of groups) {
+    const r = group.researcher;
+    const hue = hueForDoctor(r.id);
+    let list = group.interventions || [];
+    if (only) list = list.filter((row) => row.status === "completa");
+
+    if (!list.length) {
+      chunks.push(
+        buildRow(MEDICOS_COLUMNS, r.flat || r, {
+          hue,
+          lightness: shades[0],
+          saturation: 50,
+          mode: "grupo",
+        }),
+      );
+      continue;
+    }
+
+    list.forEach((row, index) => {
+      chunks.push(
+        buildRow(INTERVENCION_COLUMNS, row.flat || row, {
+          hue,
+          lightness: shades[Math.min(index, shades.length - 1)],
+          saturation: 50 - Math.min(index, 4) * 3,
+          mode: "grupo",
+        }),
+      );
+    });
+  }
+
+  const hasAnyIntervention = groups.some((g) =>
+    (g.interventions || []).some((i) => (only ? i.status === "completa" : true)),
+  );
+  renderTable(
+    hasAnyIntervention ? INTERVENCION_COLUMNS : MEDICOS_COLUMNS,
+    chunks.join(""),
+  );
 }
 
 async function fetchWorkbook(pin) {
@@ -128,107 +254,6 @@ function renderSummary() {
     <span class="pill">Completas: <strong>${s.completed}</strong></span>
     <span class="pill">Parciales: <strong>${s.partial}</strong></span>
   `;
-}
-
-function buildHeader(columns) {
-  return `<tr>${columns
-    .map(
-      (c) =>
-        `<th class="${BANDS[c.band]?.className || ""}" title="${esc(c.key)}">${esc(c.label)}</th>`,
-    )
-    .join("")}</tr>`;
-}
-
-function buildRow(columns, data, { tone = 0, secondary = false } = {}) {
-  const cls = `doc-tone-${tone}${secondary ? " doc-secondary" : ""}`;
-  const cells = columns
-    .map((c) => {
-      const raw = getPath(data, c.key);
-      const text = formatCell(raw, c.key);
-      return `<td class="${BANDS[c.band]?.className || ""}">${esc(text)}</td>`;
-    })
-    .join("");
-  return `<tr class="${cls}">${cells}</tr>`;
-}
-
-function renderTable(columns, rowHtml) {
-  tableWrap.innerHTML = `
-    <table class="data sheet-full">
-      <thead>${buildHeader(columns)}</thead>
-      <tbody>${rowHtml || `<tr><td colspan="${columns.length}" class="muted">Sin datos</td></tr>`}</tbody>
-    </table>`;
-}
-
-function renderMedicos() {
-  const rows = workbook?.researchers || [];
-  const html = rows
-    .map((r) =>
-      buildRow(MEDICOS_COLUMNS, r.flat || r, {
-        tone: doctorTone(r.id),
-        secondary: false,
-      }),
-    )
-    .join("");
-  renderTable(MEDICOS_COLUMNS, html);
-}
-
-function renderIntervenciones() {
-  const rows = filteredInterventions();
-  const html = rows
-    .map((row) =>
-      buildRow(INTERVENCION_COLUMNS, row.flat || row, {
-        tone: doctorTone(row.researcherId),
-      }),
-    )
-    .join("");
-  renderTable(INTERVENCION_COLUMNS, html);
-}
-
-function renderAgrupado() {
-  const only = onlyComplete?.checked;
-  const groups = workbook?.grouped || [];
-  const chunks = [];
-
-  for (const group of groups) {
-    const r = group.researcher;
-    const tone = doctorTone(r.id);
-    let list = group.interventions || [];
-    if (only) list = list.filter((row) => row.status === "completa");
-
-    if (!list.length) {
-      // Médico sin intervenciones: igual una fila completa con flat del médico
-      chunks.push(
-        buildRow(MEDICOS_COLUMNS, r.flat || r, { tone, secondary: false }),
-      );
-      continue;
-    }
-
-    // Primera fila: médico + esa intervención (todos los campos de intervención)
-    const first = list[0];
-    chunks.push(
-      buildRow(INTERVENCION_COLUMNS, first.flat || first, {
-        tone,
-        secondary: false,
-      }),
-    );
-    for (const row of list.slice(1)) {
-      chunks.push(
-        buildRow(INTERVENCION_COLUMNS, row.flat || row, {
-          tone,
-          secondary: true,
-        }),
-      );
-    }
-  }
-
-  // Si hay grupos sin intervenciones usamos MEDICOS_COLUMNS; si hay mixtas, unificar a INTERVENCION
-  const hasAnyIntervention = groups.some((g) =>
-    (g.interventions || []).some((i) => (only ? i.status === "completa" : true)),
-  );
-  renderTable(
-    hasAnyIntervention ? INTERVENCION_COLUMNS : MEDICOS_COLUMNS,
-    chunks.join(""),
-  );
 }
 
 function render() {

@@ -45,6 +45,10 @@ export type LocationChoice =
       sameLocality: boolean
       label?: string
       placeId?: number
+      country?: string | null
+      state?: string | null
+      locality?: string | null
+      countryCode?: string | null
     }
 
 export type ParpadeoInterrogatorioState = {
@@ -121,6 +125,9 @@ export const interrogatorioCopy: Record<
     locationTitle: string
     locationSameQuestion: string
     locationSameHint: string
+    locationAnsweredYes: string
+    locationAnsweredNo: string
+    locationChangeAnswer: string
     locationGpsBody: string
     locationAccept: string
     locationSkip: string
@@ -134,6 +141,10 @@ export const interrogatorioCopy: Record<
     locationWeatherError: string
     locationCapturing: string
     locationPlaceSelected: string
+    locationCountry: string
+    locationState: string
+    locationLocality: string
+    locationReady: string
     incompleteHint: string
   }
 > = {
@@ -219,6 +230,9 @@ export const interrogatorioCopy: Record<
       '¿La persona es de la misma localidad donde se realiza la exploración?',
     locationSameHint:
       'Si responde Sí, usamos la ubicación aproximada del dispositivo (consultorio). Si responde No, busca la ciudad del paciente.',
+    locationAnsweredYes: 'Respuesta: Sí — misma localidad.',
+    locationAnsweredNo: 'Respuesta: No — otra localidad.',
+    locationChangeAnswer: 'Cambiar esta respuesta',
     locationGpsBody:
       'Se usará la localización aproximada del dispositivo. La precisión típica no es mejor que ~500 m. Sirve para estimar temperatura, humedad, presión, UV y calidad del aire de la zona.',
     locationAccept: 'Obtener ubicación + clima',
@@ -233,8 +247,12 @@ export const interrogatorioCopy: Record<
     locationError: 'No se pudo obtener la ubicación. Intenta de nuevo.',
     locationWeatherError:
       'Ubicación OK, pero no se pudo obtener el clima. Revisa Open-Meteo en Render.',
-    locationCapturing: 'Obteniendo datos ambientales…',
+    locationCapturing: 'Obteniendo ubicación, país/estado y clima…',
     locationPlaceSelected: 'Ciudad seleccionada',
+    locationCountry: 'País',
+    locationState: 'Estado',
+    locationLocality: 'Comunidad',
+    locationReady: 'Listo, continuar',
     incompleteHint: 'Completa todos los pasos (verde) para continuar.',
   },
   en: {
@@ -319,6 +337,9 @@ export const interrogatorioCopy: Record<
       'Is the person from the same locality where the examination is taking place?',
     locationSameHint:
       'If Yes, we use the device approximate location (clinic). If No, search for the patient’s city.',
+    locationAnsweredYes: 'Answer: Yes — same locality.',
+    locationAnsweredNo: 'Answer: No — different locality.',
+    locationChangeAnswer: 'Change this answer',
     locationGpsBody:
       'The device approximate location will be used. Typical accuracy is no better than ~500 m. It estimates temperature, humidity, pressure, UV, and air quality for the area.',
     locationAccept: 'Get location + weather',
@@ -333,8 +354,12 @@ export const interrogatorioCopy: Record<
     locationError: 'Could not get location. Please try again.',
     locationWeatherError:
       'Location OK, but weather could not be fetched. Check Open-Meteo on Render.',
-    locationCapturing: 'Getting environmental data…',
+    locationCapturing: 'Getting location, country/state and weather…',
     locationPlaceSelected: 'City selected',
+    locationCountry: 'Country',
+    locationState: 'State / region',
+    locationLocality: 'Community',
+    locationReady: 'Done, continue',
     incompleteHint: 'Complete all steps (green) to continue.',
   },
   pt: {
@@ -419,6 +444,9 @@ export const interrogatorioCopy: Record<
       'A pessoa é da mesma localidade onde a exploração está sendo feita?',
     locationSameHint:
       'Se Sim, usamos a localização aproximada do dispositivo (consultório). Se Não, busque a cidade do paciente.',
+    locationAnsweredYes: 'Resposta: Sim — mesma localidade.',
+    locationAnsweredNo: 'Resposta: Não — outra localidade.',
+    locationChangeAnswer: 'Alterar esta resposta',
     locationGpsBody:
       'Será usada a localização aproximada do dispositivo. A precisão típica não é melhor que ~500 m. Serve para estimar temperatura, umidade, pressão, UV e qualidade do ar da região.',
     locationAccept: 'Obter localização + clima',
@@ -433,8 +461,12 @@ export const interrogatorioCopy: Record<
     locationError: 'Não foi possível obter a localização. Tente de novo.',
     locationWeatherError:
       'Localização OK, mas o clima falhou. Revise o Open-Meteo no Render.',
-    locationCapturing: 'Obtendo dados ambientais…',
+    locationCapturing: 'Obtendo localização, país/estado e clima…',
     locationPlaceSelected: 'Cidade selecionada',
+    locationCountry: 'País',
+    locationState: 'Estado',
+    locationLocality: 'Comunidade',
+    locationReady: 'Pronto, continuar',
     incompleteHint: 'Conclua todos os passos (verde) para seguir.',
   },
 }

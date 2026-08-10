@@ -2,6 +2,7 @@ const express = require('express');
 const { authRequired } = require('../middleware/auth');
 const { fetchEnvironmentSnapshot } = require('../services/openMeteo');
 const { searchPlaces } = require('../services/geocoding');
+const { reverseGeocode } = require('../services/nominatim');
 
 const router = express.Router();
 
@@ -15,6 +16,29 @@ router.get('/places', async (req, res) => {
   } catch (err) {
     console.error('Geocoding error:', err.message);
     res.status(502).json({ error: 'geocoding_unavailable' });
+  }
+});
+
+router.get('/reverse', async (req, res) => {
+  const lat = Number(req.query.lat);
+  const lng = Number(req.query.lng);
+  const language = String(req.query.lang || 'es');
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return res.status(400).json({ error: 'invalid_coordinates' });
+  }
+
+  try {
+    const place = await reverseGeocode(
+      Number(lat.toFixed(5)),
+      Number(lng.toFixed(5)),
+      language,
+    );
+    if (!place) return res.status(404).json({ error: 'place_not_found' });
+    res.json({ place });
+  } catch (err) {
+    console.error('Reverse geocode error:', err.message);
+    res.status(502).json({ error: 'reverse_unavailable' });
   }
 });
 

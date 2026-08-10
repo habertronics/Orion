@@ -79,6 +79,12 @@ function specialtyLabel(row) {
 
 function cityFromLocation(locationJson) {
   if (!locationJson || typeof locationJson !== 'object') return null;
+  const parts = [
+    locationJson.locality,
+    locationJson.state,
+    locationJson.country,
+  ].filter(Boolean);
+  if (parts.length) return parts.join(', ');
   if (locationJson.label) return String(locationJson.label);
   if (locationJson.source === 'skipped' || locationJson.declined) {
     return 'Sin localización';
@@ -105,6 +111,9 @@ function flattenLocation(prefix, locationJson) {
   const loc = locationJson && typeof locationJson === 'object' ? locationJson : {};
   return {
     [`${prefix}Source`]: loc.source ?? null,
+    [`${prefix}Country`]: loc.country ?? null,
+    [`${prefix}State`]: loc.state ?? null,
+    [`${prefix}Locality`]: loc.locality ?? null,
     [`${prefix}Label`]: loc.label ?? null,
     [`${prefix}Lat`]: loc.lat ?? null,
     [`${prefix}Lng`]: loc.lng ?? null,
@@ -290,6 +299,7 @@ function mapResearcherCore(row, counts = {}) {
     nickname: row.nickname || null,
     displayName: row.full_name || row.nickname || row.email,
     age: row.age,
+    sex: row.sex || null,
     phone: row.phone,
     registeredAt: row.created_at,
     ophthalmologyProfile: row.ophthalmology_profile,
@@ -322,6 +332,7 @@ function mapIntervention(row) {
     researcherEmail: row.email,
     researcherPhone: row.phone,
     researcherAge: row.age,
+    researcherSex: row.sex || null,
     researcherNickname: row.nickname,
     researcherSpecialty: specialtyLabel(row),
     researcherProfile: row.ophthalmology_profile,
@@ -373,7 +384,7 @@ router.use(adminLimit, adminPinRequired);
 router.get('/workbook', async (_req, res) => {
   try {
     const researchersResult = await query(
-      `SELECT id, email, full_name, age, phone, nickname, location_declined,
+      `SELECT id, email, full_name, age, sex, phone, nickname, location_declined,
               location_json, ophthalmology_profile, specialty_slug, specialty_other,
               role, active, created_at
        FROM researchers
@@ -400,7 +411,7 @@ router.get('/workbook', async (_req, res) => {
     const sessionsResult = await query(
       `SELECT s.id, s.researcher_id, s.project_slug, s.answers_json, s.location_json,
               s.environment_json, s.exam_json, s.meter_json, s.created_at, s.completed_at,
-              r.email, r.full_name, r.age, r.phone, r.nickname, r.created_at AS researcher_created_at,
+              r.email, r.full_name, r.age, r.sex, r.phone, r.nickname, r.created_at AS researcher_created_at,
               r.ophthalmology_profile, r.specialty_slug, r.specialty_other, r.active, r.role,
               r.location_json AS researcher_location_json, r.location_declined
        FROM parpadeo_sessions s

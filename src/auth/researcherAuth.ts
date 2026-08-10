@@ -24,6 +24,10 @@ export type ResearcherLocationPayload =
       capturedAt: string
       label?: string
       placeId?: number
+      country?: string | null
+      state?: string | null
+      locality?: string | null
+      countryCode?: string | null
     }
 
 export type AuthErrorCode =
@@ -34,6 +38,7 @@ export type AuthErrorCode =
   | 'missing_nickname'
   | 'missing_full_name'
   | 'invalid_age'
+  | 'missing_sex'
   | 'invalid_phone'
   | 'missing_location'
   | 'missing_ophthalmology_profile'
@@ -197,6 +202,7 @@ async function authRequest(input: {
   nickname?: string
   fullName?: string
   age?: number
+  sex?: 'male' | 'female'
   phone?: string
   locationDeclined?: boolean
   location?: ResearcherLocationPayload | null
@@ -219,6 +225,9 @@ async function authRequest(input: {
       input.age > 120
     ) {
       return { ok: false, error: 'invalid_age' }
+    }
+    if (input.sex !== 'male' && input.sex !== 'female') {
+      return { ok: false, error: 'missing_sex' }
     }
     const phoneDigits = String(input.phone || '').replace(/\D/g, '')
     if (phoneDigits.length < 7 || phoneDigits.length > 15) {
@@ -264,6 +273,7 @@ async function authRequest(input: {
     if (input.path === '/api/auth/register') {
       body.fullName = String(input.fullName || '').trim()
       body.age = input.age
+      body.sex = input.sex
       body.phone = String(input.phone || '').trim()
       body.useNickname = Boolean(input.useNickname)
       body.nickname = input.useNickname
@@ -330,6 +340,7 @@ export async function registerResearcher(input: {
   nickname: string
   fullName: string
   age: number
+  sex: 'male' | 'female'
   phone: string
   locationDeclined: boolean
   location: ResearcherLocationPayload | null
@@ -347,6 +358,7 @@ export async function registerResearcher(input: {
     nickname: input.nickname,
     fullName: input.fullName,
     age: input.age,
+    sex: input.sex,
     phone: input.phone,
     locationDeclined: input.locationDeclined,
     location: input.location,

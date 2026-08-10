@@ -23,6 +23,9 @@ const copy: Record<
     locationSkipped: string
     locationCoords: string
     locationSource: string
+    locationCountry: string
+    locationState: string
+    locationLocality: string
     environmentSkipped: string
     osdiAnswers: string
     osdiSubDiscomfort: string
@@ -63,6 +66,9 @@ const copy: Record<
     locationSkipped: 'Continuar sin este dato',
     locationCoords: 'Coordenadas',
     locationSource: 'Fuente',
+    locationCountry: 'País',
+    locationState: 'Estado',
+    locationLocality: 'Comunidad',
     environmentSkipped: 'Sin dato ambiental',
     osdiAnswers: 'Respuestas (ítems 1–6)',
     osdiSubDiscomfort: 'Subescala malestar / visión',
@@ -102,6 +108,9 @@ const copy: Record<
     locationSkipped: 'Continued without this data',
     locationCoords: 'Coordinates',
     locationSource: 'Source',
+    locationCountry: 'Country',
+    locationState: 'State / region',
+    locationLocality: 'Community',
     environmentSkipped: 'No environmental data',
     osdiAnswers: 'Answers (items 1–6)',
     osdiSubDiscomfort: 'Discomfort / vision subscale',
@@ -141,6 +150,9 @@ const copy: Record<
     locationSkipped: 'Continuar sem este dado',
     locationCoords: 'Coordenadas',
     locationSource: 'Fonte',
+    locationCountry: 'País',
+    locationState: 'Estado',
+    locationLocality: 'Comunidade',
     environmentSkipped: 'Sem dado ambiental',
     osdiAnswers: 'Respostas (itens 1–6)',
     osdiSubDiscomfort: 'Subescala desconforto / visão',
@@ -295,6 +307,15 @@ export function ParpadeoSummaryScreen({
           />
           {loc && loc.source !== 'skipped' && (
             <>
+              <Row
+                label={t.locationCountry}
+                value={loc.country || '—'}
+              />
+              <Row label={t.locationState} value={loc.state || '—'} />
+              <Row
+                label={t.locationLocality}
+                value={loc.locality || '—'}
+              />
               <Row
                 label={t.locationCoords}
                 value={`≈ ${loc.lat}, ${loc.lng}`}
