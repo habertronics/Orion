@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Orión · Estado del sistema</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="top">
+        <p class="eyebrow">Habertronic Orión</p>
+        <h1>Estado del sistema</h1>
+        <p class="lede">
+          Semáforos en tiempo real: Netlify, Render, Neon y Clima. Solo personal
+          autorizado.
+        </p>
+        <p class="ver" id="appVer">v1.0</p>
+      </header>
+
+      <section class="gate" id="gatePanel">
+        <h2>Acceso</h2>
+        <p>Introduce el código de mantenimiento para ver el tablero.</p>
+        <form id="gateForm" class="gate-form" autocomplete="off">
+          <label for="pinInput">Código</label>
+          <input
+            id="pinInput"
+            name="pin"
+            type="password"
+            inputmode="numeric"
+            maxlength="32"
+            placeholder="Código de acceso"
+            required
+          />
+          <button type="submit" class="btn">Entrar</button>
+        </form>
+        <p class="gate-error" id="gateError" hidden>Código incorrecto</p>
+      </section>
+
+      <section class="board" id="boardPanel" hidden>
+        <div class="board-tools">
+          <button type="button" class="btn ghost" id="refreshBtn">Actualizar ahora</button>
+          <button type="button" class="btn ghost" id="logoutBtn">Cerrar sesión</button>
+          <p class="meta" id="lastCheck">Sin comprobaciones aún</p>
+        </div>
+
+        <div class="lights" id="lights">
+          <article class="card" data-key="netlify">
+            <div class="lamp unknown" aria-hidden="true"></div>
+            <div>
+              <h3>Netlify · PWA</h3>
+              <p class="role">Sitio web / Parpadeómetro</p>
+              <p class="detail" data-detail>—</p>
+            </div>
+          </article>
+          <article class="card" data-key="render">
+            <div class="lamp unknown" aria-hidden="true"></div>
+            <div>
+              <h3>Render · API</h3>
+              <p class="role">Servidor Orión</p>
+              <p class="detail" data-detail>—</p>
+            </div>
+          </article>
+          <article class="card" data-key="neon">
+            <div class="lamp unknown" aria-hidden="true"></div>
+            <div>
+              <h3>Neon · Base de datos</h3>
+              <p class="role">Guardado de exámenes y cuentas</p>
+              <p class="detail" data-detail>—</p>
+            </div>
+          </article>
+          <article class="card" data-key="climate">
+            <div class="lamp unknown" aria-hidden="true"></div>
+            <div>
+              <h3>Clima · Open‑Meteo</h3>
+              <p class="role">Datos ambientales</p>
+              <p class="detail" data-detail>—</p>
+            </div>
+          </article>
+        </div>
+
+        <aside class="legend">
+          <p><span class="dot ok"></span> Verde: funciona bien</p>
+          <p><span class="dot slow"></span> Amarillo: responde, pero lento o parcial</p>
+          <p><span class="dot bad"></span> Rojo: no responde o falla crítica</p>
+          <p class="note">
+            Se actualiza solo cada 20 s. Render en plan gratuito a veces tarda en
+            “despertar” (amarillo/rojo breve).
+          </p>
+        </aside>
+      </section>
+    </main>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

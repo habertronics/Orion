@@ -12,6 +12,7 @@ export default defineConfig({
       input: {
         main: resolve(import.meta.dirname, 'index.html'),
         parpadeometro: resolve(import.meta.dirname, 'parpadeometro/index.html'),
+        status: resolve(import.meta.dirname, 'status/index.html'),
       },
     },
   },
@@ -55,7 +56,7 @@ export default defineConfig({
         clientsClaim: true,
         skipWaiting: true,
         navigateFallback: 'index.html',
-        navigateFallbackDenylist: [/^\/parpadeometro/],
+        navigateFallbackDenylist: [/^\/parpadeometro/, /^\/status/],
         globPatterns: ['**/*.{js,css,html,svg,ico,png,woff2}'],
         runtimeCaching: [
           {

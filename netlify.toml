@@ -13,6 +13,16 @@
   status = 200
 
 [[redirects]]
+  from = "/status"
+  to = "/status/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/status/"
+  to = "/status/index.html"
+  status = 200
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
@@ -33,7 +43,7 @@
     Permissions-Policy = "camera=(self), microphone=()"
 
 [[headers]]
-  for = "/parpadeometro/*"
+  for = "/status/*"
   [headers.values]
-    Permissions-Policy = "camera=(self), microphone=()"
     Cache-Control = "public, max-age=0, must-revalidate"
+    X-Robots-Tag = "noindex, nofollow"

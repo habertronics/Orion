@@ -1,0 +1,25 @@
+/**
+ * Código de acceso del tablero de mantenimiento.
+ * Cámbialo antes de compartir el enlace. No lo publiques en la home de Orión.
+ */
+export const STATUS_ACCESS_PIN = "418293";
+
+export const APP_VERSION = "v1.0";
+
+export const CHECK_INTERVAL_MS = 20_000;
+
+/** Umbral de latencia (ms) para semáforo amarillo. */
+export const SLOW_MS = {
+  netlify: 2500,
+  render: 4000,
+  neon: 1500,
+  climate: 3000,
+};
+
+export const ENDPOINTS = {
+  netlify: "https://habertronic-orion.netlify.app/",
+  apiHealth: "https://orion-83ct.onrender.com/api/health",
+  apiDeep: "https://orion-83ct.onrender.com/api/health/deep",
+};
+
+export const SESSION_KEY = "orion-status-unlocked";
