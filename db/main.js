@@ -2,6 +2,7 @@ import "./style.css";
 import {
   BANDS,
   INTERVENCION_COLUMNS,
+  INVITACIONES_COLUMNS,
   MEDICOS_COLUMNS,
 } from "./columns.js";
 import { API_BASE, APP_VERSION, DB_ACCESS_PIN, SESSION_KEY } from "./config.js";
@@ -16,6 +17,8 @@ const medicosDash = document.getElementById("medicosDash");
 const tableWrap = document.getElementById("tableWrap");
 const statusLine = document.getElementById("statusLine");
 const onlyComplete = document.getElementById("onlyComplete");
+const onlyCompleteWrap = document.getElementById("onlyCompleteWrap");
+const inviteFilters = document.getElementById("inviteFilters");
 const refreshBtn = document.getElementById("refreshBtn");
 const exportBtn = document.getElementById("exportBtn");
 const logoutBtn = document.getElementById("logoutBtn");
@@ -24,7 +27,9 @@ const appVer = document.getElementById("appVer");
 if (appVer) appVer.textContent = APP_VERSION;
 
 let workbook = null;
+let invitationsData = null;
 let currentView = "medicos";
+let inviteFilter = "all";
 let currentPin = sessionStorage.getItem(`${SESSION_KEY}-pin`) || "";
 /** Subespecialidad enfocada en la 2.ª gráfica de especialidades. */
 let specialtyFocusSlug = "";
@@ -792,7 +797,55 @@ function enrichResearchers(data) {
   return data;
 }
 
+async function fetchInvitations(pin, type = "all") {
+  const url = `${API_BASE}/api/admin/invitations?type=${encodeURIComponent(type)}`;
+  const response = await fetch(url, {
+    headers: { "X-Admin-Pin": pin, Accept: "application/json" },
+    cache: "no-store",
+  });
+  if (response.status === 401) throw new Error("pin");
+  if (!response.ok) throw new Error(`http_${response.status}`);
+  return response.json();
+}
+
+function updateViewChrome() {
+  const isReps = currentView === "representantes";
+  if (inviteFilters) inviteFilters.hidden = !isReps;
+  if (onlyCompleteWrap) onlyCompleteWrap.hidden = isReps;
+  if (medicosDash && isReps) medicosDash.hidden = true;
+}
+
+function renderRepresentantes() {
+  const rows = invitationsData?.invitations || [];
+  const body = rows
+    .map((row, index) => {
+      const cells = INVITACIONES_COLUMNS.map((c) => {
+        let value = row[c.key];
+        if (c.key === "medicoAcepto") value = value ? "Sí" : "No";
+        if (c.key.endsWith("At") || c.key === "createdAt" || c.key === "expiresAt") {
+          value = fmtDate(value);
+        }
+        return `<td>${esc(value)}</td>`;
+      }).join("");
+      return `<tr class="row-tone-${index % 2}">${cells}</tr>`;
+    })
+    .join("");
+  renderTable(INVITACIONES_COLUMNS, body || `<tr><td colspan="${INVITACIONES_COLUMNS.length}">Sin invitaciones</td></tr>`);
+}
+
 function renderSummary() {
+  if (currentView === "representantes") {
+    const c = invitationsData?.counts || {};
+    const reps = invitationsData?.representatives?.length ?? 0;
+    summaryBar.innerHTML = `
+      <span class="pill">Representantes: <strong>${reps}</strong></span>
+      <span class="pill">Invitaciones (filtro): <strong>${c.all ?? 0}</strong></span>
+      <span class="pill">Aceptadas preceptorship: <strong>${c.preceptorship ?? 0}</strong></span>
+      <span class="pill">Aceptadas investigadores: <strong>${c.researcher ?? 0}</strong></span>
+      <span class="pill">QR abiertos: <strong>${c.open ?? 0}</strong></span>
+    `;
+    return;
+  }
   if (!workbook?.summary) {
     summaryBar.innerHTML = "";
     return;
@@ -807,8 +860,10 @@ function renderSummary() {
 }
 
 function render() {
+  updateViewChrome();
   renderSummary();
-  if (currentView === "medicos") renderMedicos();
+  if (currentView === "representantes") renderRepresentantes();
+  else if (currentView === "medicos") renderMedicos();
   else if (currentView === "intervenciones") renderIntervenciones();
   else renderAgrupado();
 }
@@ -816,8 +871,13 @@ function render() {
 async function loadData() {
   statusLine.textContent = "Cargando registros…";
   try {
-    workbook = enrichResearchers(await fetchWorkbook(currentPin));
-    statusLine.textContent = `Actualizado ${fmtDate(workbook.generatedAt)} · una fila = todos los parámetros`;
+    if (currentView === "representantes") {
+      invitationsData = await fetchInvitations(currentPin, inviteFilter);
+      statusLine.textContent = `Actualizado ${fmtDate(invitationsData.generatedAt)} · invitaciones de representantes`;
+    } else {
+      workbook = enrichResearchers(await fetchWorkbook(currentPin));
+      statusLine.textContent = `Actualizado ${fmtDate(workbook.generatedAt)} · una fila = todos los parámetros`;
+    }
     render();
   } catch (err) {
     if (err.message === "pin") {
@@ -840,7 +900,24 @@ function csvEscape(value) {
 function exportCsv() {
   let columns = MEDICOS_COLUMNS;
   let rows = [];
-  if (currentView === "medicos") {
+  let lineBuilder = (row) =>
+    columns.map((c) => csvEscape(formatCell(getPath(row, c.key), c.key, row))).join(",");
+
+  if (currentView === "representantes") {
+    columns = INVITACIONES_COLUMNS;
+    rows = invitationsData?.invitations || [];
+    lineBuilder = (row) =>
+      columns
+        .map((c) => {
+          let value = row[c.key];
+          if (c.key === "medicoAcepto") value = value ? "Sí" : "No";
+          if (c.key.endsWith("At") || c.key === "createdAt" || c.key === "expiresAt") {
+            value = fmtDate(value);
+          }
+          return csvEscape(value);
+        })
+        .join(",");
+  } else if (currentView === "medicos") {
     columns = MEDICOS_COLUMNS;
     rows = (workbook?.researchers || []).map((r) => r.flat || r);
   } else if (currentView === "intervenciones") {
@@ -865,9 +942,7 @@ function exportCsv() {
   }
   const lines = [
     columns.map((c) => csvEscape(c.label)).join(","),
-    ...rows.map((row) =>
-      columns.map((c) => csvEscape(formatCell(getPath(row, c.key), c.key, row))).join(","),
-    ),
+    ...rows.map((row) => lineBuilder(row)),
   ];
   const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
@@ -892,6 +967,7 @@ function lockBoard() {
   sessionStorage.removeItem(`${SESSION_KEY}-pin`);
   currentPin = "";
   workbook = null;
+  invitationsData = null;
   boardPanel.hidden = true;
   gatePanel.hidden = false;
   pinInput.value = "";
@@ -908,13 +984,29 @@ gateForm.addEventListener("submit", (event) => {
   startBoard(pin);
 });
 
-document.querySelectorAll(".filter-btn").forEach((btn) => {
+document.querySelectorAll(".filters:not(.invite-filters) .filter-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
-    currentView = btn.dataset.view || "medicos";
-    document.querySelectorAll(".filter-btn").forEach((el) => {
+    const next = btn.dataset.view || "medicos";
+    const changed = next !== currentView;
+    currentView = next;
+    document.querySelectorAll(".filters:not(.invite-filters) .filter-btn").forEach((el) => {
       el.classList.toggle("active", el === btn);
     });
-    render();
+    if (changed && (currentView === "representantes" || !workbook)) {
+      void loadData();
+    } else {
+      render();
+    }
+  });
+});
+
+document.querySelectorAll(".invite-filter").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    inviteFilter = btn.dataset.invite || "all";
+    document.querySelectorAll(".invite-filter").forEach((el) => {
+      el.classList.toggle("active", el === btn);
+    });
+    if (currentView === "representantes") void loadData();
   });
 });
 

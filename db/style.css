@@ -285,6 +285,13 @@ thead .band-interf {
 thead .band-raw {
   background: #334155;
 }
+thead .band-reps {
+  background: #1e3a5f;
+}
+
+.invite-filters {
+  margin-top: -0.35rem;
+}
 
 /*
   Filas: color completo para seguir la línea.

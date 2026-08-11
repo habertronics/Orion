@@ -10,6 +10,7 @@ export const BANDS = {
   metro: { label: "Parpadeómetro", className: "band-metro" },
   interf: { label: "Interferometría", className: "band-interf" },
   raw: { label: "JSON completo", className: "band-raw" },
+  reps: { label: "Representantes", className: "band-reps" },
 };
 
 function col(key, label, band) {
@@ -350,4 +351,18 @@ export const INTERVENCION_COLUMNS = [
   col("envJson", "Ambiente JSON", "raw"),
   col("examJson", "Exam JSON", "raw"),
   col("meterJson", "Meter JSON", "raw"),
+];
+
+/** Columnas de invitaciones de representantes. */
+export const INVITACIONES_COLUMNS = [
+  col("acceptedAt", "Aceptó", "reps"),
+  col("inviteTypeLabel", "Tipo", "reps"),
+  col("statusLabel", "Estado", "reps"),
+  col("medicoAcepto", "Médico aceptó", "reps"),
+  col("inviteeName", "Médico (nombre)", "reps"),
+  col("inviteeEmail", "Médico (email)", "reps"),
+  col("representativeName", "Invitado por", "reps"),
+  col("representativeEmail", "Email representante", "reps"),
+  col("createdAt", "QR creado", "reps"),
+  col("expiresAt", "QR expira", "reps"),
 ];

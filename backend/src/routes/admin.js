@@ -636,4 +636,98 @@ router.get('/backups', async (_req, res) => {
   }
 });
 
+/**
+ * Invitaciones de representantes (preceptorship / investigador / ambas).
+ * Query: ?type=preceptorship|researcher|all
+ */
+router.get('/invitations', async (req, res) => {
+  try {
+    const typeRaw = String(req.query.type || 'all').trim().toLowerCase();
+    const type =
+      typeRaw === 'preceptorship' || typeRaw === 'researcher' ? typeRaw : 'all';
+
+    const params = [];
+    let typeSql = '';
+    if (type !== 'all') {
+      params.push(type);
+      typeSql = ` AND i.invite_type = $${params.length}`;
+    }
+
+    const result = await query(
+      `SELECT i.id, i.invite_type, i.status, i.invitee_email, i.invitee_name,
+              i.created_at, i.expires_at, i.accepted_at, i.researcher_id,
+              rep.id AS rep_id, rep.full_name AS rep_name, rep.email AS rep_email,
+              r.full_name AS researcher_name, r.email AS researcher_email
+       FROM invitations i
+       JOIN representatives rep ON rep.id = i.representative_id
+       LEFT JOIN researchers r ON r.id = i.researcher_id
+       WHERE 1=1${typeSql}
+       ORDER BY COALESCE(i.accepted_at, i.created_at) DESC
+       LIMIT 500`,
+      params,
+    );
+
+    const invitations = result.rows.map((row) => ({
+      id: row.id,
+      inviteType: row.invite_type,
+      inviteTypeLabel:
+        row.invite_type === 'preceptorship' ? 'Preceptorship' : 'Investigador',
+      status: row.status,
+      statusLabel:
+        row.status === 'registered'
+          ? 'Ya investigador'
+          : row.status === 'accepted'
+            ? 'Aceptó'
+            : row.status === 'open'
+              ? 'QR abierto'
+              : row.status === 'expired'
+                ? 'Expirado'
+                : row.status,
+      inviteeName: row.invitee_name || row.researcher_name || null,
+      inviteeEmail: row.invitee_email || row.researcher_email || null,
+      medicoAcepto: row.status === 'accepted' || row.status === 'registered',
+      createdAt: row.created_at,
+      acceptedAt: row.accepted_at,
+      expiresAt: row.expires_at,
+      representativeId: row.rep_id,
+      representativeName: row.rep_name,
+      representativeEmail: row.rep_email,
+      researcherId: row.researcher_id,
+    }));
+
+    const accepted = invitations.filter((i) => i.medicoAcepto);
+    const counts = {
+      all: invitations.length,
+      accepted: accepted.length,
+      preceptorship: accepted.filter((i) => i.inviteType === 'preceptorship')
+        .length,
+      researcher: accepted.filter((i) => i.inviteType === 'researcher').length,
+      open: invitations.filter((i) => i.status === 'open').length,
+    };
+
+    const repsResult = await query(
+      `SELECT id, email, full_name, active, created_at
+       FROM representatives
+       ORDER BY created_at DESC`,
+    );
+
+    return res.json({
+      generatedAt: new Date().toISOString(),
+      filter: type,
+      counts,
+      invitations,
+      representatives: repsResult.rows.map((r) => ({
+        id: r.id,
+        email: r.email,
+        fullName: r.full_name,
+        active: r.active,
+        createdAt: r.created_at,
+      })),
+    });
+  } catch (err) {
+    console.error('Admin invitations error:', err);
+    res.status(500).json({ error: 'server_error' });
+  }
+});
+
 module.exports = router;

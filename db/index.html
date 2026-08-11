@@ -33,7 +33,7 @@
           tiene color propio; en Médico + intervención, un color por doctor y tonos distintos
           de ese mismo color para cada una de sus intervenciones.
         </p>
-        <p class="ver" id="appVer">v1.17</p>
+        <p class="ver" id="appVer">v1.18</p>
       </header>
 
       <section class="gate" id="gatePanel">
@@ -54,13 +54,24 @@
           <button type="button" class="filter-btn active" data-view="medicos">Médicos</button>
           <button type="button" class="filter-btn" data-view="intervenciones">Intervenciones</button>
           <button type="button" class="filter-btn" data-view="agrupado">Médico + intervención</button>
+          <button type="button" class="filter-btn" data-view="representantes">Representantes</button>
+        </div>
+
+        <div class="filters invite-filters" id="inviteFilters" hidden role="tablist" aria-label="Tipo de invitación">
+          <button type="button" class="filter-btn invite-filter active" data-invite="all">Ambas</button>
+          <button type="button" class="filter-btn invite-filter" data-invite="preceptorship">
+            Preceptorship
+          </button>
+          <button type="button" class="filter-btn invite-filter" data-invite="researcher">
+            Investigadores
+          </button>
         </div>
 
         <div class="tools">
           <button type="button" class="btn" id="refreshBtn">Actualizar ahora</button>
           <button type="button" class="btn ghost" id="exportBtn">Exportar CSV</button>
           <button type="button" class="btn ghost" id="logoutBtn">Cerrar sesión</button>
-          <label class="check">
+          <label class="check" id="onlyCompleteWrap">
             <input type="checkbox" id="onlyComplete" checked />
             Solo intervenciones completas
           </label>
