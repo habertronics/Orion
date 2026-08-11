@@ -29,7 +29,7 @@ body {
 .shell {
   width: min(720px, calc(100% - 2rem));
   margin: 0 auto;
-  padding: 1.75rem 0 2.5rem;
+  padding: 1.75rem 0 4.5rem;
 }
 
 .back-link {
@@ -53,27 +53,28 @@ body {
 
 .nav-back {
   appearance: none;
+  position: fixed;
+  left: max(0.85rem, env(safe-area-inset-left));
+  bottom: max(0.85rem, env(safe-area-inset-bottom));
+  z-index: 40;
   display: inline-flex;
-  align-self: flex-start;
-  margin: 1.15rem 0 0;
-  padding: 0.45rem 0.75rem;
+  align-items: center;
+  margin: 0;
+  padding: 0.55rem 0.9rem;
   border-radius: 999px;
   border: 1px solid var(--line);
-  background: rgba(0, 0, 0, 0.18);
+  background: rgba(20, 32, 24, 0.92);
   color: var(--ink);
   font: inherit;
   font-size: 0.88rem;
   font-weight: 600;
   cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
 }
 
 .nav-back:hover {
   border-color: rgba(110, 207, 142, 0.45);
   color: var(--accent);
-}
-
-.panel.board .nav-back {
-  margin: 1.25rem 0 0.25rem;
 }
 
 .top .eyebrow {
