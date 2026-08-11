@@ -97,6 +97,10 @@ body {
   gap: 0.7rem;
 }
 
+.auth-view[hidden] {
+  display: none !important;
+}
+
 #viewWelcome {
   gap: 0.85rem;
 }
