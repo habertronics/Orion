@@ -1,43 +1,66 @@
 .brand-spotlight {
   position: absolute;
-  inset: -5%;
+  inset: -4%;
   z-index: 0;
   display: grid;
   place-items: center;
   pointer-events: none;
-  opacity: calc(0.12 + (var(--sstrength, 0) * 0.78));
-  transition: opacity 0.08s linear;
-  -webkit-mask-image: radial-gradient(
-    circle 55vmin at var(--sx, 50%) var(--sy, 42%),
-    #000 0%,
-    #000 22%,
-    rgba(0, 0, 0, 0.55) 45%,
-    rgba(0, 0, 0, 0.15) 68%,
-    transparent 100%
-  );
-  mask-image: radial-gradient(
-    circle 55vmin at var(--sx, 50%) var(--sy, 42%),
-    #000 0%,
-    #000 22%,
-    rgba(0, 0, 0, 0.55) 45%,
-    rgba(0, 0, 0, 0.15) 68%,
-    transparent 100%
+}
+
+.brand-spotlight__mosaic {
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 7), 1fr);
+  grid-template-rows: repeat(var(--rows, 5), 1fr);
+  gap: 1.5px;
+  width: min(92vw, 36rem);
+  height: min(48vh, 22rem);
+  max-width: 100%;
+  mix-blend-mode: multiply;
+  filter: contrast(1.04) saturate(1.1);
+}
+
+.brand-spotlight__tile {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background-repeat: no-repeat;
+  background-size: calc(var(--cols, 7) * 100%) calc(var(--rows, 5) * 100%);
+  opacity: 0.06;
+  /* El viento “barre” de izquierda a derecha, con irregularidad por ráfaga */
+  animation: brand-wind calc(11s + var(--gust, 0.5) * 5s) ease-in-out infinite;
+  animation-delay: calc(
+    (var(--col, 0) * -0.7s) + (var(--row, 0) * -0.28s) + (var(--gust, 0) * -2.4s)
   );
 }
 
-.brand-spotlight__logo {
-  width: min(88vw, 34rem);
-  height: auto;
-  max-height: 48vh;
-  object-fit: contain;
-  user-select: none;
-  mix-blend-mode: multiply;
-  opacity: 0.95;
-  filter: contrast(1.05) saturate(1.15);
+@keyframes brand-wind {
+  0%,
+  100% {
+    opacity: 0.03;
+  }
+  12% {
+    opacity: 0.1;
+  }
+  28% {
+    opacity: 0.48;
+  }
+  40% {
+    opacity: 0.14;
+  }
+  58% {
+    opacity: 0.38;
+  }
+  74% {
+    opacity: 0.06;
+  }
+  88% {
+    opacity: 0.22;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .brand-spotlight {
-    display: none;
+  .brand-spotlight__tile {
+    animation: none;
+    opacity: 0.1;
   }
 }

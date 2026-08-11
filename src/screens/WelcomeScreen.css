@@ -50,14 +50,6 @@
 .welcome__footer {
   position: relative;
   z-index: 1;
-  /* Deja pasar el toque al fondo; los controles reactivan pointer-events */
-  pointer-events: none;
-}
-
-.welcome__lang-btn,
-.welcome__consent,
-.welcome__continue {
-  pointer-events: auto;
 }
 
 .welcome__hero {

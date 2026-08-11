@@ -1,7 +1,6 @@
-import { useRef, useState, type CSSProperties } from 'react'
+import { useState } from 'react'
 import { APP_VERSION } from '../config'
 import { BrandSpotlight } from '../components/BrandSpotlight'
-import { useBrandSpotlight } from '../hooks/useBrandSpotlight'
 import { welcomeCopy } from '../i18n/welcome'
 import type { Lang } from '../i18n/preferences'
 import './WelcomeScreen.css'
@@ -10,29 +9,13 @@ type WelcomeScreenProps = {
   onContinue?: (lang: Lang) => void
 }
 
-const INTERACTIVE =
-  'button, a, input, label, .welcome__lang-btn, .welcome__consent, .welcome__continue'
-
 export function WelcomeScreen({ onContinue }: WelcomeScreenProps) {
   const [lang, setLang] = useState<Lang>('es')
   const [accepted, setAccepted] = useState(false)
-  const rootRef = useRef<HTMLElement>(null)
-  useBrandSpotlight(rootRef, INTERACTIVE)
   const t = welcomeCopy[lang]
 
   return (
-    <main
-      ref={rootRef}
-      className="welcome"
-      aria-labelledby="welcome-brand"
-      style={
-        {
-          '--sx': '50%',
-          '--sy': '40%',
-          '--sstrength': '0',
-        } as CSSProperties
-      }
-    >
+    <main className="welcome" aria-labelledby="welcome-brand">
       <div className="welcome__atmosphere" aria-hidden="true" />
       <BrandSpotlight />
 

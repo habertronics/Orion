@@ -46,7 +46,6 @@
 .home__actions {
   position: relative;
   z-index: 1;
-  pointer-events: none;
 }
 
 .home__header {
@@ -109,7 +108,6 @@
   color: #eef5f4;
   text-align: left;
   cursor: pointer;
-  pointer-events: auto;
   transition:
     transform 0.2s ease,
     filter 0.2s ease;

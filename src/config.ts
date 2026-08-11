@@ -1,5 +1,5 @@
 /** Versión visible en portada (Welcome + Home). Subir en cada cambio visible/funcional del front principal. */
-export const APP_VERSION = 'v1.5'
+export const APP_VERSION = 'v1.6'
 
 const API_URLS = {
   localhost: 'http://localhost:3001',

@@ -1,6 +1,4 @@
-import { useRef, type CSSProperties } from 'react'
 import { BrandSpotlight } from '../components/BrandSpotlight'
-import { useBrandSpotlight } from '../hooks/useBrandSpotlight'
 import { homeCopy } from '../i18n/home'
 import { APP_VERSION } from '../config'
 import type { Lang } from '../i18n/preferences'
@@ -13,26 +11,11 @@ type HomeScreenProps = {
   onSelectMode: (mode: UserMode) => void
 }
 
-const INTERACTIVE = 'button, a, input, label, .home__btn'
-
 export function HomeScreen({ lang, onSelectMode }: HomeScreenProps) {
   const t = homeCopy[lang]
-  const rootRef = useRef<HTMLElement>(null)
-  useBrandSpotlight(rootRef, INTERACTIVE)
 
   return (
-    <main
-      ref={rootRef}
-      className="home"
-      aria-labelledby="home-brand"
-      style={
-        {
-          '--sx': '50%',
-          '--sy': '40%',
-          '--sstrength': '0',
-        } as CSSProperties
-      }
-    >
+    <main className="home" aria-labelledby="home-brand">
       <div className="home__atmosphere" aria-hidden="true" />
       <BrandSpotlight />
 
