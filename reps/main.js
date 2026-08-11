@@ -393,7 +393,8 @@ refreshInvitesBtn.addEventListener("click", () => void loadInvites());
 
 const existing = getSession();
 if (existing && getToken()) {
-  showHome(existing);
+  // Siempre empezar en Entrar / Registrarme (no saltar al home).
+  showAuth();
 } else {
   showAuth();
 }
