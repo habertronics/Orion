@@ -593,4 +593,23 @@ router.get('/workbook', async (_req, res) => {
   }
 });
 
+/** Dispara backup Neon → Drive/S3 (para cron externo o prueba manual). */
+router.post('/backup', async (_req, res) => {
+  try {
+    const { runBackup } = require('../../scripts/backup-db');
+    const result = await runBackup();
+    res.json({
+      ok: true,
+      driveId: result.drive?.id || null,
+      driveLink: result.drive?.webViewLink || null,
+      folderId: result.drive?.folderId || null,
+      s3: result.s3,
+      bytes: result.bytes,
+    });
+  } catch (err) {
+    console.error('Admin backup error:', err);
+    res.status(500).json({ error: 'backup_failed', message: err.message || 'error' });
+  }
+});
+
 module.exports = router;

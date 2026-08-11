@@ -180,7 +180,7 @@ async function uploadDrive(filePath, fileName) {
   return { ...res.data, folderId };
 }
 
-async function main() {
+async function runBackup() {
   if (!process.env.DATABASE_URL) {
     throw new Error('Falta DATABASE_URL en backend/.env');
   }
@@ -202,11 +202,17 @@ async function main() {
 
     const key = `orion-backups/${path.basename(local.gzPath)}`;
     const fileName = path.basename(local.gzPath);
+    const result = {
+      localGz: local.gzPath,
+      bytes: local.bytes,
+      s3: null,
+      drive: null,
+    };
 
     if (process.env.BACKUP_TO_S3 === '1') {
       console.log('3) Subiendo a AWS S3…');
-      const uri = await uploadS3(local.gzPath, key);
-      console.log(`   OK ${uri}`);
+      result.s3 = await uploadS3(local.gzPath, key);
+      console.log(`   OK ${result.s3}`);
     } else {
       console.log('3) S3 omitido (BACKUP_TO_S3!=1)');
     }
@@ -214,6 +220,7 @@ async function main() {
     if (process.env.BACKUP_TO_DRIVE === '1') {
       console.log('4) Subiendo a Google Drive…');
       const info = await uploadDrive(local.gzPath, fileName);
+      result.drive = info;
       console.log(`   Carpeta: Orion-Backups (${info.folderId || '—'})`);
       console.log(`   OK id=${info.id} ${info.webViewLink || ''}`);
     } else {
@@ -221,12 +228,17 @@ async function main() {
     }
 
     console.log('Listo.');
+    return result;
   } finally {
     await pool.end();
   }
 }
 
-main().catch((err) => {
-  console.error('Backup falló:', err.message || err);
-  process.exit(1);
-});
+module.exports = { runBackup };
+
+if (require.main === module) {
+  runBackup().catch((err) => {
+    console.error('Backup falló:', err.message || err);
+    process.exit(1);
+  });
+}
