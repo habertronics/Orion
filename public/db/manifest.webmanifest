@@ -1,10 +1,10 @@
 {
   "id": "/db/",
-  "name": "Orión DB",
-  "short_name": "Orión DB",
+  "name": "Registros · Orión DB",
+  "short_name": "Registros",
   "description": "Registros de médicos e intervenciones de Habertronic Orión",
   "lang": "es",
-  "start_url": "/db/",
+  "start_url": "/db/?source=pwa",
   "scope": "/db/",
   "display": "standalone",
   "theme_color": "#1e293b",

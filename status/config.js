@@ -4,7 +4,7 @@
  */
 export const STATUS_ACCESS_PIN = "6666";
 
-export const APP_VERSION = "v1.7";
+export const APP_VERSION = "v1.8";
 
 /** Netlify / Render / Neon: cada 30 s. El clima se cachea ~30 min en el servidor. */
 export const CHECK_INTERVAL_MS = 30_000;

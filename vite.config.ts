@@ -38,6 +38,9 @@ export default defineConfig({
         'db/icons/apple-touch-icon.png',
         'db/manifest.webmanifest',
         'reps/icons/icon.svg',
+        'reps/icons/icon-192.png',
+        'reps/icons/icon-512.png',
+        'reps/icons/apple-touch-icon.png',
         'reps/manifest.webmanifest',
       ],
       manifest: {
