@@ -46,6 +46,8 @@ const countResearcher = document.getElementById("countResearcher");
 const ledeText = document.getElementById("ledeText");
 
 let activeInviteType = "researcher";
+/** Historial de pantallas de auth: Regresar vuelve al paso anterior. */
+let authStack = ["welcome"];
 
 const ERRORS = {
   invalid_email: "Revisa el correo electrónico.",
@@ -141,12 +143,22 @@ function clearMessages() {
   authInfo.textContent = "";
 }
 
-function showView(name) {
+function showView(name, { push = true } = {}) {
+  if (push) {
+    const current = authStack[authStack.length - 1];
+    if (current !== name) authStack.push(name);
+  }
   viewWelcome.hidden = name !== "welcome";
   loginForm.hidden = name !== "login";
   forgotForm.hidden = name !== "forgot";
   registerForm.hidden = name !== "register";
   clearMessages();
+}
+
+function goBackAuth() {
+  if (authStack.length > 1) authStack.pop();
+  const prev = authStack[authStack.length - 1] || "welcome";
+  showView(prev, { push: false });
 }
 
 async function api(path, { method = "GET", body, auth = false } = {}) {
@@ -173,7 +185,8 @@ async function api(path, { method = "GET", body, auth = false } = {}) {
 function showAuth() {
   authPanel.hidden = false;
   homePanel.hidden = true;
-  showView("welcome");
+  authStack = ["welcome"];
+  showView("welcome", { push: false });
   ledeText.hidden = true;
 }
 
@@ -310,6 +323,17 @@ forgotBtn.addEventListener("click", () => {
   showView("forgot");
 });
 
+document.querySelectorAll("[data-back]").forEach((btn) => {
+  btn.addEventListener("click", (event) => {
+    event.preventDefault();
+    goBackAuth();
+  });
+});
+
+document.getElementById("homeBackBtn")?.addEventListener("click", () => {
+  logout();
+});
+
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   clearMessages();
@@ -351,7 +375,8 @@ forgotForm.addEventListener("submit", async (event) => {
     loginPassword.value = data.temporaryPassword;
   }
   loginEmail.value = email;
-  showView("login");
+  authStack = ["welcome", "login"];
+  showView("login", { push: false });
   showInfo(msg);
 });
 

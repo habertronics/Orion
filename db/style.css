@@ -50,6 +50,26 @@ body {
   color: var(--accent);
 }
 
+.nav-back {
+  appearance: none;
+  display: inline-flex;
+  margin: 1.25rem 0 0.25rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.18);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.nav-back:hover {
+  border-color: rgba(56, 189, 248, 0.45);
+  color: var(--accent);
+}
+
 .eyebrow {
   margin: 0;
   text-transform: uppercase;

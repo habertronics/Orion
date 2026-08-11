@@ -51,6 +51,31 @@ body {
   color: var(--accent);
 }
 
+.nav-back {
+  appearance: none;
+  display: inline-flex;
+  align-self: flex-start;
+  margin: 1.15rem 0 0;
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.18);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.nav-back:hover {
+  border-color: rgba(110, 207, 142, 0.45);
+  color: var(--accent);
+}
+
+.panel.board .nav-back {
+  margin: 1.25rem 0 0.25rem;
+}
+
 .top .eyebrow {
   margin: 0;
   letter-spacing: 0.08em;

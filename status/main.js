@@ -371,6 +371,7 @@ copyPinBtn?.addEventListener("click", () => {
 
 refreshBtn.addEventListener("click", () => void runChecks({ forceClimate: true }));
 logoutBtn.addEventListener("click", lockBoard);
+document.getElementById("boardBackBtn")?.addEventListener("click", lockBoard);
 
 if (sessionStorage.getItem(SESSION_KEY) === "1") {
   startBoard();

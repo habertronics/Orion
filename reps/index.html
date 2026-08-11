@@ -22,7 +22,6 @@
   <body>
     <main class="shell">
       <header class="top">
-        <a class="back-link" href="/">← Regresar</a>
         <div class="brand-row">
           <svg
             class="brand-icon"
@@ -66,7 +65,7 @@
           Regístrate con tu correo institucional, invita médicos con tu QR y
           comprueba quién ya aceptó.
         </p>
-        <p class="ver" id="appVer">v0.14</p>
+        <p class="ver" id="appVer">v0.15</p>
       </header>
 
       <section class="panel auth-panel" id="authPanel">
@@ -95,6 +94,7 @@
           />
           <button type="submit" class="btn btn-block">Entrar</button>
           <button type="button" class="link-btn" id="forgotBtn">Olvidé contraseña</button>
+          <button type="button" class="nav-back" data-back>← Regresar</button>
         </form>
 
         <!-- Olvidé contraseña (pantalla aparte) -->
@@ -110,6 +110,7 @@
           <button type="submit" class="btn btn-block">
             Enviar al correo registrado la contraseña
           </button>
+          <button type="button" class="nav-back" data-back>← Regresar</button>
         </form>
 
         <!-- Registro -->
@@ -133,6 +134,7 @@
           <label for="regFullName">Nombre completo</label>
           <input id="regFullName" type="text" required maxlength="200" autocomplete="name" />
           <button type="submit" class="btn btn-block">Crear cuenta</button>
+          <button type="button" class="nav-back" data-back>← Regresar</button>
         </form>
 
         <p class="form-info" id="authInfo" hidden></p>
@@ -188,6 +190,8 @@
           </ul>
           <button type="button" class="btn ghost" id="refreshInvitesBtn">Actualizar lista</button>
         </div>
+
+        <button type="button" class="nav-back" id="homeBackBtn">← Regresar</button>
       </section>
     </main>
     <script type="module" src="./main.js"></script>

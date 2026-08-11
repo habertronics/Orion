@@ -1170,6 +1170,7 @@ onlyComplete?.addEventListener("change", () => render());
 refreshBtn.addEventListener("click", () => void loadData());
 exportBtn.addEventListener("click", exportCsv);
 logoutBtn.addEventListener("click", lockBoard);
+document.getElementById("boardBackBtn")?.addEventListener("click", lockBoard);
 
 if (sessionStorage.getItem(SESSION_KEY) === "1" && currentPin) {
   startBoard(currentPin);
