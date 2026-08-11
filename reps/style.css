@@ -92,21 +92,13 @@ body {
   max-width: 420px;
 }
 
-.auth-title {
-  margin: 0 0 0.35rem;
-  font-size: 1.25rem;
-  font-weight: 700;
-}
-
-.auth-sub {
-  margin: 0 0 1.15rem;
-  color: var(--muted);
-  font-size: 0.95rem;
-}
-
 .auth-view {
   display: grid;
-  gap: 0.55rem;
+  gap: 0.7rem;
+}
+
+#viewWelcome {
+  gap: 0.85rem;
 }
 
 .auth-form label {
@@ -116,8 +108,7 @@ body {
 
 .auth-form input[type="email"],
 .auth-form input[type="password"],
-.auth-form input[type="text"],
-.auth-form input[type="tel"] {
+.auth-form input[type="text"] {
   width: 100%;
   padding: 0.75rem 0.85rem;
   border-radius: 10px;
@@ -125,23 +116,13 @@ body {
   background: rgba(0, 0, 0, 0.25);
   color: var(--ink);
   font-size: 1rem;
-  margin-bottom: 0.2rem;
-}
-
-.check {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin: 0.35rem 0 0.55rem;
-  color: var(--ink);
-  font-size: 0.92rem;
 }
 
 .btn {
   appearance: none;
   border: none;
   border-radius: 10px;
-  padding: 0.8rem 1rem;
+  padding: 0.85rem 1rem;
   font: inherit;
   font-weight: 600;
   cursor: pointer;
@@ -172,12 +153,8 @@ body {
   font: inherit;
   font-size: 0.92rem;
   cursor: pointer;
-  padding: 0.45rem 0;
+  padding: 0.35rem 0;
   text-align: center;
-}
-
-.link-btn.muted {
-  color: var(--muted);
 }
 
 .form-error {

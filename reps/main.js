@@ -24,14 +24,10 @@ const goRegisterBtn = document.getElementById("goRegisterBtn");
 const loginEmail = document.getElementById("loginEmail");
 const loginPassword = document.getElementById("loginPassword");
 const forgotBtn = document.getElementById("forgotBtn");
-const loginBackBtn = document.getElementById("loginBackBtn");
 const forgotEmail = document.getElementById("forgotEmail");
-const forgotBackBtn = document.getElementById("forgotBackBtn");
 const regFullName = document.getElementById("regFullName");
 const regEmail = document.getElementById("regEmail");
 const regPassword = document.getElementById("regPassword");
-const regRemember = document.getElementById("regRemember");
-const registerBackBtn = document.getElementById("registerBackBtn");
 const logoutBtn = document.getElementById("logoutBtn");
 const welcomeLine = document.getElementById("welcomeLine");
 const qrInviteBtn = document.getElementById("qrInviteBtn");
@@ -49,7 +45,7 @@ const ERRORS = {
   email_taken: "Ese correo ya está registrado.",
   invalid_credentials: "Correo o contraseña incorrectos.",
   missing_password: "Escribe una contraseña.",
-  missing_full_name: "Escribe tu nombre.",
+  missing_full_name: "Escribe tu nombre completo.",
   rate_limited: "Demasiados intentos. Espera un momento.",
   server_error: "Error del servidor. Intenta de nuevo.",
   network_error: "Sin conexión con la API.",
@@ -79,18 +75,13 @@ function setRemembered(email, password) {
   );
 }
 
-function clearRemembered() {
-  localStorage.removeItem(REMEMBER_KEY);
-}
-
 function getToken() {
   return sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY);
 }
 
-function setToken(token, remember) {
+function setToken(token) {
   sessionStorage.setItem(TOKEN_KEY, token);
-  if (remember) localStorage.setItem(TOKEN_KEY, token);
-  else localStorage.removeItem(TOKEN_KEY);
+  localStorage.setItem(TOKEN_KEY, token);
 }
 
 function clearToken() {
@@ -108,7 +99,7 @@ function getSession() {
   }
 }
 
-function setSession(user, remember) {
+function setSession(user) {
   const payload = JSON.stringify({
     id: user.id,
     email: user.email,
@@ -116,8 +107,7 @@ function setSession(user, remember) {
     displayName: user.displayName || user.fullName || user.email,
   });
   sessionStorage.setItem(SESSION_KEY, payload);
-  if (remember) localStorage.setItem(SESSION_KEY, payload);
-  else localStorage.removeItem(SESSION_KEY);
+  localStorage.setItem(SESSION_KEY, payload);
 }
 
 function clearSession() {
@@ -177,12 +167,13 @@ function showAuth() {
   authPanel.hidden = false;
   homePanel.hidden = true;
   showView("welcome");
-  ledeText.textContent = "Invita médicos a Orión con tu QR de representante.";
+  ledeText.hidden = true;
 }
 
 function showHome(user) {
   authPanel.hidden = true;
   homePanel.hidden = false;
+  ledeText.hidden = false;
   welcomeLine.textContent = `Hola, ${user.displayName || user.email}`;
   ledeText.textContent =
     "Elige una opción. El QR pide correo del médico + Aceptar.";
@@ -291,13 +282,11 @@ goLoginBtn.addEventListener("click", () => {
 });
 
 goRegisterBtn.addEventListener("click", () => showView("register"));
-loginBackBtn.addEventListener("click", () => showView("welcome"));
-registerBackBtn.addEventListener("click", () => showView("welcome"));
+
 forgotBtn.addEventListener("click", () => {
   forgotEmail.value = normalizeEmail(loginEmail.value);
   showView("forgot");
 });
-forgotBackBtn.addEventListener("click", () => showView("login"));
 
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -312,10 +301,9 @@ loginForm.addEventListener("submit", async (event) => {
     showError(data.error || "invalid_credentials");
     return;
   }
-  const hadRemember = Boolean(getRemembered());
-  setToken(data.token, hadRemember);
-  setSession(data.user, hadRemember);
-  if (hadRemember) setRemembered(email, password);
+  setToken(data.token);
+  setSession(data.user);
+  setRemembered(email, password);
   showHome(data.user);
 });
 
@@ -335,7 +323,7 @@ forgotForm.addEventListener("submit", async (event) => {
     showError(data.error || "server_error");
     return;
   }
-  let msg = "Enviamos una nueva contraseña a tu correo registrado.";
+  let msg = "Enviamos la contraseña al correo registrado.";
   if (data.temporaryPassword) {
     msg += ` Contraseña temporal: ${data.temporaryPassword}`;
     loginPassword.value = data.temporaryPassword;
@@ -350,7 +338,6 @@ registerForm.addEventListener("submit", async (event) => {
   clearMessages();
   const email = normalizeEmail(regEmail.value);
   const password = regPassword.value;
-  const remember = Boolean(regRemember.checked);
   const { res, data } = await api("/api/reps/auth/register", {
     method: "POST",
     body: {
@@ -363,10 +350,9 @@ registerForm.addEventListener("submit", async (event) => {
     showError(data.error || "server_error");
     return;
   }
-  setToken(data.token, remember);
-  setSession(data.user, remember);
-  if (remember) setRemembered(email, password);
-  else clearRemembered();
+  setToken(data.token);
+  setSession(data.user);
+  setRemembered(email, password);
   showHome(data.user);
 });
 
