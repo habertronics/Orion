@@ -10,7 +10,7 @@ import {
   TOKEN_KEY,
 } from "./config.js";
 
-mountSophiaMosaic({ tint: "#6ecf8e" });
+mountSophiaMosaic({ tint: "#6ecf8e", placement: "bottom" });
 
 const appVer = document.getElementById("appVer");
 if (appVer) appVer.textContent = APP_VERSION;

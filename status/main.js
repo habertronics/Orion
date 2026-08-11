@@ -11,7 +11,7 @@ import {
   STATUS_ACCESS_PIN,
 } from "./config.js";
 
-mountSophiaMosaic({ tint: "#5eead4" });
+mountSophiaMosaic({ tint: "#5eead4", placement: "bottom" });
 
 const gatePanel = document.getElementById("gatePanel");
 const boardPanel = document.getElementById("boardPanel");

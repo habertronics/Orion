@@ -4,17 +4,22 @@ const LOGO_SRC = '/brand/sophia-logo.png'
 
 /**
  * Mosaico ambientado Sofía (ráfagas de “viento”).
- * @param {{ tint?: string, parent?: ParentNode }} [options]
+ * @param {{ tint?: string, placement?: 'top' | 'bottom', parent?: ParentNode }} [options]
  * - tint: color de marca (apps oscuras: logo como máscara)
+ * - placement: 'top' (default) o 'bottom' (debajo de los botones de acceso)
  * - sin tint: PNG a color (portada clara)
  */
 export function mountSophiaMosaic(options = {}) {
-  const { tint = '', parent = document.body } = options
+  const { tint = '', placement = 'top', parent = document.body } = options
 
   if (document.querySelector('.sophia-mosaic')) return
 
+  const classes = ['sophia-mosaic']
+  if (tint) classes.push('sophia-mosaic--tinted')
+  if (placement === 'bottom') classes.push('sophia-mosaic--bottom')
+
   const root = document.createElement('div')
-  root.className = tint ? 'sophia-mosaic sophia-mosaic--tinted' : 'sophia-mosaic'
+  root.className = classes.join(' ')
   root.setAttribute('aria-hidden', 'true')
   root.style.setProperty('--cols', String(COLS))
   root.style.setProperty('--rows', String(ROWS))

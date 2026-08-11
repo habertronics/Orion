@@ -10,6 +10,13 @@
   overflow: hidden;
 }
 
+/* Debajo de Entrar / Registrarme en reps, DB y Estado */
+.sophia-mosaic--bottom {
+  align-items: flex-end;
+  padding-top: 0;
+  padding-bottom: max(4.5rem, calc(env(safe-area-inset-bottom) + 3.5rem));
+}
+
 .sophia-mosaic__grid {
   display: grid;
   grid-template-columns: repeat(var(--cols, 7), 1fr);

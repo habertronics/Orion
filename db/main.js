@@ -9,7 +9,7 @@ import {
 } from "./columns.js";
 import { API_BASE, APP_VERSION, DB_ACCESS_PIN, SESSION_KEY } from "./config.js";
 
-mountSophiaMosaic({ tint: "#38bdf8" });
+mountSophiaMosaic({ tint: "#38bdf8", placement: "bottom" });
 
 const gatePanel = document.getElementById("gatePanel");
 const boardPanel = document.getElementById("boardPanel");
