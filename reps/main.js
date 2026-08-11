@@ -1,6 +1,12 @@
 import "./style.css";
 import QRCode from "qrcode";
-import { API_BASE, APP_VERSION, SESSION_KEY, TOKEN_KEY } from "./config.js";
+import {
+  API_BASE,
+  APP_VERSION,
+  REMEMBER_KEY,
+  SESSION_KEY,
+  TOKEN_KEY,
+} from "./config.js";
 
 const appVer = document.getElementById("appVer");
 if (appVer) appVer.textContent = APP_VERSION;
@@ -9,17 +15,23 @@ const authPanel = document.getElementById("authPanel");
 const homePanel = document.getElementById("homePanel");
 const authError = document.getElementById("authError");
 const authInfo = document.getElementById("authInfo");
+const viewWelcome = document.getElementById("viewWelcome");
 const loginForm = document.getElementById("loginForm");
 const forgotForm = document.getElementById("forgotForm");
 const registerForm = document.getElementById("registerForm");
+const goLoginBtn = document.getElementById("goLoginBtn");
+const goRegisterBtn = document.getElementById("goRegisterBtn");
 const loginEmail = document.getElementById("loginEmail");
 const loginPassword = document.getElementById("loginPassword");
 const forgotBtn = document.getElementById("forgotBtn");
+const loginBackBtn = document.getElementById("loginBackBtn");
 const forgotEmail = document.getElementById("forgotEmail");
 const forgotBackBtn = document.getElementById("forgotBackBtn");
 const regFullName = document.getElementById("regFullName");
 const regEmail = document.getElementById("regEmail");
 const regPassword = document.getElementById("regPassword");
+const regRemember = document.getElementById("regRemember");
+const registerBackBtn = document.getElementById("registerBackBtn");
 const logoutBtn = document.getElementById("logoutBtn");
 const welcomeLine = document.getElementById("welcomeLine");
 const qrInviteBtn = document.getElementById("qrInviteBtn");
@@ -37,7 +49,7 @@ const ERRORS = {
   email_taken: "Ese correo ya está registrado.",
   invalid_credentials: "Correo o contraseña incorrectos.",
   missing_password: "Escribe una contraseña.",
-  missing_full_name: "Escribe tu nombre completo.",
+  missing_full_name: "Escribe tu nombre.",
   rate_limited: "Demasiados intentos. Espera un momento.",
   server_error: "Error del servidor. Intenta de nuevo.",
   network_error: "Sin conexión con la API.",
@@ -48,13 +60,37 @@ function normalizeEmail(email) {
   return String(email || "").trim().toLowerCase();
 }
 
+function getRemembered() {
+  try {
+    const raw = localStorage.getItem(REMEMBER_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed?.email || !parsed?.password) return null;
+    return { email: String(parsed.email), password: String(parsed.password) };
+  } catch {
+    return null;
+  }
+}
+
+function setRemembered(email, password) {
+  localStorage.setItem(
+    REMEMBER_KEY,
+    JSON.stringify({ email: normalizeEmail(email), password }),
+  );
+}
+
+function clearRemembered() {
+  localStorage.removeItem(REMEMBER_KEY);
+}
+
 function getToken() {
   return sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY);
 }
 
-function setToken(token) {
+function setToken(token, remember) {
   sessionStorage.setItem(TOKEN_KEY, token);
-  localStorage.setItem(TOKEN_KEY, token);
+  if (remember) localStorage.setItem(TOKEN_KEY, token);
+  else localStorage.removeItem(TOKEN_KEY);
 }
 
 function clearToken() {
@@ -72,7 +108,7 @@ function getSession() {
   }
 }
 
-function setSession(user) {
+function setSession(user, remember) {
   const payload = JSON.stringify({
     id: user.id,
     email: user.email,
@@ -80,7 +116,8 @@ function setSession(user) {
     displayName: user.displayName || user.fullName || user.email,
   });
   sessionStorage.setItem(SESSION_KEY, payload);
-  localStorage.setItem(SESSION_KEY, payload);
+  if (remember) localStorage.setItem(SESSION_KEY, payload);
+  else localStorage.removeItem(SESSION_KEY);
 }
 
 function clearSession() {
@@ -107,13 +144,11 @@ function clearMessages() {
   authInfo.textContent = "";
 }
 
-function setAuthMode(mode) {
-  document.querySelectorAll(".tab").forEach((t) => {
-    t.classList.toggle("active", t.getAttribute("data-auth") === mode);
-  });
-  loginForm.hidden = mode !== "login";
-  registerForm.hidden = mode !== "register";
-  forgotForm.hidden = mode !== "forgot";
+function showView(name) {
+  viewWelcome.hidden = name !== "welcome";
+  loginForm.hidden = name !== "login";
+  forgotForm.hidden = name !== "forgot";
+  registerForm.hidden = name !== "register";
   clearMessages();
 }
 
@@ -141,9 +176,8 @@ async function api(path, { method = "GET", body, auth = false } = {}) {
 function showAuth() {
   authPanel.hidden = false;
   homePanel.hidden = true;
-  setAuthMode("login");
-  ledeText.textContent =
-    "Entra con tu correo o regístrate para invitar médicos con tu QR.";
+  showView("welcome");
+  ledeText.textContent = "Invita médicos a Orión con tu QR de representante.";
 }
 
 function showHome(user) {
@@ -247,29 +281,23 @@ async function createAndShowQr() {
   }
 }
 
-async function sendForgotPassword(email) {
-  const { res, data } = await api("/api/reps/auth/forgot-password", {
-    method: "POST",
-    body: { email },
-  });
-  if (!res?.ok) {
-    showError(data.error || "server_error");
-    return false;
+goLoginBtn.addEventListener("click", () => {
+  const remembered = getRemembered();
+  if (remembered) {
+    loginEmail.value = remembered.email;
+    loginPassword.value = remembered.password;
   }
-  let msg = "Listo. Si ese correo está registrado, te enviamos una nueva contraseña.";
-  if (data.temporaryPassword) {
-    msg += ` Contraseña temporal: ${data.temporaryPassword}`;
-    loginPassword.value = data.temporaryPassword;
-  }
-  showInfo(msg);
-  return true;
-}
-
-document.querySelectorAll(".tab").forEach((tab) => {
-  tab.addEventListener("click", () => {
-    setAuthMode(tab.getAttribute("data-auth"));
-  });
+  showView("login");
 });
+
+goRegisterBtn.addEventListener("click", () => showView("register"));
+loginBackBtn.addEventListener("click", () => showView("welcome"));
+registerBackBtn.addEventListener("click", () => showView("welcome"));
+forgotBtn.addEventListener("click", () => {
+  forgotEmail.value = normalizeEmail(loginEmail.value);
+  showView("forgot");
+});
+forgotBackBtn.addEventListener("click", () => showView("login"));
 
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -284,23 +312,11 @@ loginForm.addEventListener("submit", async (event) => {
     showError(data.error || "invalid_credentials");
     return;
   }
-  setToken(data.token);
-  setSession(data.user);
+  const hadRemember = Boolean(getRemembered());
+  setToken(data.token, hadRemember);
+  setSession(data.user, hadRemember);
+  if (hadRemember) setRemembered(email, password);
   showHome(data.user);
-});
-
-forgotBtn.addEventListener("click", async () => {
-  clearMessages();
-  const email = normalizeEmail(loginEmail.value);
-  if (email) {
-    forgotBtn.disabled = true;
-    await sendForgotPassword(email);
-    forgotBtn.disabled = false;
-    return;
-  }
-  forgotEmail.value = "";
-  setAuthMode("forgot");
-  forgotEmail.focus();
 });
 
 forgotForm.addEventListener("submit", async (event) => {
@@ -311,22 +327,30 @@ forgotForm.addEventListener("submit", async (event) => {
     showError("invalid_email");
     return;
   }
-  const ok = await sendForgotPassword(email);
-  if (ok) {
-    const msg = authInfo.textContent;
-    loginEmail.value = email;
-    setAuthMode("login");
-    if (msg) showInfo(msg);
+  const { res, data } = await api("/api/reps/auth/forgot-password", {
+    method: "POST",
+    body: { email },
+  });
+  if (!res?.ok) {
+    showError(data.error || "server_error");
+    return;
   }
+  let msg = "Enviamos una nueva contraseña a tu correo registrado.";
+  if (data.temporaryPassword) {
+    msg += ` Contraseña temporal: ${data.temporaryPassword}`;
+    loginPassword.value = data.temporaryPassword;
+  }
+  loginEmail.value = email;
+  showView("login");
+  showInfo(msg);
 });
-
-forgotBackBtn.addEventListener("click", () => setAuthMode("login"));
 
 registerForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   clearMessages();
   const email = normalizeEmail(regEmail.value);
   const password = regPassword.value;
+  const remember = Boolean(regRemember.checked);
   const { res, data } = await api("/api/reps/auth/register", {
     method: "POST",
     body: {
@@ -339,8 +363,10 @@ registerForm.addEventListener("submit", async (event) => {
     showError(data.error || "server_error");
     return;
   }
-  setToken(data.token);
-  setSession(data.user);
+  setToken(data.token, remember);
+  setSession(data.user, remember);
+  if (remember) setRemembered(email, password);
+  else clearRemembered();
   showHome(data.user);
 });
 

@@ -32,23 +32,28 @@
           Regístrate con tu correo institucional, invita médicos con tu QR y
           comprueba quién ya aceptó.
         </p>
-        <p class="ver" id="appVer">v0.4</p>
+        <p class="ver" id="appVer">v0.5</p>
       </header>
 
-      <section class="panel" id="authPanel">
-        <div class="tabs" role="tablist">
-          <button type="button" class="tab active" data-auth="login">Entrar</button>
-          <button type="button" class="tab" data-auth="register">Registrarme</button>
+      <section class="panel auth-panel" id="authPanel">
+        <!-- Pantalla 1: solo dos botones -->
+        <div class="auth-view" id="viewWelcome">
+          <h2 class="auth-title">Acceso</h2>
+          <p class="auth-sub">Elige cómo continuar</p>
+          <button type="button" class="btn btn-block" id="goLoginBtn">Entrar</button>
+          <button type="button" class="btn btn-block ghost" id="goRegisterBtn">Registrarme</button>
         </div>
 
-        <form id="loginForm" class="auth-form" autocomplete="on">
-          <label for="loginEmail">Usuario (correo electrónico)</label>
+        <!-- Pantalla 2: login limpio -->
+        <form id="loginForm" class="auth-view auth-form" hidden autocomplete="on">
+          <h2 class="auth-title">Entrar</h2>
+          <label for="loginEmail">Usuario</label>
           <input
             id="loginEmail"
             type="email"
             required
             autocomplete="username"
-            placeholder="tunombre@laboratorio.com"
+            placeholder="correo electrónico"
           />
           <label for="loginPassword">Contraseña</label>
           <input
@@ -57,15 +62,15 @@
             required
             autocomplete="current-password"
           />
-          <button type="submit" class="btn">Entrar</button>
-          <button type="button" class="btn ghost" id="forgotBtn">Olvidé contraseña</button>
+          <button type="submit" class="btn btn-block">Entrar</button>
+          <button type="button" class="link-btn" id="forgotBtn">Olvidé contraseña</button>
+          <button type="button" class="link-btn muted" id="loginBackBtn">Volver</button>
         </form>
 
-        <form id="forgotForm" class="auth-form" hidden autocomplete="on">
-          <p class="field-hint">
-            Escribe el correo de tu cuenta. Te enviaremos una nueva contraseña.
-          </p>
-          <label for="forgotEmail">Correo electrónico</label>
+        <!-- Pantalla 3: olvidé contraseña -->
+        <form id="forgotForm" class="auth-view auth-form" hidden autocomplete="on">
+          <h2 class="auth-title">Olvidé contraseña</h2>
+          <label for="forgotEmail">Correo electrónico registrado</label>
           <input
             id="forgotEmail"
             type="email"
@@ -73,11 +78,13 @@
             autocomplete="email"
             placeholder="tunombre@laboratorio.com"
           />
-          <button type="submit" class="btn">Enviar contraseña</button>
-          <button type="button" class="btn ghost" id="forgotBackBtn">Volver a Entrar</button>
+          <button type="submit" class="btn btn-block">Enviar contraseña</button>
+          <button type="button" class="link-btn muted" id="forgotBackBtn">Volver</button>
         </form>
 
-        <form id="registerForm" class="auth-form" hidden autocomplete="on">
+        <!-- Pantalla 4: registro -->
+        <form id="registerForm" class="auth-view auth-form" hidden autocomplete="on">
+          <h2 class="auth-title">Crear cuenta</h2>
           <label for="regEmail">Usuario (correo electrónico)</label>
           <input
             id="regEmail"
@@ -86,6 +93,8 @@
             autocomplete="email"
             placeholder="tunombre@laboratorio.com"
           />
+          <label for="regFullName">Nombre</label>
+          <input id="regFullName" type="text" required maxlength="200" autocomplete="name" />
           <label for="regPassword">Contraseña</label>
           <input
             id="regPassword"
@@ -94,9 +103,12 @@
             minlength="4"
             autocomplete="new-password"
           />
-          <label for="regFullName">Nombre completo</label>
-          <input id="regFullName" type="text" required maxlength="200" autocomplete="name" />
-          <button type="submit" class="btn">Crear cuenta</button>
+          <label class="check">
+            <input id="regRemember" type="checkbox" checked />
+            Recordar en este dispositivo
+          </label>
+          <button type="submit" class="btn btn-block">Crear cuenta</button>
+          <button type="button" class="link-btn muted" id="registerBackBtn">Volver</button>
         </form>
 
         <p class="form-info" id="authInfo" hidden></p>

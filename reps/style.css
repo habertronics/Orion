@@ -76,7 +76,7 @@ body {
 
 .panel {
   margin-top: 1.5rem;
-  padding: 1.25rem 1.15rem;
+  padding: 1.35rem 1.2rem;
   border: 1px solid var(--line);
   border-radius: 16px;
   background: var(--card);
@@ -88,34 +88,25 @@ body {
   background: transparent;
 }
 
-.tabs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.4rem;
-  margin-bottom: 1rem;
+.auth-panel {
+  max-width: 420px;
 }
 
-.tab {
-  appearance: none;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 0.65rem;
-  background: transparent;
+.auth-title {
+  margin: 0 0 0.35rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.auth-sub {
+  margin: 0 0 1.15rem;
   color: var(--muted);
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
+  font-size: 0.95rem;
 }
 
-.tab.active {
-  background: rgba(110, 207, 142, 0.18);
-  color: var(--ink);
-  border-color: rgba(110, 207, 142, 0.4);
-}
-
-.auth-form {
+.auth-view {
   display: grid;
-  gap: 0.45rem;
+  gap: 0.55rem;
 }
 
 .auth-form label {
@@ -128,41 +119,38 @@ body {
 .auth-form input[type="text"],
 .auth-form input[type="tel"] {
   width: 100%;
-  padding: 0.7rem 0.85rem;
+  padding: 0.75rem 0.85rem;
   border-radius: 10px;
   border: 1px solid var(--line);
   background: rgba(0, 0, 0, 0.25);
   color: var(--ink);
   font-size: 1rem;
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.2rem;
 }
 
 .check {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin: 0.35rem 0 0.75rem;
+  margin: 0.35rem 0 0.55rem;
   color: var(--ink);
   font-size: 0.92rem;
-}
-
-.pw-row {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 0.5rem;
-  margin-bottom: 0.35rem;
 }
 
 .btn {
   appearance: none;
   border: none;
   border-radius: 10px;
-  padding: 0.7rem 1rem;
+  padding: 0.8rem 1rem;
   font: inherit;
   font-weight: 600;
   cursor: pointer;
   background: var(--accent-deep);
   color: #f4fff7;
+}
+
+.btn-block {
+  width: 100%;
 }
 
 .btn:disabled {
@@ -176,6 +164,22 @@ body {
   color: var(--ink);
 }
 
+.link-btn {
+  appearance: none;
+  border: none;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 0.92rem;
+  cursor: pointer;
+  padding: 0.45rem 0;
+  text-align: center;
+}
+
+.link-btn.muted {
+  color: var(--muted);
+}
+
 .form-error {
   margin: 0.85rem 0 0;
   color: #fca5a5;
@@ -187,17 +191,6 @@ body {
   color: #bbf7d0;
   font-size: 0.9rem;
   line-height: 1.4;
-}
-
-.field-hint {
-  margin: 0 0 0.75rem;
-  font-size: 0.85rem;
-  color: var(--muted);
-  line-height: 1.4;
-}
-
-.auth-form .btn.ghost {
-  margin-top: 0.45rem;
 }
 
 .welcome {
