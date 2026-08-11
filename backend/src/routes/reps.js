@@ -88,8 +88,10 @@ function acceptUrlForToken(token) {
 }
 
 function registerUrlForEmail(email) {
-  const base = `${PUBLIC_APP_ORIGIN.replace(/\/$/, '')}/`;
-  return `${base}?inviteEmail=${encodeURIComponent(email)}`;
+  const base = `${PUBLIC_APP_ORIGIN.replace(/\/$/, '')}/app/`;
+  const url = new URL(base);
+  if (email) url.searchParams.set('inviteEmail', email);
+  return url.toString();
 }
 
 /** POST /api/reps/auth/register — usuario, contraseña y nombre completo. */

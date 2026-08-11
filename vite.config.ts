@@ -20,6 +20,19 @@ export default defineConfig({
     },
   },
   plugins: [
+    {
+      name: 'orion-app-path',
+      configureServer(server) {
+        server.middlewares.use((req, _res, next) => {
+          if (!req.url) return next()
+          if (req.url === '/app' || req.url.startsWith('/app/') || req.url.startsWith('/app?')) {
+            const rest = req.url.slice('/app'.length) || '/'
+            req.url = rest.startsWith('/') ? rest : `/${rest}`
+          }
+          next()
+        })
+      },
+    },
     react(),
     VitePWA({
       registerType: 'autoUpdate',
@@ -44,7 +57,7 @@ export default defineConfig({
         'reps/manifest.webmanifest',
       ],
       manifest: {
-        id: '/',
+        id: '/app/',
         name: 'Habertronic Orión',
         short_name: 'Orión',
         description:
@@ -54,10 +67,10 @@ export default defineConfig({
         display: 'standalone',
         orientation: 'portrait',
         lang: 'es',
-        start_url: '/',
-        scope: '/',
-        // No capturar /reps /db /status: el celular debe abrirlos en Chrome para poder instalarlos.
-        handle_links: 'not-preferred',
+        // Alcance propio: NO anidar /reps /db /status (Chrome no deja instalar las otras).
+        start_url: '/app/',
+        scope: '/app/',
+        handle_links: 'preferred',
         icons: [
           {
             src: 'pwa-192.png',
@@ -82,6 +95,7 @@ export default defineConfig({
         clientsClaim: true,
         skipWaiting: true,
         navigateFallback: 'index.html',
+        navigateFallbackAllowlist: [/^\/app/],
         navigateFallbackDenylist: [/^\/parpadeometro/, /^\/status/, /^\/db/, /^\/reps/],
         globPatterns: ['**/*.{js,css,html,svg,ico,png,woff2}'],
         // WASM ~12MB: no precache; runtime cache below.

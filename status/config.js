@@ -4,7 +4,7 @@
  */
 export const STATUS_ACCESS_PIN = "6666";
 
-export const APP_VERSION = "v1.10";
+export const APP_VERSION = "v1.11";
 
 /** Netlify / Render / Neon: cada 30 s. El clima se cachea ~30 min en el servidor. */
 export const CHECK_INTERVAL_MS = 30_000;
@@ -22,7 +22,7 @@ export const SLOW_MS = {
 export const BACKUP_STALE_MS = 48 * 60 * 60 * 1000;
 
 export const ENDPOINTS = {
-  netlify: "https://habertronic-orion.netlify.app/",
+  netlify: "https://habertronic-orion.netlify.app/app/",
   apiHealth: "https://orion-83ct.onrender.com/api/health",
   apiDeep: "https://orion-83ct.onrender.com/api/health/deep",
   apiBackups: "https://orion-83ct.onrender.com/api/admin/backups",

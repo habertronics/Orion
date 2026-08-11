@@ -458,7 +458,7 @@ function refreshInstallBanner() {
   } else {
     if (installBannerText) {
       installBannerText.textContent =
-        "En Chrome: menú ⋮ → Instalar app / Añadir a pantalla de inicio. Si no aparece, copia el enlace y ábrelo en una pestaña nueva de Chrome (no desde Orión).";
+        "Importante: desinstala la Orión antigua (si la tenías) y abre cada app en Chrome por separado para poder instalar Representantes, Registros y Estado.";
     }
     if (installAppBtn) installAppBtn.hidden = true;
   }

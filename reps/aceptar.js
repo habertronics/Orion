@@ -49,13 +49,13 @@ function setBusy(busy) {
   if (declineBtn) declineBtn.disabled = busy;
 }
 
-function showDone(message, { showRegister = false, registerUrl = "/", title = "Listo" } = {}) {
+function showDone(message, { showRegister = false, registerUrl = "/app/", title = "Listo" } = {}) {
   acceptForm.hidden = true;
   donePanel.hidden = false;
   if (doneTitle) doneTitle.textContent = title;
   doneText.textContent = message;
   registerLink.hidden = !showRegister;
-  registerLink.href = registerUrl || "/";
+  registerLink.href = registerUrl || "/app/";
 }
 
 async function loadInvite() {
@@ -89,8 +89,8 @@ async function loadInvite() {
         {
           showRegister: true,
           registerUrl: data.inviteeEmail
-            ? `/?inviteEmail=${encodeURIComponent(data.inviteeEmail)}`
-            : "/",
+            ? `/app/?inviteEmail=${encodeURIComponent(data.inviteeEmail)}`
+            : "/app/",
         },
       );
       inviteLede.textContent = data.labName || "Laboratorio Sofía";
@@ -164,7 +164,7 @@ async function postDecision(path) {
         : `Aceptaste la invitación de ${label} de ${data.invitedBy}. Usaremos ${data.inviteeEmail} para vincularte. Entra a Orión con ese correo para registrarte.`,
       {
         showRegister: true,
-        registerUrl: data.registerUrl || "/",
+        registerUrl: data.registerUrl || "/app/",
       },
     );
   } catch {

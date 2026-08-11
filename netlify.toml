@@ -2,6 +2,27 @@
   command = "npm run build"
   publish = "dist"
 
+# Orión (investigadores): alcance /app/ — no anida a reps/db/status/parpadeómetro
+[[redirects]]
+  from = "/app"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/app/"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/app/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/"
+  to = "/app/"
+  status = 302
+
 [[redirects]]
   from = "/parpadeometro"
   to = "/parpadeometro/index.html"
@@ -50,11 +71,6 @@
 [[redirects]]
   from = "/reps/"
   to = "/reps/index.html"
-  status = 200
-
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
   status = 200
 
 [[headers]]
