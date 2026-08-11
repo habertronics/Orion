@@ -14,6 +14,7 @@ const doctorEmail = document.getElementById("doctorEmail");
 const declineBtn = document.getElementById("declineBtn");
 const acceptError = document.getElementById("acceptError");
 const donePanel = document.getElementById("donePanel");
+const doneTitle = document.getElementById("doneTitle");
 const doneText = document.getElementById("doneText");
 const registerLink = document.getElementById("registerLink");
 const fatalError = document.getElementById("fatalError");
@@ -48,9 +49,10 @@ function setBusy(busy) {
   if (declineBtn) declineBtn.disabled = busy;
 }
 
-function showDone(message, { showRegister = false, registerUrl = "/" } = {}) {
+function showDone(message, { showRegister = false, registerUrl = "/", title = "Listo" } = {}) {
   acceptForm.hidden = true;
   donePanel.hidden = false;
+  if (doneTitle) doneTitle.textContent = title;
   doneText.textContent = message;
   registerLink.hidden = !showRegister;
   registerLink.href = registerUrl || "/";
@@ -95,12 +97,10 @@ async function loadInvite() {
       return;
     }
     if (data.alreadyDeclined) {
-      showDone(
-        `Esta invitación quedó registrada como no aceptada${
-          data.inviteeEmail ? ` (${data.inviteeEmail})` : ""
-        }.`,
-        { showRegister: false },
-      );
+      showDone("Gracias por su respuesta.", {
+        showRegister: false,
+        title: "Respuesta registrada",
+      });
       inviteLede.textContent = data.labName || "Laboratorio Sofía";
       return;
     }
@@ -152,10 +152,10 @@ async function postDecision(path) {
     }
     const label = typeLabel(data.inviteType);
     if (path === "decline") {
-      showDone(
-        `Registramos que no aceptaste la invitación de ${label} de ${data.invitedBy}.`,
-        { showRegister: false },
-      );
+      showDone("Gracias por su respuesta.", {
+        showRegister: false,
+        title: "Respuesta registrada",
+      });
       return;
     }
     showDone(

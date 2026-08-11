@@ -30,6 +30,7 @@ let workbook = null;
 let invitationsData = null;
 let currentView = "medicos";
 let inviteFilter = "all";
+let repRankSort = { key: "invited", dir: "desc" };
 let currentPin = sessionStorage.getItem(`${SESSION_KEY}-pin`) || "";
 /** Subespecialidad enfocada en la 2.ª gráfica de especialidades. */
 let specialtyFocusSlug = "";
@@ -799,7 +800,8 @@ function enrichResearchers(data) {
 }
 
 async function fetchInvitations(pin, type = "all") {
-  const url = `${API_BASE}/api/admin/invitations?type=${encodeURIComponent(type)}`;
+  const apiType = type === "ranking" ? "all" : type;
+  const url = `${API_BASE}/api/admin/invitations?type=${encodeURIComponent(apiType)}`;
   const response = await fetch(url, {
     headers: { "X-Admin-Pin": pin, Accept: "application/json" },
     cache: "no-store",
@@ -813,10 +815,163 @@ function updateViewChrome() {
   const isReps = currentView === "representantes";
   if (inviteFilters) inviteFilters.hidden = !isReps;
   if (onlyCompleteWrap) onlyCompleteWrap.hidden = isReps;
-  if (medicosDash && isReps) medicosDash.hidden = true;
+  if (medicosDash && !isReps && currentView !== "medicos") {
+    medicosDash.hidden = true;
+  }
+}
+
+function topRepLabel(rep) {
+  if (!rep) return "—";
+  const name = rep.name || rep.fullName || "—";
+  return `${name} (${rep.invited ?? 0})`;
+}
+
+function renderRepresentantesDashboard() {
+  if (!medicosDash) return;
+  const c = invitationsData?.counts || {};
+  const accepted = Number(c.accepted) || 0;
+  const declined = Number(c.declined) || 0;
+  const invited = Number(c.invited) || accepted + declined;
+  const reps = Number(c.representatives) || invitationsData?.representatives?.length || 0;
+
+  medicosDash.hidden = false;
+  medicosDash.innerHTML = `
+    <div class="mdash">
+      <div class="mdash__chart">
+        <h3 class="mdash__title">Respuestas de médicos</h3>
+        <canvas id="repsPie" class="mdash__canvas" width="260" height="260" aria-label="Aceptó contra no aceptó"></canvas>
+        <ul class="mdash__legend">
+          <li><span class="mdash__swatch" style="background:#4ade80"></span> Aceptó <strong>${accepted}</strong></li>
+          <li><span class="mdash__swatch" style="background:#f87171"></span> No aceptó <strong>${declined}</strong></li>
+          <li><span class="mdash__swatch" style="background:#38bdf8"></span> Médicos invitados <strong>${invited}</strong></li>
+        </ul>
+      </div>
+      <div class="mdash__kpis">
+        <button type="button" class="mdash__btn mdash__btn--medicos" disabled>
+          <span class="mdash__btn-label">Representantes registrados</span>
+          <span class="mdash__btn-value">${reps}</span>
+        </button>
+        <button type="button" class="mdash__btn mdash__btn--interv" disabled>
+          <span class="mdash__btn-label">Médicos invitados</span>
+          <span class="mdash__btn-value">${invited}</span>
+        </button>
+        <div class="mdash__stats" aria-label="Invitados por representante">
+          <p class="mdash__stats-title">Invitados por representante</p>
+          <div class="mdash__stats-grid">
+            <div>
+              <span class="mdash__stat-label">Promedio</span>
+              <span class="mdash__stat-value">${fmtStat(c.avgInvitedPerRep)}</span>
+            </div>
+            <div>
+              <span class="mdash__stat-label">Mediana</span>
+              <span class="mdash__stat-value">${fmtStat(c.medianInvitedPerRep)}</span>
+            </div>
+            <div>
+              <span class="mdash__stat-label">Moda</span>
+              <span class="mdash__stat-value">${fmtStat(c.modeInvitedPerRep)}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="reps-highlights">
+      <div class="reps-hi">
+        <span class="reps-hi__label">Más invitados</span>
+        <strong>${esc(topRepLabel(c.topByInvited))}</strong>
+      </div>
+      <div class="reps-hi">
+        <span class="reps-hi__label">Más aceptados</span>
+        <strong>${esc(topRepLabel(c.topByAccepted))}</strong>
+      </div>
+      <div class="reps-hi">
+        <span class="reps-hi__label">Más no aceptaron</span>
+        <strong>${esc(topRepLabel(c.topByDeclined))}</strong>
+      </div>
+      <div class="reps-hi reps-hi--totals">
+        <span class="reps-hi__label">Totales</span>
+        <strong>Invitados ${invited} · Aceptó ${accepted} · No aceptó ${declined}</strong>
+      </div>
+    </div>
+  `;
+
+  requestAnimationFrame(() => {
+    drawDonut(
+      document.getElementById("repsPie"),
+      [
+        { label: "Aceptó", value: accepted, color: "#4ade80" },
+        { label: "No aceptó", value: declined, color: "#f87171" },
+      ],
+      invited,
+      "invitados",
+    );
+  });
+}
+
+function sortedRankings() {
+  const rows = [...(invitationsData?.rankings || [])];
+  const { key, dir } = repRankSort;
+  const mult = dir === "asc" ? 1 : -1;
+  rows.sort((a, b) => {
+    if (key === "name") {
+      return mult * String(a.name || "").localeCompare(String(b.name || ""), "es");
+    }
+    const av = Number(a[key]) || 0;
+    const bv = Number(b[key]) || 0;
+    if (av !== bv) return mult * (av - bv);
+    return String(a.name || "").localeCompare(String(b.name || ""), "es");
+  });
+  return rows;
+}
+
+function sortMark(key) {
+  if (repRankSort.key !== key) return "";
+  return repRankSort.dir === "asc" ? " ↑" : " ↓";
+}
+
+function renderRepRankingTable() {
+  const rows = sortedRankings();
+  const head = `
+    <tr>
+      <th class="band-reps"><button type="button" class="th-sort" data-sort="name">Representante${sortMark("name")}</button></th>
+      <th class="band-reps"><button type="button" class="th-sort" data-sort="invited">Invitados${sortMark("invited")}</button></th>
+      <th class="band-reps"><button type="button" class="th-sort" data-sort="accepted">Aceptaron${sortMark("accepted")}</button></th>
+      <th class="band-reps"><button type="button" class="th-sort" data-sort="declined">No aceptaron${sortMark("declined")}</button></th>
+    </tr>`;
+  const body = rows
+    .map(
+      (row, index) => `<tr class="row-tone-${index % 2}">
+        <td title="${esc(row.email || "")}">${esc(row.name)}</td>
+        <td>${row.invited}</td>
+        <td>${row.accepted}</td>
+        <td>${row.declined}</td>
+      </tr>`,
+    )
+    .join("");
+  tableWrap.innerHTML = `
+    <table class="data sheet-reps sheet-reps--rank">
+      <thead>${head}</thead>
+      <tbody>${body || `<tr><td colspan="4">Sin representantes</td></tr>`}</tbody>
+    </table>`;
+  tableWrap.querySelectorAll(".th-sort").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const key = btn.dataset.sort || "invited";
+      if (repRankSort.key === key) {
+        repRankSort.dir = repRankSort.dir === "desc" ? "asc" : "desc";
+      } else {
+        repRankSort = { key, dir: key === "name" ? "asc" : "desc" };
+      }
+      renderRepRankingTable();
+    });
+  });
 }
 
 function renderRepresentantes() {
+  renderRepresentantesDashboard();
+  if (inviteFilter === "ranking") {
+    renderRepRankingTable();
+    return;
+  }
   const rows = invitationsData?.invitations || [];
   const body = rows
     .map((row, index) => {
@@ -837,14 +992,11 @@ function renderRepresentantes() {
 function renderSummary() {
   if (currentView === "representantes") {
     const c = invitationsData?.counts || {};
-    const reps = invitationsData?.representatives?.length ?? 0;
     summaryBar.innerHTML = `
-      <span class="pill">Representantes: <strong>${reps}</strong></span>
-      <span class="pill">Invitaciones: <strong>${c.all ?? 0}</strong></span>
+      <span class="pill">Representantes: <strong>${c.representatives ?? 0}</strong></span>
+      <span class="pill">Invitados: <strong>${c.invited ?? 0}</strong></span>
       <span class="pill">Aceptó: <strong>${c.accepted ?? 0}</strong></span>
       <span class="pill">No aceptó: <strong>${c.declined ?? 0}</strong></span>
-      <span class="pill">Preceptorship aceptadas: <strong>${c.preceptorship ?? 0}</strong></span>
-      <span class="pill">Investigadores aceptadas: <strong>${c.researcher ?? 0}</strong></span>
     `;
     return;
   }
@@ -906,10 +1058,21 @@ function exportCsv() {
     columns.map((c) => csvEscape(formatCell(getPath(row, c.key), c.key, row))).join(",");
 
   if (currentView === "representantes") {
-    columns = INVITACIONES_COLUMNS;
-    rows = invitationsData?.invitations || [];
-    lineBuilder = (row) =>
-      columns.map((c) => csvEscape(row[c.key])).join(",");
+    if (inviteFilter === "ranking") {
+      columns = [
+        { key: "name", label: "Representante" },
+        { key: "invited", label: "Invitados" },
+        { key: "accepted", label: "Aceptaron" },
+        { key: "declined", label: "No aceptaron" },
+      ];
+      rows = sortedRankings();
+      lineBuilder = (row) => columns.map((c) => csvEscape(row[c.key])).join(",");
+    } else {
+      columns = INVITACIONES_COLUMNS;
+      rows = invitationsData?.invitations || [];
+      lineBuilder = (row) =>
+        columns.map((c) => csvEscape(row[c.key])).join(",");
+    }
   } else if (currentView === "medicos") {
     columns = MEDICOS_COLUMNS;
     rows = (workbook?.researchers || []).map((r) => r.flat || r);

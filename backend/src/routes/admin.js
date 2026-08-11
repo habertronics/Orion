@@ -691,32 +691,107 @@ router.get('/invitations', async (req, res) => {
 
     const accepted = invitations.filter((i) => i.medicoAcepto);
     const declined = invitations.filter((i) => i.status === 'declined');
+
+    const rankParams = [];
+    let rankTypeSql = '';
+    if (type !== 'all') {
+      rankParams.push(type);
+      rankTypeSql = ` AND i.invite_type = $${rankParams.length}`;
+    }
+
+    const rankResult = await query(
+      `SELECT rep.id, rep.full_name, rep.email,
+              COUNT(i.id) FILTER (
+                WHERE i.status IN ('accepted', 'registered', 'declined')
+              )::int AS invited,
+              COUNT(i.id) FILTER (
+                WHERE i.status IN ('accepted', 'registered')
+              )::int AS accepted,
+              COUNT(i.id) FILTER (
+                WHERE i.status = 'declined'
+              )::int AS declined
+       FROM representatives rep
+       LEFT JOIN invitations i
+         ON i.representative_id = rep.id${rankTypeSql}
+       GROUP BY rep.id, rep.full_name, rep.email
+       ORDER BY invited DESC, accepted DESC, rep.full_name ASC`,
+      rankParams,
+    );
+
+    const rankings = rankResult.rows.map((r) => ({
+      id: r.id,
+      name: r.full_name,
+      email: r.email,
+      invited: Number(r.invited) || 0,
+      accepted: Number(r.accepted) || 0,
+      declined: Number(r.declined) || 0,
+    }));
+
+    const invitedCounts = rankings.map((r) => r.invited);
+    const mean = (arr) =>
+      arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
+    const median = (arr) => {
+      if (!arr.length) return null;
+      const s = [...arr].sort((a, b) => a - b);
+      const m = Math.floor(s.length / 2);
+      return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+    };
+    const mode = (arr) => {
+      if (!arr.length) return null;
+      const freq = new Map();
+      let best = arr[0];
+      let bestN = 0;
+      for (const v of arr) {
+        const n = (freq.get(v) || 0) + 1;
+        freq.set(v, n);
+        if (n > bestN || (n === bestN && v < best)) {
+          best = v;
+          bestN = n;
+        }
+      }
+      return best;
+    };
+
+    const byInvited = [...rankings].sort(
+      (a, b) => b.invited - a.invited || b.accepted - a.accepted,
+    );
+    const byAccepted = [...rankings].sort(
+      (a, b) => b.accepted - a.accepted || b.invited - a.invited,
+    );
+    const byDeclined = [...rankings].sort(
+      (a, b) => b.declined - a.declined || b.invited - a.invited,
+    );
+
     const counts = {
       all: invitations.length,
       accepted: accepted.length,
       declined: declined.length,
+      invited: accepted.length + declined.length,
       preceptorship: accepted.filter((i) => i.inviteType === 'preceptorship')
         .length,
       researcher: accepted.filter((i) => i.inviteType === 'researcher').length,
+      representatives: rankings.length,
+      avgInvitedPerRep: mean(invitedCounts),
+      medianInvitedPerRep: median(invitedCounts),
+      modeInvitedPerRep: mode(invitedCounts),
+      topByInvited: byInvited[0] || null,
+      topByAccepted: byAccepted[0] || null,
+      topByDeclined: byDeclined[0] || null,
     };
-
-    const repsResult = await query(
-      `SELECT id, email, full_name, active, created_at
-       FROM representatives
-       ORDER BY created_at DESC`,
-    );
 
     return res.json({
       generatedAt: new Date().toISOString(),
       filter: type,
       counts,
       invitations,
-      representatives: repsResult.rows.map((r) => ({
+      rankings,
+      representatives: rankings.map((r) => ({
         id: r.id,
         email: r.email,
-        fullName: r.full_name,
-        active: r.active,
-        createdAt: r.created_at,
+        fullName: r.name,
+        invited: r.invited,
+        accepted: r.accepted,
+        declined: r.declined,
       })),
     });
   } catch (err) {
