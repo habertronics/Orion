@@ -196,6 +196,34 @@ async function enrollInActiveProjects(researcherId) {
   );
 }
 
+/** Si el médico aceptó una invitación de rep con este email, vincula. */
+async function linkAcceptedInvites(researcher) {
+  const pending = await query(
+    `SELECT id, representative_id, accepted_at
+     FROM invitations
+     WHERE invitee_email = $1 AND status = 'accepted'
+     ORDER BY accepted_at ASC NULLS LAST, created_at ASC
+     LIMIT 1`,
+    [researcher.email],
+  );
+  const inv = pending.rows[0];
+  if (!inv) return;
+
+  await query(
+    `UPDATE invitations
+     SET researcher_id = $1, status = 'registered'
+     WHERE id = $2`,
+    [researcher.id, inv.id],
+  );
+  await query(
+    `UPDATE researchers
+     SET invited_by_rep_id = COALESCE(invited_by_rep_id, $1),
+         invitation_accepted_at = COALESCE(invitation_accepted_at, $2)
+     WHERE id = $3`,
+    [inv.representative_id, inv.accepted_at || new Date().toISOString(), researcher.id],
+  );
+}
+
 async function logLoginAttempt({ researcherId, email, success, req }) {
   await query(
     `INSERT INTO researcher_login_events
@@ -314,6 +342,7 @@ router.post('/register', registerRateLimit, async (req, res) => {
 
     const researcher = inserted.rows[0];
     await enrollInActiveProjects(researcher.id);
+    await linkAcceptedInvites(researcher);
 
     const token = signToken(researcher);
     res.status(201).json({

@@ -52,6 +52,7 @@ const adminRoutes = require('./routes/admin');
 app.use('/api/admin', adminRoutes);
 
 app.use('/api/auth', authRoutes);
+app.use('/api/reps', require('./routes/reps'));
 app.use('/api/projects', projectRoutes);
 app.use('/api/environment', environmentRoutes);
 app.use('/api/parpadeo', parpadeoRoutes);

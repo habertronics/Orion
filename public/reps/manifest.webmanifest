@@ -1,0 +1,20 @@
+{
+  "id": "/reps/",
+  "name": "Orión Representantes",
+  "short_name": "Orión Reps",
+  "description": "Invitaciones de representantes médicos a investigadores Orión",
+  "lang": "es",
+  "start_url": "/reps/",
+  "scope": "/reps/",
+  "display": "standalone",
+  "theme_color": "#1a2e1f",
+  "background_color": "#142018",
+  "icons": [
+    {
+      "src": "/reps/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

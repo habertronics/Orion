@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#1a2e1f" />
+    <meta name="description" content="Aceptar invitación Orión — Laboratorio Sofía" />
+    <title>Invitación · Laboratorio Sofía</title>
+    <link rel="icon" type="image/svg+xml" href="/reps/icons/icon.svg" />
+    <link rel="stylesheet" href="./aceptar.css" />
+  </head>
+  <body>
+    <main class="invite-shell">
+      <p class="eyebrow">Cuerpo médico · Laboratorio Sofía</p>
+      <h1>Invitación a Orión</h1>
+      <p class="lede" id="inviteLede">Cargando invitación…</p>
+
+      <form id="acceptForm" class="invite-form" hidden>
+        <p class="from" id="fromLine"></p>
+        <fieldset class="type-box">
+          <legend>Tipo de invitación</legend>
+          <label class="radio">
+            <input type="radio" name="acceptType" value="researcher" checked />
+            Investigador
+          </label>
+          <label class="radio">
+            <input type="radio" name="acceptType" value="preceptorship" />
+            Preceptorship
+          </label>
+        </fieldset>
+        <label for="doctorEmail">Tu correo electrónico</label>
+        <input
+          id="doctorEmail"
+          type="email"
+          required
+          autocomplete="email"
+          placeholder="doctor@clinica.com"
+        />
+        <p class="note">
+          Obligatorio: con este correo te vinculamos al representante y te
+          enviaremos el enlace formal para registrarte en Orión.
+        </p>
+        <button type="submit" class="btn accept">Aceptar invitación</button>
+        <p class="form-error" id="acceptError" hidden></p>
+      </form>
+
+      <div id="donePanel" class="done" hidden>
+        <h2>Listo</h2>
+        <p id="doneText"></p>
+        <a class="btn" id="registerLink" href="/">Ir a Orión</a>
+      </div>
+
+      <p class="form-error" id="fatalError" hidden></p>
+    </main>
+    <script type="module" src="./aceptar.js"></script>
+  </body>
+</html>

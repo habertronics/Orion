@@ -1,0 +1,25 @@
+# Versionado de Orión Representantes
+
+El usuario identifica la build mirando la etiqueta de versión en la cabecera de `/reps/` (p. ej. `v0.1`). **Mantener siempre este sistema.**
+
+## Cuándo subir versión
+
+Cada cambio **visible o funcional** en `reps/` debe incrementar la versión antes de cerrar el trabajo / desplegar.
+
+- Parche / ajuste pequeño → subir el menor (p. ej. `v0.1` → `v0.2`)
+- Cambio de comportamiento importante → puede saltar más si tiene sentido (p. ej. `v0.9` → `v1.0`)
+
+## Dónde actualizar (siempre juntos)
+
+1. `reps/config.js` — constante `APP_VERSION` (fuente de verdad)
+2. `reps/index.html` — texto del `#appVer` (mismo string; se muestra antes de cargar el JS)
+
+Al iniciar, `main.js` escribe `APP_VERSION` en `#appVer`.
+
+## Deploy
+
+Al publicar en Netlify, mencionar la versión en el mensaje de deploy (ej. `v0.2 reps …`).
+
+## Recordatorio al usuario
+
+En la respuesta final, si hubo cambio en Representantes, indicar la versión nueva (ej. “queda en **v0.2**”).

@@ -1,0 +1,149 @@
+:root {
+  --bg0: #101a12;
+  --bg1: #1a2e1f;
+  --ink: #eef6ef;
+  --muted: #9bb59f;
+  --accent: #6ecf8e;
+  --accent-deep: #3d9a5c;
+  --card: rgba(255, 255, 255, 0.06);
+  --line: rgba(238, 246, 239, 0.14);
+  --font: "Segoe UI", system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font);
+  color: var(--ink);
+  background:
+    radial-gradient(ellipse 70% 45% at 20% 0%, rgba(110, 207, 142, 0.22), transparent 55%),
+    linear-gradient(165deg, var(--bg0), var(--bg1));
+}
+
+.invite-shell {
+  width: min(420px, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: 2.5rem 0 3rem;
+}
+
+.eyebrow {
+  margin: 0;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  color: var(--accent);
+}
+
+h1 {
+  margin: 0.45rem 0 0;
+  font-size: clamp(1.6rem, 5vw, 2rem);
+  letter-spacing: -0.02em;
+}
+
+.lede {
+  margin: 0.75rem 0 1.25rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.invite-form,
+.done {
+  padding: 1.15rem 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--card);
+}
+
+.from {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+}
+
+.type-box {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.75rem 0.85rem;
+  margin: 0 0 1rem;
+}
+
+.type-box legend {
+  padding: 0 0.35rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.radio {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0.35rem 0;
+  font-size: 0.95rem;
+}
+
+label[for="doctorEmail"] {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+input[type="email"] {
+  width: 100%;
+  padding: 0.75rem 0.85rem;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--ink);
+  font-size: 1rem;
+}
+
+.note {
+  margin: 0.65rem 0 1rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.btn {
+  display: inline-flex;
+  justify-content: center;
+  appearance: none;
+  border: none;
+  border-radius: 10px;
+  padding: 0.8rem 1rem;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  background: var(--accent-deep);
+  color: #f4fff7;
+  width: 100%;
+}
+
+.btn.accept {
+  background: linear-gradient(180deg, #4caf6e, var(--accent-deep));
+}
+
+.btn:disabled {
+  opacity: 0.5;
+}
+
+.form-error {
+  margin: 0.75rem 0 0;
+  color: #fca5a5;
+  font-size: 0.9rem;
+}
+
+.done h2 {
+  margin: 0 0 0.5rem;
+}
+
+.done p {
+  margin: 0 0 1rem;
+  color: var(--muted);
+  line-height: 1.45;
+}

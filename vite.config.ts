@@ -14,6 +14,8 @@ export default defineConfig({
         parpadeometro: resolve(import.meta.dirname, 'parpadeometro/index.html'),
         status: resolve(import.meta.dirname, 'status/index.html'),
         db: resolve(import.meta.dirname, 'db/index.html'),
+        reps: resolve(import.meta.dirname, 'reps/index.html'),
+        repsAceptar: resolve(import.meta.dirname, 'reps/aceptar.html'),
       },
     },
   },
@@ -35,6 +37,8 @@ export default defineConfig({
         'db/icons/icon-512.png',
         'db/icons/apple-touch-icon.png',
         'db/manifest.webmanifest',
+        'reps/icons/icon.svg',
+        'reps/manifest.webmanifest',
       ],
       manifest: {
         name: 'Habertronic Orión',
@@ -71,14 +75,24 @@ export default defineConfig({
         clientsClaim: true,
         skipWaiting: true,
         navigateFallback: 'index.html',
-        navigateFallbackDenylist: [/^\/parpadeometro/, /^\/status/, /^\/db/],
+        navigateFallbackDenylist: [/^\/parpadeometro/, /^\/status/, /^\/db/, /^\/reps/],
         globPatterns: ['**/*.{js,css,html,svg,ico,png,woff2}'],
+        // WASM ~12MB: no precache; runtime cache below.
+        globIgnores: ['**/parpadeometro/wasm/**'],
         runtimeCaching: [
+          {
+            urlPattern: /\/parpadeometro\/wasm\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'mediapipe-wasm-v1',
+              expiration: { maxEntries: 8, maxAgeSeconds: 60 * 60 * 24 * 30 },
+            },
+          },
           {
             urlPattern: /^https:\/\/cdn\.jsdelivr\.net\/.*/i,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'mediapipe-cdn',
+              cacheName: 'mediapipe-cdn-v2',
               expiration: { maxEntries: 32, maxAgeSeconds: 60 * 60 * 24 * 30 },
             },
           },
@@ -86,7 +100,7 @@ export default defineConfig({
             urlPattern: /^https:\/\/storage\.googleapis\.com\/mediapipe-models\/.*/i,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'mediapipe-models',
+              cacheName: 'mediapipe-models-v2',
               expiration: { maxEntries: 8, maxAgeSeconds: 60 * 60 * 24 * 30 },
             },
           },
