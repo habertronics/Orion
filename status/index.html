@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#102832" />
     <meta
       name="description"
-      content="Orión Estado del sistema — semáforos de Netlify, Render, Neon y Clima"
+      content="Orión Estado del sistema — semáforos de Netlify, Render, Neon, Clima y Backups"
     />
     <meta name="application-name" content="Orión Estado del sistema" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -36,10 +36,10 @@
           </div>
         </div>
         <p class="lede">
-          Semáforos en tiempo real: Netlify, Render, Neon y Clima. Solo personal
-          autorizado.
+          Semáforos en tiempo real: Netlify, Render, Neon, Clima y Backups. Solo
+          personal autorizado.
         </p>
-        <p class="ver" id="appVer">v1.5</p>
+        <p class="ver" id="appVer">v1.6</p>
       </header>
 
       <section class="gate" id="gatePanel">
@@ -120,6 +120,14 @@
               <p class="detail" data-detail>—</p>
             </div>
           </article>
+          <article class="card" data-key="backups">
+            <div class="lamp unknown" aria-hidden="true"></div>
+            <div>
+              <h3>Backups · Google Drive</h3>
+              <p class="role">Copias de Neon en Orion-Backups</p>
+              <p class="detail" data-detail>—</p>
+            </div>
+          </article>
         </div>
 
         <aside class="legend">
@@ -127,10 +135,11 @@
           <p><span class="dot slow"></span> Amarillo: responde, pero lento o parcial</p>
           <p><span class="dot bad"></span> Rojo: no responde o falla crítica</p>
           <p class="note">
-            Netlify, Render y Neon se revisan cada 30 s. El clima en automático solo se
-            consulta de verdad cada ~30 min (el resto usa caché).
+            Netlify, Render, Neon y Backups se revisan cada 30 s. El clima en automático
+            solo se consulta de verdad cada ~30 min (el resto usa caché).
             <strong>Actualizar ahora</strong> sí pide clima fresco al momento.
-            Open‑Meteo gratuito: hasta ~10 000 llamadas/día.
+            Backups: verde si hay copia reciente (&lt; 48 h); amarillo si está atrasada;
+            rojo si no hay ninguna. Open‑Meteo gratuito: hasta ~10 000 llamadas/día.
           </p>
         </aside>
       </section>

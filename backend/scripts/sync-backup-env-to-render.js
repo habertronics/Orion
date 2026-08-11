@@ -94,22 +94,17 @@ async function main() {
 
   const targets = services.filter(
     (s) =>
+      s.name === 'Orion' ||
       s.name === 'habertronic-orion-api' ||
       s.name === 'habertronic-orion-backup' ||
       s.type === 'cron_job' ||
-      s.serviceDetails?.type === 'cron' ||
       (s.name || '').includes('orion-backup'),
   );
 
   if (!targets.length) {
-    // fallback: update web API at least
-    const web = services.find((s) => s.name === 'habertronic-orion-api');
-    if (!web) {
-      throw new Error(
-        'No encontré habertronic-orion-api ni el cron. Crea el Blueprint/cron en Render y reintenta.',
-      );
-    }
-    targets.push(web);
+    throw new Error(
+      'No encontré Orion ni habertronic-orion-backup. Revisa el dashboard de Render.',
+    );
   }
 
   for (const svc of targets) {

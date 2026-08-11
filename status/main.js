@@ -1,6 +1,7 @@
 import "./style.css";
 import {
   APP_VERSION,
+  BACKUP_STALE_MS,
   CHECK_INTERVAL_MS,
   ENDPOINTS,
   SESSION_KEY,
@@ -209,10 +210,100 @@ async function checkApiStack({ forceClimate = false } = {}) {
     setLamp("climate", "bad", climate?.error || "Clima no responde");
   }
 
-  // Si deep tarda mucho, avisar en Render aunque health simple esté ok.
   if (deep.ms >= SLOW_MS.render && renderState === "ok") {
     setLamp("render", "slow", `Health OK · deep ${deep.ms} ms (lento)`);
   }
+}
+
+function formatBackupWhen(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleString("es-MX", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}
+
+async function checkBackups() {
+  const { res, ms, error } = await timedFetch(ENDPOINTS.apiBackups, {
+    timeoutMs: 20_000,
+    headers: {
+      Accept: "application/json",
+      "X-Admin-Pin": STATUS_ACCESS_PIN,
+    },
+  });
+
+  if (error || !res) {
+    setLamp(
+      "backups",
+      "bad",
+      `No se pudo consultar · ${error?.message || "sin respuesta"}`,
+    );
+    return;
+  }
+
+  if (res.status === 401) {
+    setLamp("backups", "bad", "PIN admin no coincide con el de Render");
+    return;
+  }
+
+  if (!res.ok) {
+    setLamp("backups", "bad", `HTTP ${res.status} · ${ms} ms`);
+    return;
+  }
+
+  let payload = null;
+  try {
+    payload = await res.json();
+  } catch {
+    setLamp("backups", "bad", `Respuesta ilegible · ${ms} ms`);
+    return;
+  }
+
+  if (payload?.configured === false || payload?.error === "drive_not_configured") {
+    setLamp("backups", "bad", "Drive no configurado en Render");
+    return;
+  }
+
+  if (payload?.ok === false && payload?.error) {
+    setLamp("backups", "bad", `Error Drive · ${payload.error}`);
+    return;
+  }
+
+  const count = Number(payload?.count) || 0;
+  const latestAt = payload?.latest?.createdAt || payload?.latest?.modifiedAt || null;
+  const when = formatBackupWhen(latestAt);
+
+  if (!payload?.exists || count === 0) {
+    setLamp("backups", "bad", `Sin backups en Drive · ${ms} ms`);
+    return;
+  }
+
+  const ageMs = latestAt ? Date.now() - new Date(latestAt).getTime() : null;
+  let state = "ok";
+  if (ageMs == null || Number.isNaN(ageMs)) {
+    state = "slow";
+  } else if (ageMs > BACKUP_STALE_MS * 2) {
+    state = "bad";
+  } else if (ageMs > BACKUP_STALE_MS) {
+    state = "slow";
+  } else if (ms >= SLOW_MS.backups) {
+    state = "slow";
+  }
+
+  const ageHint =
+    state === "ok"
+      ? "al día"
+      : state === "slow"
+        ? "atrasado (>48 h)"
+        : "muy atrasado (>96 h)";
+
+  setLamp(
+    "backups",
+    state,
+    `${count} backup${count === 1 ? "" : "s"} · último ${when} · ${ageHint} · ${ms} ms`,
+  );
 }
 
 async function runChecks({ forceClimate = false } = {}) {
@@ -220,7 +311,11 @@ async function runChecks({ forceClimate = false } = {}) {
   checking = true;
   refreshBtn.disabled = true;
   try {
-    await Promise.all([checkNetlify(), checkApiStack({ forceClimate })]);
+    await Promise.all([
+      checkNetlify(),
+      checkApiStack({ forceClimate }),
+      checkBackups(),
+    ]);
     const now = new Date();
     lastCheck.textContent = `Última comprobación: ${now.toLocaleTimeString("es-MX", {
       hour: "2-digit",

@@ -113,7 +113,35 @@ async function uploadS3(filePath, key) {
   return `s3://${bucket}/${key}`;
 }
 
-async function ensureDriveFolder(drive, folderName) {
+function driveCredentialsReady() {
+  return Boolean(
+    process.env.GOOGLE_DRIVE_CLIENT_ID &&
+      process.env.GOOGLE_DRIVE_CLIENT_SECRET &&
+      process.env.GOOGLE_DRIVE_REFRESH_TOKEN,
+  );
+}
+
+function createDriveClient() {
+  let google;
+  try {
+    google = require('googleapis').google;
+  } catch {
+    throw new Error('Instala googleapis: cd backend && npm install googleapis');
+  }
+  if (!driveCredentialsReady()) {
+    throw new Error(
+      'Faltan GOOGLE_DRIVE_CLIENT_ID / CLIENT_SECRET / REFRESH_TOKEN. Corre: npm run db:backup:drive-auth',
+    );
+  }
+  const oauth2 = new google.auth.OAuth2(
+    process.env.GOOGLE_DRIVE_CLIENT_ID,
+    process.env.GOOGLE_DRIVE_CLIENT_SECRET,
+  );
+  oauth2.setCredentials({ refresh_token: process.env.GOOGLE_DRIVE_REFRESH_TOKEN });
+  return google.drive({ version: 'v3', auth: oauth2 });
+}
+
+async function findDriveFolderId(drive, folderName) {
   const safeName = String(folderName || 'Orion-Backups').replace(/'/g, "\\'");
   const listed = await drive.files.list({
     q: `name='${safeName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
@@ -121,9 +149,12 @@ async function ensureDriveFolder(drive, folderName) {
     spaces: 'drive',
     pageSize: 5,
   });
-  if (listed.data.files?.length) {
-    return listed.data.files[0].id;
-  }
+  return listed.data.files?.[0]?.id || null;
+}
+
+async function ensureDriveFolder(drive, folderName) {
+  const existing = await findDriveFolderId(drive, folderName);
+  if (existing) return existing;
   const created = await drive.files.create({
     requestBody: {
       name: folderName || 'Orion-Backups',
@@ -135,28 +166,76 @@ async function ensureDriveFolder(drive, folderName) {
   return created.data.id;
 }
 
-async function uploadDrive(filePath, fileName) {
-  let google;
-  try {
-    google = require('googleapis').google;
-  } catch {
-    throw new Error('Instala googleapis: cd backend && npm install googleapis');
+/** Lista backups en Drive (sin crear carpeta). Para el tablero de estatus. */
+async function listDriveBackups() {
+  if (!driveCredentialsReady()) {
+    return {
+      ok: false,
+      configured: false,
+      exists: false,
+      count: 0,
+      folderId: null,
+      latest: null,
+      error: 'drive_not_configured',
+    };
   }
 
-  const clientId = process.env.GOOGLE_DRIVE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_DRIVE_CLIENT_SECRET;
-  const refreshToken = process.env.GOOGLE_DRIVE_REFRESH_TOKEN;
+  const drive = createDriveClient();
   let folderId = process.env.GOOGLE_DRIVE_FOLDER_ID || null;
-
-  if (!clientId || !clientSecret || !refreshToken) {
-    throw new Error(
-      'Faltan GOOGLE_DRIVE_CLIENT_ID / CLIENT_SECRET / REFRESH_TOKEN. Corre: npm run db:backup:drive-auth',
-    );
+  if (!folderId) {
+    folderId = await findDriveFolderId(drive, 'Orion-Backups');
+  }
+  if (!folderId) {
+    return {
+      ok: true,
+      configured: true,
+      exists: false,
+      count: 0,
+      folderId: null,
+      latest: null,
+      error: null,
+    };
   }
 
-  const oauth2 = new google.auth.OAuth2(clientId, clientSecret);
-  oauth2.setCredentials({ refresh_token: refreshToken });
-  const drive = google.drive({ version: 'v3', auth: oauth2 });
+  const files = [];
+  let pageToken;
+  do {
+    const listed = await drive.files.list({
+      q: `'${folderId}' in parents and trashed=false and name contains 'orion-backup'`,
+      fields: 'nextPageToken, files(id, name, createdTime, modifiedTime, size, webViewLink)',
+      orderBy: 'createdTime desc',
+      pageSize: 100,
+      spaces: 'drive',
+      pageToken: pageToken || undefined,
+    });
+    files.push(...(listed.data.files || []));
+    pageToken = listed.data.nextPageToken;
+  } while (pageToken);
+
+  const latestFile = files[0] || null;
+  return {
+    ok: true,
+    configured: true,
+    exists: files.length > 0,
+    count: files.length,
+    folderId,
+    latest: latestFile
+      ? {
+          id: latestFile.id,
+          name: latestFile.name,
+          createdAt: latestFile.createdTime || null,
+          modifiedAt: latestFile.modifiedTime || null,
+          bytes: latestFile.size != null ? Number(latestFile.size) : null,
+          webViewLink: latestFile.webViewLink || null,
+        }
+      : null,
+    error: null,
+  };
+}
+
+async function uploadDrive(filePath, fileName) {
+  const drive = createDriveClient();
+  let folderId = process.env.GOOGLE_DRIVE_FOLDER_ID || null;
 
   if (!folderId) {
     folderId = await ensureDriveFolder(drive, 'Orion-Backups');
@@ -234,7 +313,7 @@ async function runBackup() {
   }
 }
 
-module.exports = { runBackup };
+module.exports = { runBackup, listDriveBackups };
 
 if (require.main === module) {
   runBackup().catch((err) => {

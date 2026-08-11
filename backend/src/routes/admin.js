@@ -612,4 +612,28 @@ router.post('/backup', async (_req, res) => {
   }
 });
 
+/** Estado de backups en Google Drive (cantidad + último). */
+router.get('/backups', async (_req, res) => {
+  try {
+    const { listDriveBackups } = require('../../scripts/backup-db');
+    const info = await listDriveBackups();
+    res.json({
+      ...info,
+      checkedAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error('Admin backups list error:', err);
+    res.status(500).json({
+      ok: false,
+      configured: true,
+      exists: false,
+      count: 0,
+      folderId: null,
+      latest: null,
+      error: err.message || 'list_failed',
+      checkedAt: new Date().toISOString(),
+    });
+  }
+});
+
 module.exports = router;
