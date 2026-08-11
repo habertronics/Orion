@@ -45,6 +45,49 @@
   pointer-events: none;
 }
 
+.welcome__brand-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  opacity: calc(0.05 + (var(--sstrength, 0) * 0.42));
+  transition: opacity 0.05s linear;
+  -webkit-mask-image: radial-gradient(
+    circle 42vmin at var(--sx, 50%) var(--sy, 40%),
+    rgba(0, 0, 0, calc(0.15 + var(--sstrength, 0) * 0.85)) 0%,
+    rgba(0, 0, 0, calc(0.08 + var(--sstrength, 0) * 0.45)) 28%,
+    rgba(0, 0, 0, calc(var(--sstrength, 0) * 0.12)) 55%,
+    transparent 78%
+  );
+  mask-image: radial-gradient(
+    circle 42vmin at var(--sx, 50%) var(--sy, 40%),
+    rgba(0, 0, 0, calc(0.15 + var(--sstrength, 0) * 0.85)) 0%,
+    rgba(0, 0, 0, calc(0.08 + var(--sstrength, 0) * 0.45)) 28%,
+    rgba(0, 0, 0, calc(var(--sstrength, 0) * 0.12)) 55%,
+    transparent 78%
+  );
+}
+
+.welcome__brand-logo {
+  width: min(78vw, 28rem);
+  height: auto;
+  max-height: 42vh;
+  object-fit: contain;
+  user-select: none;
+  filter: blur(calc((1 - var(--sstrength, 0)) * 1.1px));
+  mix-blend-mode: multiply;
+  opacity: 0.9;
+}
+
+.welcome__hero,
+.welcome__lang,
+.welcome__footer {
+  position: relative;
+  z-index: 1;
+}
+
 .welcome__hero {
   display: flex;
   flex-direction: column;
@@ -52,6 +95,16 @@
   gap: 0.65rem;
   max-width: 38rem;
   animation: rise-in 0.7s ease-out both;
+}
+
+.welcome__ver {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #0f7a74;
 }
 
 .welcome__greeting {
@@ -256,5 +309,9 @@
   .welcome__continue {
     animation: none;
     transition: none;
+  }
+
+  .welcome__brand-veil {
+    display: none;
   }
 }
