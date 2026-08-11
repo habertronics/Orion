@@ -13,3 +13,27 @@ services:
         sync: false
       - key: CORS_ORIGINS
         sync: false
+
+  # Backup diario → Drive (3:00 AM Ciudad de México ≈ 09:00 UTC)
+  - type: cron
+    name: habertronic-orion-backup
+    runtime: node
+    rootDir: backend
+    schedule: "0 9 * * *"
+    buildCommand: npm install
+    startCommand: npm run db:backup
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: BACKUP_TO_DRIVE
+        value: "1"
+      - key: BACKUP_TO_S3
+        value: "0"
+      - key: GOOGLE_DRIVE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_DRIVE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_DRIVE_REFRESH_TOKEN
+        sync: false
+      - key: GOOGLE_DRIVE_FOLDER_ID
+        sync: false
