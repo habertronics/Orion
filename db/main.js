@@ -820,11 +820,7 @@ function renderRepresentantes() {
   const body = rows
     .map((row, index) => {
       const cells = INVITACIONES_COLUMNS.map((c) => {
-        let value = row[c.key];
-        if (c.key === "medicoAcepto") value = value ? "Sí" : "No";
-        if (c.key.endsWith("At") || c.key === "createdAt" || c.key === "expiresAt") {
-          value = fmtDate(value);
-        }
+        const value = row[c.key];
         return `<td>${esc(value)}</td>`;
       }).join("");
       return `<tr class="row-tone-${index % 2}">${cells}</tr>`;
@@ -907,16 +903,7 @@ function exportCsv() {
     columns = INVITACIONES_COLUMNS;
     rows = invitationsData?.invitations || [];
     lineBuilder = (row) =>
-      columns
-        .map((c) => {
-          let value = row[c.key];
-          if (c.key === "medicoAcepto") value = value ? "Sí" : "No";
-          if (c.key.endsWith("At") || c.key === "createdAt" || c.key === "expiresAt") {
-            value = fmtDate(value);
-          }
-          return csvEscape(value);
-        })
-        .join(",");
+      columns.map((c) => csvEscape(row[c.key])).join(",");
   } else if (currentView === "medicos") {
     columns = MEDICOS_COLUMNS;
     rows = (workbook?.researchers || []).map((r) => r.flat || r);
