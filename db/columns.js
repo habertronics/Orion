@@ -20,6 +20,8 @@ function col(key, label, band) {
 export const MEDICO_COLS = [
   col("registeredAt", "Alta", "medico"),
   col("displayName", "Nombre", "medico"),
+  col("soloRegistrado", "Solo registrado", "medico"),
+  col("counts.completed", "Intervenciones positivas", "medico"),
   col("fullName", "Nombre completo", "medico"),
   col("nickname", "Apodo", "medico"),
   col("email", "Email", "medico"),

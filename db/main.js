@@ -12,6 +12,7 @@ const gateForm = document.getElementById("gateForm");
 const pinInput = document.getElementById("pinInput");
 const gateError = document.getElementById("gateError");
 const summaryBar = document.getElementById("summaryBar");
+const medicosDash = document.getElementById("medicosDash");
 const tableWrap = document.getElementById("tableWrap");
 const statusLine = document.getElementById("statusLine");
 const onlyComplete = document.getElementById("onlyComplete");
@@ -25,6 +26,40 @@ if (appVer) appVer.textContent = APP_VERSION;
 let workbook = null;
 let currentView = "medicos";
 let currentPin = sessionStorage.getItem(`${SESSION_KEY}-pin`) || "";
+/** Subespecialidad enfocada en la 2.ª gráfica de especialidades. */
+let specialtyFocusSlug = "";
+
+const SPECIALTY_SHORT = {
+  cornea: "Córnea",
+  refractive: "Refractiva",
+  cataract: "Catarata",
+  glaucoma: "Glaucoma",
+  retina: "Retina",
+  uvea: "Úvea",
+  pediatric: "Pediátrica",
+  oculoplastics: "Oculoplástica",
+  neuro: "Neuro",
+  oncology: "Oncología",
+  lowVision: "Baja visión",
+  pathology: "Patología",
+  other: "Otra",
+};
+
+const CHART_PALETTE = [
+  "#38bdf8",
+  "#4ade80",
+  "#fbbf24",
+  "#f472b6",
+  "#a78bfa",
+  "#2dd4bf",
+  "#fb923c",
+  "#60a5fa",
+  "#e879f9",
+  "#34d399",
+  "#f87171",
+  "#c084fc",
+  "#94a3b8",
+];
 
 function fmtDate(value) {
   if (value == null || value === "") return "—";
@@ -80,6 +115,19 @@ function locationProvided(data, key) {
 
 function formatCell(value, key = "", data = null) {
   const k = key.toLowerCase();
+  if (key === "soloRegistrado") {
+    const only =
+      value === true ||
+      (data != null && Number(getPath(data, "counts.total") ?? 0) === 0);
+    return only ? "Solo registrado" : "—";
+  }
+  if (key === "counts.completed") {
+    const n =
+      value != null
+        ? Number(value)
+        : Number(getPath(data, "counts.completed") ?? 0);
+    return Number.isFinite(n) ? String(n) : "0";
+  }
   if (k.includes("locprovided") || k.endsWith("provided")) {
     const on = data ? locationProvided(data, key) : value === true;
     return on ? "✓" : "✗";
@@ -191,6 +239,20 @@ function buildRow(columns, data, color = {}) {
       const text = formatCell(raw, c.key, data);
       const band = BANDS[c.band]?.className || "";
       const k = c.key.toLowerCase();
+      if (c.key === "soloRegistrado") {
+        const only =
+          raw === true || Number(getPath(data, "counts.total") ?? 0) === 0;
+        return only
+          ? `<td class="${band}"><span class="badge mute">Solo registrado</span></td>`
+          : `<td class="${band} muted">—</td>`;
+      }
+      if (c.key === "counts.completed") {
+        const n = Number(raw ?? 0);
+        const safe = Number.isFinite(n) ? n : 0;
+        return safe > 0
+          ? `<td class="${band}"><span class="badge ok">${safe}</span></td>`
+          : `<td class="${band}">${safe}</td>`;
+      }
       if (k.includes("locprovided") || k.endsWith("provided")) {
         const on = locationProvided(data, c.key);
         return `<td class="${band} loc-flag ${on ? "is-on" : "is-off"}">${on ? "✓" : "✗"}</td>`;
@@ -218,7 +280,400 @@ function renderTable(columns, rowHtml) {
     </table>`;
 }
 
+function meanOf(values) {
+  if (!values.length) return null;
+  const sum = values.reduce((a, b) => a + b, 0);
+  return sum / values.length;
+}
+
+function medianOf(values) {
+  if (!values.length) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  if (sorted.length % 2 === 0) {
+    return (sorted[mid - 1] + sorted[mid]) / 2;
+  }
+  return sorted[mid];
+}
+
+function modeOf(values) {
+  if (!values.length) return null;
+  const freq = new Map();
+  let best = values[0];
+  let bestCount = 0;
+  for (const v of values) {
+    const next = (freq.get(v) || 0) + 1;
+    freq.set(v, next);
+    if (next > bestCount || (next === bestCount && v < best)) {
+      best = v;
+      bestCount = next;
+    }
+  }
+  return best;
+}
+
+function fmtStat(value) {
+  if (value == null || !Number.isFinite(value)) return "—";
+  if (Number.isInteger(value)) return String(value);
+  return value.toFixed(1);
+}
+
+function doctorActivityStats() {
+  const researchers = workbook?.researchers || [];
+  const perDoctor = [];
+  let soloRegistrados = 0;
+  let conIntervenciones = 0;
+  for (const r of researchers) {
+    const n = Number(r.counts?.completed ?? 0);
+    const safe = Number.isFinite(n) ? n : 0;
+    perDoctor.push(safe);
+    if (safe === 0) soloRegistrados += 1;
+    else conIntervenciones += 1;
+  }
+  const totalIntervenciones =
+    workbook?.summary?.completed ??
+    (workbook?.interventions || []).filter((i) => i.status === "completa").length;
+  return {
+    totalMedicos: researchers.length,
+    soloRegistrados,
+    conIntervenciones,
+    totalIntervenciones: Number(totalIntervenciones) || 0,
+    perDoctor,
+    promedio: meanOf(perDoctor),
+    mediana: medianOf(perDoctor),
+    moda: modeOf(perDoctor),
+  };
+}
+
+function doctorDemoStats() {
+  const researchers = workbook?.researchers || [];
+  const sex = { male: 0, female: 0, prefer_not: 0, unknown: 0 };
+  const profile = { general: 0, specialty: 0, unknown: 0 };
+  const specialtyCounts = new Map();
+
+  for (const r of researchers) {
+    const s = r.sex || r.flat?.sex;
+    if (s === "male" || s === "female" || s === "prefer_not") sex[s] += 1;
+    else sex.unknown += 1;
+
+    const p = r.ophthalmologyProfile || r.flat?.ophthalmologyProfile;
+    if (p === "general") profile.general += 1;
+    else if (p === "specialty") {
+      profile.specialty += 1;
+      const slug = r.specialtySlug || r.flat?.specialtySlug || "other";
+      const label =
+        SPECIALTY_SHORT[slug] ||
+        r.specialtyLabel ||
+        r.flat?.specialtyLabel ||
+        slug;
+      const prev = specialtyCounts.get(slug) || { slug, label, count: 0 };
+      prev.count += 1;
+      specialtyCounts.set(slug, prev);
+    } else profile.unknown += 1;
+  }
+
+  const specialties = [...specialtyCounts.values()].sort(
+    (a, b) => b.count - a.count || a.label.localeCompare(b.label, "es"),
+  );
+  return { sex, profile, specialties };
+}
+
+function drawDonut(canvas, slices, centerMain, centerSub) {
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  const cssSize = Math.min(200, canvas.clientWidth || 200);
+  canvas.width = cssSize * dpr;
+  canvas.height = cssSize * dpr;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const cx = cssSize / 2;
+  const cy = cssSize / 2;
+  const radius = cssSize * 0.38;
+  const total = slices.reduce((sum, s) => sum + (s.value || 0), 0);
+
+  ctx.clearRect(0, 0, cssSize, cssSize);
+
+  if (total <= 0) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.fillStyle = "#334155";
+    ctx.fill();
+    ctx.fillStyle = "#e2e8f0";
+    ctx.font = "600 0.9rem Segoe UI, system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("Sin datos", cx, cy);
+    return;
+  }
+
+  let angle = -Math.PI / 2;
+  for (const slice of slices.filter((s) => s.value > 0)) {
+    const sweep = (slice.value / total) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, radius, angle, angle + sweep);
+    ctx.closePath();
+    ctx.fillStyle = slice.color;
+    ctx.fill();
+    angle += sweep;
+  }
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius * 0.52, 0, Math.PI * 2);
+  ctx.fillStyle = "#0f172a";
+  ctx.fill();
+  ctx.fillStyle = "#f8fafc";
+  ctx.font = "700 1.25rem Segoe UI, system-ui, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(String(centerMain ?? total), cx, cy - (centerSub ? 8 : 0));
+  if (centerSub) {
+    ctx.fillStyle = "#94a3b8";
+    ctx.font = "600 0.7rem Segoe UI, system-ui, sans-serif";
+    ctx.fillText(centerSub, cx, cy + 14);
+  }
+}
+
+function drawSpecialtyBars(canvas, specialties) {
+  if (!canvas) return;
+  const rows = specialties.length
+    ? specialties
+    : [{ label: "Sin especialidades", count: 0, slug: "_" }];
+  const dpr = window.devicePixelRatio || 1;
+  const rowH = 28;
+  const padL = 108;
+  const padR = 44;
+  const padT = 8;
+  const cssW = Math.max(320, canvas.clientWidth || 420);
+  const cssH = padT * 2 + rows.length * rowH;
+  canvas.width = cssW * dpr;
+  canvas.height = cssH * dpr;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, cssW, cssH);
+
+  const max = Math.max(1, ...rows.map((r) => r.count));
+  const barMax = cssW - padL - padR;
+
+  rows.forEach((row, index) => {
+    const y = padT + index * rowH + 4;
+    const color = CHART_PALETTE[index % CHART_PALETTE.length];
+    const w = (row.count / max) * barMax;
+    ctx.fillStyle = "#94a3b8";
+    ctx.font = "600 0.72rem Segoe UI, system-ui, sans-serif";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+    ctx.fillText(row.label, padL - 8, y + 8);
+    ctx.fillStyle = color;
+    ctx.fillRect(padL, y, Math.max(row.count > 0 ? 4 : 0, w), 16);
+    ctx.fillStyle = "#e2e8f0";
+    ctx.textAlign = "left";
+    ctx.fillText(String(row.count), padL + w + 6, y + 8);
+  });
+}
+
+function legendHtml(items) {
+  return `<ul class="mdash__legend">${items
+    .map(
+      (it) =>
+        `<li><span class="mdash__swatch" style="background:${it.color}"></span> ${esc(it.label)} <strong>${it.value}</strong></li>`,
+    )
+    .join("")}</ul>`;
+}
+
+function renderMedicosDashboard() {
+  if (!medicosDash) return;
+  const stats = doctorActivityStats();
+  const demo = doctorDemoStats();
+  if (
+    !specialtyFocusSlug ||
+    !demo.specialties.some((s) => s.slug === specialtyFocusSlug)
+  ) {
+    specialtyFocusSlug = demo.specialties[0]?.slug || "";
+  }
+  const focus =
+    demo.specialties.find((s) => s.slug === specialtyFocusSlug) || null;
+  const focusOthers = demo.specialties
+    .filter((s) => s.slug !== specialtyFocusSlug)
+    .reduce((sum, s) => sum + s.count, 0);
+  const focusTotal = (focus?.count || 0) + focusOthers;
+
+  const sexSlices = [
+    { label: "Hombres", value: demo.sex.male, color: "#38bdf8" },
+    { label: "Mujeres", value: demo.sex.female, color: "#f472b6" },
+    { label: "Prefiere no decir", value: demo.sex.prefer_not, color: "#a78bfa" },
+    { label: "Sin dato", value: demo.sex.unknown, color: "#64748b" },
+  ];
+  const profileSlices = [
+    { label: "Oftalmólogo general", value: demo.profile.general, color: "#4ade80" },
+    { label: "Alta especialidad", value: demo.profile.specialty, color: "#fbbf24" },
+    { label: "Sin dato", value: demo.profile.unknown, color: "#64748b" },
+  ];
+  const focusLegend = [
+    {
+      label: focus?.label || "Elegida",
+      value: focus?.count || 0,
+      color: "#38bdf8",
+    },
+    {
+      label: "Otras especialidades",
+      value: focusOthers,
+      color: "#64748b",
+    },
+  ].filter((s) => s.value > 0 || s.label === (focus?.label || "Elegida"));
+  const sexLegendHtml = legendHtml(sexSlices.filter((s) => s.value > 0));
+  const profileLegendHtml = legendHtml(profileSlices.filter((s) => s.value > 0));
+  const focusLegendHtml = legendHtml(focusLegend);
+
+  medicosDash.hidden = false;
+  medicosDash.innerHTML = `
+    <div class="mdash">
+      <div class="mdash__chart">
+        <h3 class="mdash__title">Distribución de médicos</h3>
+        <canvas id="medicosPie" class="mdash__canvas" width="260" height="260" aria-label="Gráfica de pastel de médicos"></canvas>
+        <ul class="mdash__legend">
+          <li><span class="mdash__swatch mdash__swatch--all"></span> Médicos registrados <strong>${stats.totalMedicos}</strong></li>
+          <li><span class="mdash__swatch mdash__swatch--solo"></span> Solo registrados <strong>${stats.soloRegistrados}</strong></li>
+          <li><span class="mdash__swatch mdash__swatch--con"></span> Con ≥ 1 intervención <strong>${stats.conIntervenciones}</strong></li>
+        </ul>
+      </div>
+      <div class="mdash__kpis">
+        <button type="button" class="mdash__btn mdash__btn--medicos" disabled>
+          <span class="mdash__btn-label">Total de médicos</span>
+          <span class="mdash__btn-value">${stats.totalMedicos}</span>
+        </button>
+        <button type="button" class="mdash__btn mdash__btn--interv" disabled>
+          <span class="mdash__btn-label">Total de intervenciones</span>
+          <span class="mdash__btn-value">${stats.totalIntervenciones}</span>
+        </button>
+        <div class="mdash__stats" aria-label="Estadísticas por médico">
+          <p class="mdash__stats-title">Intervenciones por médico</p>
+          <div class="mdash__stats-grid">
+            <div>
+              <span class="mdash__stat-label">Promedio</span>
+              <span class="mdash__stat-value">${fmtStat(stats.promedio)}</span>
+            </div>
+            <div>
+              <span class="mdash__stat-label">Mediana</span>
+              <span class="mdash__stat-value">${fmtStat(stats.mediana)}</span>
+            </div>
+            <div>
+              <span class="mdash__stat-label">Moda</span>
+              <span class="mdash__stat-value">${fmtStat(stats.moda)}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mdash-stack">
+      <div class="mdash mdash--compact">
+        <div class="mdash__chart">
+          <h3 class="mdash__title">Sexo</h3>
+          <canvas id="sexPie" class="mdash__canvas" width="200" height="200" aria-label="Hombres y mujeres"></canvas>
+        </div>
+        <div class="mdash__side">
+          ${sexLegendHtml}
+        </div>
+      </div>
+      <div class="mdash mdash--compact">
+        <div class="mdash__chart">
+          <h3 class="mdash__title">Perfil oftalmológico</h3>
+          <canvas id="profilePie" class="mdash__canvas" width="200" height="200" aria-label="General contra especialistas"></canvas>
+        </div>
+        <div class="mdash__side">
+          ${profileLegendHtml}
+        </div>
+      </div>
+      <div class="mdash mdash--compact mdash--wide">
+        <div class="mdash__chart mdash__chart--bars">
+          <h3 class="mdash__title">Todas las subespecialidades</h3>
+          <canvas id="specialtyBars" class="mdash__bars" width="420" height="200" aria-label="Barras de subespecialidades"></canvas>
+        </div>
+        <div class="mdash__side">
+          <ul class="mdash__legend">
+            ${demo.specialties
+              .map(
+                (s, i) =>
+                  `<li><span class="mdash__swatch" style="background:${CHART_PALETTE[i % CHART_PALETTE.length]}"></span> ${esc(s.label)} <strong>${s.count}</strong></li>`,
+              )
+              .join("") || `<li class="muted">Aún no hay altas especialidades registradas</li>`}
+          </ul>
+        </div>
+      </div>
+      <div class="mdash mdash--compact">
+        <div class="mdash__chart">
+          <h3 class="mdash__title">Una subespecialidad</h3>
+          <canvas id="specialtyFocusPie" class="mdash__canvas" width="200" height="200" aria-label="Subespecialidad enfocada"></canvas>
+        </div>
+        <div class="mdash__side">
+          <label class="mdash__focus-label" for="specialtyFocus">
+            Enfoque
+            <select id="specialtyFocus" class="mdash__select">
+              ${demo.specialties
+                .map(
+                  (s) =>
+                    `<option value="${String(s.slug).replaceAll('"', "")}" ${s.slug === specialtyFocusSlug ? "selected" : ""}>${esc(s.label)} (${s.count})</option>`,
+                )
+                .join("") || `<option value="">Sin datos</option>`}
+            </select>
+          </label>
+          ${focusLegendHtml}
+        </div>
+      </div>
+    </div>`;
+
+  drawDonut(
+    document.getElementById("medicosPie"),
+    [
+      { value: stats.soloRegistrados, color: "#94a3b8" },
+      { value: stats.conIntervenciones, color: "#38bdf8" },
+    ],
+    stats.totalMedicos,
+    "registrados",
+  );
+  drawDonut(
+    document.getElementById("sexPie"),
+    sexSlices,
+    sexSlices.reduce((a, s) => a + s.value, 0),
+    "sexo",
+  );
+  drawDonut(
+    document.getElementById("profilePie"),
+    profileSlices,
+    profileSlices.reduce((a, s) => a + s.value, 0),
+    "perfil",
+  );
+  drawSpecialtyBars(document.getElementById("specialtyBars"), demo.specialties);
+  drawDonut(
+    document.getElementById("specialtyFocusPie"),
+    [
+      { value: focus?.count || 0, color: "#38bdf8" },
+      { value: focusOthers, color: "#64748b" },
+    ],
+    focusTotal || 0,
+    focus?.label || "—",
+  );
+
+  const focusSelect = document.getElementById("specialtyFocus");
+  if (focusSelect) {
+    focusSelect.addEventListener("change", () => {
+      specialtyFocusSlug = focusSelect.value || "";
+      renderMedicosDashboard();
+    });
+  }
+}
+
+function hideMedicosDashboard() {
+  if (!medicosDash) return;
+  medicosDash.hidden = true;
+  medicosDash.innerHTML = "";
+}
+
 function renderMedicos() {
+  renderMedicosDashboard();
   const rows = workbook?.researchers || [];
   const html = rows
     .map((r) =>
@@ -240,6 +695,7 @@ function filteredInterventions() {
 }
 
 function renderIntervenciones() {
+  hideMedicosDashboard();
   const rows = filteredInterventions();
   const html = rows
     .map((row, index) =>
@@ -255,6 +711,7 @@ function renderIntervenciones() {
 }
 
 function renderAgrupado() {
+  hideMedicosDashboard();
   const only = onlyComplete?.checked;
   const groups = workbook?.grouped || [];
   const chunks = [];
@@ -310,6 +767,31 @@ async function fetchWorkbook(pin) {
   return response.json();
 }
 
+/** Completa counts.completed / soloRegistrado si el API aún no los manda. */
+function enrichResearchers(data) {
+  if (!data?.researchers) return data;
+  const completedById = new Map();
+  for (const item of data.interventions || []) {
+    if (item.status !== "completa") continue;
+    const id = item.researcherId;
+    completedById.set(id, (completedById.get(id) || 0) + 1);
+  }
+  for (const r of data.researchers) {
+    const total = Number(r.counts?.total ?? 0);
+    const completed =
+      r.counts?.completed != null
+        ? Number(r.counts.completed)
+        : completedById.get(r.id) || 0;
+    r.counts = { ...(r.counts || {}), completed, total };
+    r.soloRegistrado = r.soloRegistrado === true || total === 0;
+    if (r.flat) {
+      r.flat.counts = { ...(r.flat.counts || r.counts), completed, total };
+      r.flat.soloRegistrado = r.soloRegistrado;
+    }
+  }
+  return data;
+}
+
 function renderSummary() {
   if (!workbook?.summary) {
     summaryBar.innerHTML = "";
@@ -334,7 +816,7 @@ function render() {
 async function loadData() {
   statusLine.textContent = "Cargando registros…";
   try {
-    workbook = await fetchWorkbook(currentPin);
+    workbook = enrichResearchers(await fetchWorkbook(currentPin));
     statusLine.textContent = `Actualizado ${fmtDate(workbook.generatedAt)} · una fila = todos los parámetros`;
     render();
   } catch (err) {
