@@ -32,7 +32,7 @@
           Regístrate con tu correo institucional, invita médicos con tu QR y
           comprueba quién ya aceptó.
         </p>
-        <p class="ver" id="appVer">v0.3</p>
+        <p class="ver" id="appVer">v0.4</p>
       </header>
 
       <section class="panel" id="authPanel">
@@ -61,10 +61,24 @@
           <button type="button" class="btn ghost" id="forgotBtn">Olvidé contraseña</button>
         </form>
 
+        <form id="forgotForm" class="auth-form" hidden autocomplete="on">
+          <p class="field-hint">
+            Escribe el correo de tu cuenta. Te enviaremos una nueva contraseña.
+          </p>
+          <label for="forgotEmail">Correo electrónico</label>
+          <input
+            id="forgotEmail"
+            type="email"
+            required
+            autocomplete="email"
+            placeholder="tunombre@laboratorio.com"
+          />
+          <button type="submit" class="btn">Enviar contraseña</button>
+          <button type="button" class="btn ghost" id="forgotBackBtn">Volver a Entrar</button>
+        </form>
+
         <form id="registerForm" class="auth-form" hidden autocomplete="on">
-          <label for="regFullName">Nombre completo</label>
-          <input id="regFullName" type="text" required maxlength="200" autocomplete="name" />
-          <label for="regEmail">Correo institucional</label>
+          <label for="regEmail">Usuario (correo electrónico)</label>
           <input
             id="regEmail"
             type="email"
@@ -72,9 +86,16 @@
             autocomplete="email"
             placeholder="tunombre@laboratorio.com"
           />
-          <p class="field-hint">
-            Al crear la cuenta te enviamos la contraseña a ese correo.
-          </p>
+          <label for="regPassword">Contraseña</label>
+          <input
+            id="regPassword"
+            type="password"
+            required
+            minlength="4"
+            autocomplete="new-password"
+          />
+          <label for="regFullName">Nombre completo</label>
+          <input id="regFullName" type="text" required maxlength="200" autocomplete="name" />
           <button type="submit" class="btn">Crear cuenta</button>
         </form>
 

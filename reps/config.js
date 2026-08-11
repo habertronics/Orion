@@ -1,4 +1,4 @@
-export const APP_VERSION = "v0.3";
+export const APP_VERSION = "v0.4";
 
 export const API_BASE = "https://orion-83ct.onrender.com";
 

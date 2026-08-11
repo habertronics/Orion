@@ -92,17 +92,20 @@ function registerUrlForEmail(email) {
   return `${base}?inviteEmail=${encodeURIComponent(email)}`;
 }
 
-/** POST /api/reps/auth/register — nombre + correo; contraseña se genera y se envía. */
+/** POST /api/reps/auth/register — usuario, contraseña y nombre completo. */
 router.post('/auth/register', registerRateLimit, async (req, res) => {
   const email = normalizeEmail(req.body.email);
   const fullName = normalizeFullName(req.body.fullName);
-  const password = generatePassword(8);
+  const password = String(req.body.password || '');
 
   if (!fullName) {
     return res.status(400).json({ error: 'missing_full_name' });
   }
   if (!isValidEmail(email)) {
     return res.status(400).json({ error: 'invalid_email' });
+  }
+  if (!password || password.length < 4) {
+    return res.status(400).json({ error: 'missing_password' });
   }
 
   try {
@@ -122,19 +125,10 @@ router.post('/auth/register', registerRateLimit, async (req, res) => {
       [email, passwordHash, fullName],
     );
     const rep = inserted.rows[0];
-    const mail = await sendPasswordEmail({
-      to: email,
-      fullName,
-      password,
-      reason: 'register',
-    });
     const token = signRepToken(rep);
     return res.status(201).json({
       token,
       user: { ...userPayload(rep), createdAt: rep.created_at },
-      passwordEmailed: Boolean(mail?.queued),
-      // Mientras no haya SMTP real, devolvemos la clave para que pueda entrar ya.
-      temporaryPassword: mail?.provider === 'log' ? password : undefined,
     });
   } catch (err) {
     console.error('Rep register error:', err);

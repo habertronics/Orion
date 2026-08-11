@@ -10,12 +10,16 @@ const homePanel = document.getElementById("homePanel");
 const authError = document.getElementById("authError");
 const authInfo = document.getElementById("authInfo");
 const loginForm = document.getElementById("loginForm");
+const forgotForm = document.getElementById("forgotForm");
 const registerForm = document.getElementById("registerForm");
 const loginEmail = document.getElementById("loginEmail");
 const loginPassword = document.getElementById("loginPassword");
 const forgotBtn = document.getElementById("forgotBtn");
+const forgotEmail = document.getElementById("forgotEmail");
+const forgotBackBtn = document.getElementById("forgotBackBtn");
 const regFullName = document.getElementById("regFullName");
 const regEmail = document.getElementById("regEmail");
+const regPassword = document.getElementById("regPassword");
 const logoutBtn = document.getElementById("logoutBtn");
 const welcomeLine = document.getElementById("welcomeLine");
 const qrInviteBtn = document.getElementById("qrInviteBtn");
@@ -103,6 +107,16 @@ function clearMessages() {
   authInfo.textContent = "";
 }
 
+function setAuthMode(mode) {
+  document.querySelectorAll(".tab").forEach((t) => {
+    t.classList.toggle("active", t.getAttribute("data-auth") === mode);
+  });
+  loginForm.hidden = mode !== "login";
+  registerForm.hidden = mode !== "register";
+  forgotForm.hidden = mode !== "forgot";
+  clearMessages();
+}
+
 async function api(path, { method = "GET", body, auth = false } = {}) {
   const headers = { Accept: "application/json" };
   if (body) headers["Content-Type"] = "application/json";
@@ -127,8 +141,9 @@ async function api(path, { method = "GET", body, auth = false } = {}) {
 function showAuth() {
   authPanel.hidden = false;
   homePanel.hidden = true;
+  setAuthMode("login");
   ledeText.textContent =
-    "Entra con tu correo institucional o regístrate para invitar médicos con tu QR.";
+    "Entra con tu correo o regístrate para invitar médicos con tu QR.";
 }
 
 function showHome(user) {
@@ -232,14 +247,27 @@ async function createAndShowQr() {
   }
 }
 
+async function sendForgotPassword(email) {
+  const { res, data } = await api("/api/reps/auth/forgot-password", {
+    method: "POST",
+    body: { email },
+  });
+  if (!res?.ok) {
+    showError(data.error || "server_error");
+    return false;
+  }
+  let msg = "Listo. Si ese correo está registrado, te enviamos una nueva contraseña.";
+  if (data.temporaryPassword) {
+    msg += ` Contraseña temporal: ${data.temporaryPassword}`;
+    loginPassword.value = data.temporaryPassword;
+  }
+  showInfo(msg);
+  return true;
+}
+
 document.querySelectorAll(".tab").forEach((tab) => {
   tab.addEventListener("click", () => {
-    document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
-    tab.classList.add("active");
-    const mode = tab.getAttribute("data-auth");
-    loginForm.hidden = mode !== "login";
-    registerForm.hidden = mode !== "register";
-    clearMessages();
+    setAuthMode(tab.getAttribute("data-auth"));
   });
 });
 
@@ -264,39 +292,46 @@ loginForm.addEventListener("submit", async (event) => {
 forgotBtn.addEventListener("click", async () => {
   clearMessages();
   const email = normalizeEmail(loginEmail.value);
+  if (email) {
+    forgotBtn.disabled = true;
+    await sendForgotPassword(email);
+    forgotBtn.disabled = false;
+    return;
+  }
+  forgotEmail.value = "";
+  setAuthMode("forgot");
+  forgotEmail.focus();
+});
+
+forgotForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  clearMessages();
+  const email = normalizeEmail(forgotEmail.value);
   if (!email) {
     showError("invalid_email");
-    loginEmail.focus();
     return;
   }
-  forgotBtn.disabled = true;
-  const { res, data } = await api("/api/reps/auth/forgot-password", {
-    method: "POST",
-    body: { email },
-  });
-  forgotBtn.disabled = false;
-  if (!res?.ok) {
-    showError(data.error || "server_error");
-    return;
+  const ok = await sendForgotPassword(email);
+  if (ok) {
+    const msg = authInfo.textContent;
+    loginEmail.value = email;
+    setAuthMode("login");
+    if (msg) showInfo(msg);
   }
-  let msg =
-    data.message ||
-    "Si el correo está registrado, enviamos una nueva contraseña.";
-  if (data.temporaryPassword) {
-    msg += ` Contraseña temporal (mientras configuramos el correo): ${data.temporaryPassword}`;
-    loginPassword.value = data.temporaryPassword;
-  }
-  showInfo(msg);
 });
+
+forgotBackBtn.addEventListener("click", () => setAuthMode("login"));
 
 registerForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   clearMessages();
   const email = normalizeEmail(regEmail.value);
+  const password = regPassword.value;
   const { res, data } = await api("/api/reps/auth/register", {
     method: "POST",
     body: {
       email,
+      password,
       fullName: regFullName.value,
     },
   });
@@ -306,13 +341,6 @@ registerForm.addEventListener("submit", async (event) => {
   }
   setToken(data.token);
   setSession(data.user);
-  if (data.temporaryPassword) {
-    // Entra directo; deja constancia de la clave enviada/generada.
-    sessionStorage.setItem(
-      "orion-reps-last-temp-password",
-      data.temporaryPassword,
-    );
-  }
   showHome(data.user);
 });
 
