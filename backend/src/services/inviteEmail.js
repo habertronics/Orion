@@ -1,6 +1,6 @@
 /**
- * Envío de invitación formal (Laboratorio Sofía / cuerpo médico).
- * Hoy: deja registro en logs. Cuando haya SMTP/Resend, se conecta aquí.
+ * Correos de representantes / invitaciones.
+ * Hoy: log. Cuando haya SMTP/Resend, se conecta aquí.
  */
 function buildInviteEmail({ inviteeEmail, repName, inviteType, registerUrl }) {
   const typeLabel =
@@ -28,9 +28,32 @@ function buildInviteEmail({ inviteeEmail, repName, inviteType, registerUrl }) {
   return { to: inviteeEmail, subject, text };
 }
 
+function buildPasswordEmail({ to, fullName, password, reason }) {
+  const subject =
+    reason === 'reset'
+      ? 'Orión Representantes — tu nueva contraseña'
+      : 'Orión Representantes — tu contraseña de acceso';
+  const greeting = fullName ? `Hola ${fullName},` : 'Hola,';
+  const intro =
+    reason === 'reset'
+      ? 'Pediste recuperar el acceso. Esta es tu nueva contraseña:'
+      : 'Tu cuenta de representante quedó creada. Esta es tu contraseña:';
+  const text = [
+    greeting,
+    ``,
+    intro,
+    password,
+    ``,
+    `Entra en: https://habertronic-orion.netlify.app/reps/`,
+    ``,
+    `Atentamente,`,
+    `Habertronic Orión`,
+  ].join('\n');
+  return { to, subject, text };
+}
+
 async function sendInviteEmail(payload) {
   const mail = buildInviteEmail(payload);
-  // Placeholder: sin proveedor de correo configurado aún.
   console.log('[invite-email] queued', {
     to: mail.to,
     subject: mail.subject,
@@ -39,4 +62,19 @@ async function sendInviteEmail(payload) {
   return { queued: true, provider: 'log', ...mail };
 }
 
-module.exports = { buildInviteEmail, sendInviteEmail };
+async function sendPasswordEmail(payload) {
+  const mail = buildPasswordEmail(payload);
+  console.log('[rep-password-email] queued', {
+    to: mail.to,
+    subject: mail.subject,
+    reason: payload.reason,
+  });
+  return { queued: true, provider: 'log', ...mail };
+}
+
+module.exports = {
+  buildInviteEmail,
+  sendInviteEmail,
+  buildPasswordEmail,
+  sendPasswordEmail,
+};

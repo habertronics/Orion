@@ -1,12 +1,6 @@
 import "./style.css";
 import QRCode from "qrcode";
-import {
-  API_BASE,
-  APP_VERSION,
-  REMEMBER_KEY,
-  SESSION_KEY,
-  TOKEN_KEY,
-} from "./config.js";
+import { API_BASE, APP_VERSION, SESSION_KEY, TOKEN_KEY } from "./config.js";
 
 const appVer = document.getElementById("appVer");
 if (appVer) appVer.textContent = APP_VERSION;
@@ -14,17 +8,14 @@ if (appVer) appVer.textContent = APP_VERSION;
 const authPanel = document.getElementById("authPanel");
 const homePanel = document.getElementById("homePanel");
 const authError = document.getElementById("authError");
+const authInfo = document.getElementById("authInfo");
 const loginForm = document.getElementById("loginForm");
 const registerForm = document.getElementById("registerForm");
 const loginEmail = document.getElementById("loginEmail");
 const loginPassword = document.getElementById("loginPassword");
-const loginRemember = document.getElementById("loginRemember");
+const forgotBtn = document.getElementById("forgotBtn");
 const regFullName = document.getElementById("regFullName");
 const regEmail = document.getElementById("regEmail");
-const regPhone = document.getElementById("regPhone");
-const regPassword = document.getElementById("regPassword");
-const regRemember = document.getElementById("regRemember");
-const suggestPwBtn = document.getElementById("suggestPwBtn");
 const logoutBtn = document.getElementById("logoutBtn");
 const welcomeLine = document.getElementById("welcomeLine");
 const qrInviteBtn = document.getElementById("qrInviteBtn");
@@ -43,54 +34,23 @@ const ERRORS = {
   invalid_credentials: "Correo o contraseña incorrectos.",
   missing_password: "Escribe una contraseña.",
   missing_full_name: "Escribe tu nombre completo.",
-  invalid_phone: "Teléfono no válido.",
   rate_limited: "Demasiados intentos. Espera un momento.",
   server_error: "Error del servidor. Intenta de nuevo.",
   network_error: "Sin conexión con la API.",
   rep_required: "Sesión de representante requerida.",
 };
 
-function suggestPassword(length = 5) {
-  const alphabet = "abcdefghijklmnopqrstuvwxyz0123456789";
-  const values = crypto.getRandomValues(new Uint32Array(length));
-  return Array.from(values, (n) => alphabet[n % alphabet.length]).join("");
-}
-
 function normalizeEmail(email) {
   return String(email || "").trim().toLowerCase();
-}
-
-function getRemembered() {
-  try {
-    const raw = localStorage.getItem(REMEMBER_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (!parsed?.email || !parsed?.password) return null;
-    return { email: String(parsed.email), password: String(parsed.password) };
-  } catch {
-    return null;
-  }
-}
-
-function setRemembered(email, password) {
-  localStorage.setItem(
-    REMEMBER_KEY,
-    JSON.stringify({ email: normalizeEmail(email), password }),
-  );
-}
-
-function clearRemembered() {
-  localStorage.removeItem(REMEMBER_KEY);
 }
 
 function getToken() {
   return sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY);
 }
 
-function setToken(token, remember) {
+function setToken(token) {
   sessionStorage.setItem(TOKEN_KEY, token);
-  if (remember) localStorage.setItem(TOKEN_KEY, token);
-  else localStorage.removeItem(TOKEN_KEY);
+  localStorage.setItem(TOKEN_KEY, token);
 }
 
 function clearToken() {
@@ -108,7 +68,7 @@ function getSession() {
   }
 }
 
-function setSession(user, remember) {
+function setSession(user) {
   const payload = JSON.stringify({
     id: user.id,
     email: user.email,
@@ -116,8 +76,7 @@ function setSession(user, remember) {
     displayName: user.displayName || user.fullName || user.email,
   });
   sessionStorage.setItem(SESSION_KEY, payload);
-  if (remember) localStorage.setItem(SESSION_KEY, payload);
-  else localStorage.removeItem(SESSION_KEY);
+  localStorage.setItem(SESSION_KEY, payload);
 }
 
 function clearSession() {
@@ -126,13 +85,22 @@ function clearSession() {
 }
 
 function showError(code) {
+  authInfo.hidden = true;
   authError.hidden = false;
   authError.textContent = ERRORS[code] || code || "Error";
 }
 
-function clearError() {
+function showInfo(message) {
+  authError.hidden = true;
+  authInfo.hidden = false;
+  authInfo.textContent = message;
+}
+
+function clearMessages() {
   authError.hidden = true;
   authError.textContent = "";
+  authInfo.hidden = true;
+  authInfo.textContent = "";
 }
 
 async function api(path, { method = "GET", body, auth = false } = {}) {
@@ -160,14 +128,15 @@ function showAuth() {
   authPanel.hidden = false;
   homePanel.hidden = true;
   ledeText.textContent =
-    "Regístrate con tu correo institucional, invita médicos con tu QR y comprueba quién ya aceptó.";
+    "Entra con tu correo institucional o regístrate para invitar médicos con tu QR.";
 }
 
 function showHome(user) {
   authPanel.hidden = true;
   homePanel.hidden = false;
   welcomeLine.textContent = `Hola, ${user.displayName || user.email}`;
-  ledeText.textContent = "Elige una opción. El QR pide correo del médico + Aceptar (nada anónimo).";
+  ledeText.textContent =
+    "Elige una opción. El QR pide correo del médico + Aceptar.";
   void loadInvites();
 }
 
@@ -270,20 +239,15 @@ document.querySelectorAll(".tab").forEach((tab) => {
     const mode = tab.getAttribute("data-auth");
     loginForm.hidden = mode !== "login";
     registerForm.hidden = mode !== "register";
-    clearError();
+    clearMessages();
   });
-});
-
-suggestPwBtn.addEventListener("click", () => {
-  regPassword.value = suggestPassword();
 });
 
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  clearError();
+  clearMessages();
   const email = normalizeEmail(loginEmail.value);
   const password = loginPassword.value;
-  const remember = Boolean(loginRemember.checked);
   const { res, data } = await api("/api/reps/auth/login", {
     method: "POST",
     body: { email, password },
@@ -292,36 +256,63 @@ loginForm.addEventListener("submit", async (event) => {
     showError(data.error || "invalid_credentials");
     return;
   }
-  setToken(data.token, remember);
-  setSession(data.user, remember);
-  if (remember) setRemembered(email, password);
-  else clearRemembered();
+  setToken(data.token);
+  setSession(data.user);
   showHome(data.user);
+});
+
+forgotBtn.addEventListener("click", async () => {
+  clearMessages();
+  const email = normalizeEmail(loginEmail.value);
+  if (!email) {
+    showError("invalid_email");
+    loginEmail.focus();
+    return;
+  }
+  forgotBtn.disabled = true;
+  const { res, data } = await api("/api/reps/auth/forgot-password", {
+    method: "POST",
+    body: { email },
+  });
+  forgotBtn.disabled = false;
+  if (!res?.ok) {
+    showError(data.error || "server_error");
+    return;
+  }
+  let msg =
+    data.message ||
+    "Si el correo está registrado, enviamos una nueva contraseña.";
+  if (data.temporaryPassword) {
+    msg += ` Contraseña temporal (mientras configuramos el correo): ${data.temporaryPassword}`;
+    loginPassword.value = data.temporaryPassword;
+  }
+  showInfo(msg);
 });
 
 registerForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  clearError();
+  clearMessages();
   const email = normalizeEmail(regEmail.value);
-  const password = regPassword.value;
-  const remember = Boolean(regRemember.checked);
   const { res, data } = await api("/api/reps/auth/register", {
     method: "POST",
     body: {
       email,
-      password,
       fullName: regFullName.value,
-      phone: regPhone.value,
     },
   });
   if (!res?.ok) {
     showError(data.error || "server_error");
     return;
   }
-  setToken(data.token, remember);
-  setSession(data.user, remember);
-  if (remember) setRemembered(email, password);
-  else clearRemembered();
+  setToken(data.token);
+  setSession(data.user);
+  if (data.temporaryPassword) {
+    // Entra directo; deja constancia de la clave enviada/generada.
+    sessionStorage.setItem(
+      "orion-reps-last-temp-password",
+      data.temporaryPassword,
+    );
+  }
   showHome(data.user);
 });
 
@@ -335,15 +326,6 @@ document.querySelectorAll('input[name="inviteType"]').forEach((input) => {
     if (!qrCard.hidden) void createAndShowQr();
   });
 });
-
-regPassword.value = suggestPassword();
-
-const remembered = getRemembered();
-if (remembered) {
-  loginEmail.value = remembered.email;
-  loginPassword.value = remembered.password;
-  loginRemember.checked = true;
-}
 
 const existing = getSession();
 if (existing && getToken()) {

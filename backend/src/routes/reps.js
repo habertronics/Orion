@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 const { query } = require('../db');
 const { createRateLimiter } = require('../middleware/rateLimit');
 const { repAuthRequired, signRepToken } = require('../middleware/repAuth');
-const { sendInviteEmail } = require('../services/inviteEmail');
+const { sendInviteEmail, sendPasswordEmail } = require('../services/inviteEmail');
 
 const router = express.Router();
 
@@ -17,6 +17,12 @@ const registerRateLimit = createRateLimiter({
 const loginRateLimit = createRateLimiter({
   windowMs: 15 * 60 * 1000,
   max: 40,
+  message: 'rate_limited',
+});
+
+const forgotRateLimit = createRateLimiter({
+  windowMs: 60 * 60 * 1000,
+  max: 8,
   message: 'rate_limited',
 });
 
@@ -39,19 +45,18 @@ function normalizeFullName(value) {
   return name.length ? name.slice(0, 200) : null;
 }
 
-function normalizePhone(value) {
-  const phone = String(value || '').trim();
-  return phone.length ? phone.slice(0, 40) : null;
-}
-
 function isValidEmail(email) {
   return email.includes('@') && email.length >= 5;
 }
 
-function isValidPhone(phone) {
-  if (!phone) return true;
-  const digits = String(phone).replace(/\D/g, '');
-  return digits.length >= 7 && digits.length <= 15;
+function generatePassword(length = 8) {
+  const alphabet = 'abcdefghijkmnopqrstuvwxyz23456789';
+  const bytes = crypto.randomBytes(length);
+  let out = '';
+  for (let i = 0; i < length; i += 1) {
+    out += alphabet[bytes[i] % alphabet.length];
+  }
+  return out;
 }
 
 function parseInviteType(value) {
@@ -87,24 +92,17 @@ function registerUrlForEmail(email) {
   return `${base}?inviteEmail=${encodeURIComponent(email)}`;
 }
 
-/** POST /api/reps/auth/register */
+/** POST /api/reps/auth/register — nombre + correo; contraseña se genera y se envía. */
 router.post('/auth/register', registerRateLimit, async (req, res) => {
   const email = normalizeEmail(req.body.email);
-  const password = String(req.body.password || '');
   const fullName = normalizeFullName(req.body.fullName);
-  const phone = normalizePhone(req.body.phone);
+  const password = generatePassword(8);
 
   if (!fullName) {
     return res.status(400).json({ error: 'missing_full_name' });
   }
   if (!isValidEmail(email)) {
     return res.status(400).json({ error: 'invalid_email' });
-  }
-  if (!password || password.length < 4) {
-    return res.status(400).json({ error: 'missing_password' });
-  }
-  if (phone && !isValidPhone(phone)) {
-    return res.status(400).json({ error: 'invalid_phone' });
   }
 
   try {
@@ -119,15 +117,24 @@ router.post('/auth/register', registerRateLimit, async (req, res) => {
     const passwordHash = await bcrypt.hash(password, 10);
     const inserted = await query(
       `INSERT INTO representatives (email, password_hash, full_name, phone)
-       VALUES ($1, $2, $3, $4)
+       VALUES ($1, $2, $3, NULL)
        RETURNING id, email, full_name, created_at`,
-      [email, passwordHash, fullName, phone || null],
+      [email, passwordHash, fullName],
     );
     const rep = inserted.rows[0];
+    const mail = await sendPasswordEmail({
+      to: email,
+      fullName,
+      password,
+      reason: 'register',
+    });
     const token = signRepToken(rep);
     return res.status(201).json({
       token,
       user: { ...userPayload(rep), createdAt: rep.created_at },
+      passwordEmailed: Boolean(mail?.queued),
+      // Mientras no haya SMTP real, devolvemos la clave para que pueda entrar ya.
+      temporaryPassword: mail?.provider === 'log' ? password : undefined,
     });
   } catch (err) {
     console.error('Rep register error:', err);
@@ -165,6 +172,56 @@ router.post('/auth/login', loginRateLimit, async (req, res) => {
     return res.json({ token, user: userPayload(rep) });
   } catch (err) {
     console.error('Rep login error:', err);
+    return res.status(500).json({ error: 'server_error' });
+  }
+});
+
+/**
+ * POST /api/reps/auth/forgot-password
+ * No se puede recuperar la contraseña hasheada: se genera una nueva y se envía.
+ */
+router.post('/auth/forgot-password', forgotRateLimit, async (req, res) => {
+  const email = normalizeEmail(req.body.email);
+  if (!isValidEmail(email)) {
+    return res.status(400).json({ error: 'invalid_email' });
+  }
+
+  try {
+    const result = await query(
+      `SELECT id, email, full_name, active
+       FROM representatives WHERE email = $1`,
+      [email],
+    );
+    const rep = result.rows[0];
+    // Misma respuesta si existe o no (no filtrar correos).
+    if (!rep || !rep.active) {
+      return res.json({
+        ok: true,
+        message: 'Si el correo está registrado, enviamos una nueva contraseña.',
+      });
+    }
+
+    const password = generatePassword(8);
+    const passwordHash = await bcrypt.hash(password, 10);
+    await query(`UPDATE representatives SET password_hash = $1 WHERE id = $2`, [
+      passwordHash,
+      rep.id,
+    ]);
+    const mail = await sendPasswordEmail({
+      to: email,
+      fullName: rep.full_name,
+      password,
+      reason: 'reset',
+    });
+
+    return res.json({
+      ok: true,
+      message: 'Si el correo está registrado, enviamos una nueva contraseña.',
+      passwordEmailed: Boolean(mail?.queued),
+      temporaryPassword: mail?.provider === 'log' ? password : undefined,
+    });
+  } catch (err) {
+    console.error('Rep forgot password error:', err);
     return res.status(500).json({ error: 'server_error' });
   }
 });

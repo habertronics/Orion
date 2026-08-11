@@ -32,7 +32,7 @@
           Regístrate con tu correo institucional, invita médicos con tu QR y
           comprueba quién ya aceptó.
         </p>
-        <p class="ver" id="appVer">v0.2</p>
+        <p class="ver" id="appVer">v0.3</p>
       </header>
 
       <section class="panel" id="authPanel">
@@ -42,36 +42,43 @@
         </div>
 
         <form id="loginForm" class="auth-form" autocomplete="on">
-          <label for="loginEmail">Correo electrónico</label>
-          <input id="loginEmail" type="email" required placeholder="tunombre@laboratorio.com" />
+          <label for="loginEmail">Usuario (correo electrónico)</label>
+          <input
+            id="loginEmail"
+            type="email"
+            required
+            autocomplete="username"
+            placeholder="tunombre@laboratorio.com"
+          />
           <label for="loginPassword">Contraseña</label>
-          <input id="loginPassword" type="password" required />
-          <label class="check">
-            <input id="loginRemember" type="checkbox" />
-            Guardar credenciales en este teléfono
-          </label>
+          <input
+            id="loginPassword"
+            type="password"
+            required
+            autocomplete="current-password"
+          />
           <button type="submit" class="btn">Entrar</button>
+          <button type="button" class="btn ghost" id="forgotBtn">Olvidé contraseña</button>
         </form>
 
         <form id="registerForm" class="auth-form" hidden autocomplete="on">
           <label for="regFullName">Nombre completo</label>
-          <input id="regFullName" type="text" required maxlength="200" />
+          <input id="regFullName" type="text" required maxlength="200" autocomplete="name" />
           <label for="regEmail">Correo institucional</label>
-          <input id="regEmail" type="email" required placeholder="tunombre@laboratorio.com" />
-          <label for="regPhone">Teléfono (opcional)</label>
-          <input id="regPhone" type="tel" maxlength="40" />
-          <label for="regPassword">Contraseña</label>
-          <div class="pw-row">
-            <input id="regPassword" type="text" required minlength="4" />
-            <button type="button" class="btn ghost" id="suggestPwBtn">Sugerir</button>
-          </div>
-          <label class="check">
-            <input id="regRemember" type="checkbox" checked />
-            Guardar credenciales en este teléfono
-          </label>
+          <input
+            id="regEmail"
+            type="email"
+            required
+            autocomplete="email"
+            placeholder="tunombre@laboratorio.com"
+          />
+          <p class="field-hint">
+            Al crear la cuenta te enviamos la contraseña a ese correo.
+          </p>
           <button type="submit" class="btn">Crear cuenta</button>
         </form>
 
+        <p class="form-info" id="authInfo" hidden></p>
         <p class="form-error" id="authError" hidden></p>
       </section>
 
