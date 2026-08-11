@@ -4,7 +4,7 @@ import {
 } from './parpadeoApi'
 import type { ParpadeoExamState } from '../i18n/parpadeoExam'
 import type { ParpadeoInterrogatorioState } from '../i18n/parpadeoInterrogatorio'
-import type { MeterResult } from './parpadeoMeter'
+import { isMeterComplete, type MeterResult } from './parpadeoMeter'
 
 const STORAGE_KEY = 'habertronic-orion-pending-protocol-uploads'
 export const UPLOAD_FLUSHED_EVENT = 'orion-pending-upload-flushed'
@@ -52,6 +52,7 @@ function notifyFlushed(detail: {
 }
 
 export function enqueueParpadeoComplete(payload: PendingParpadeoUpload['payload']) {
+  if (!payload.exam || !isMeterComplete(payload.meter)) return null
   const rest = readQueue().filter((item) => item.protocol !== 'parpadeo')
   const entry: PendingParpadeoUpload = {
     id: crypto.randomUUID(),
@@ -78,6 +79,10 @@ export async function flushPendingUploads(): Promise<void> {
 
   for (const item of queue) {
     if (item.protocol === 'parpadeo') {
+      if (!item.payload.exam || !isMeterComplete(item.payload.meter)) {
+        // Borradores incompletos en cola: se descartan (no hay registro parcial).
+        continue
+      }
       const result = await saveParpadeoComplete(item.payload)
       if (result.ok) {
         notifyFlushed({ protocol: 'parpadeo', ok: true, id: result.id })

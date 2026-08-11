@@ -426,8 +426,10 @@ function mapResearcherCore(row, counts = {}) {
       parpadeo: Number(counts.parpadeo || 0),
       parpadeoCompleted: Number(counts.parpadeo_completed || 0),
       interferometria: Number(counts.interferometria || 0),
+      completed: Number(counts.completed || 0),
       total: Number(counts.total || 0),
     },
+    soloRegistrado: Number(counts.total || 0) === 0,
   };
 }
 
@@ -496,6 +498,9 @@ router.use(adminLimit, adminPinRequired);
 
 router.get('/workbook', async (_req, res) => {
   try {
+    // Consistencia: no mostrar ni contar sesiones a medias (abortadas).
+    await query(`DELETE FROM parpadeo_sessions WHERE completed_at IS NULL`);
+
     const researchersResult = await query(
       `SELECT id, email, full_name, age, sex, phone, nickname, location_declined,
               location_json, ophthalmology_profile, specialty_slug, specialty_other,
@@ -507,6 +512,7 @@ router.get('/workbook', async (_req, res) => {
     const countsResult = await query(
       `SELECT researcher_id,
               COUNT(*)::int AS total,
+              COUNT(*) FILTER (WHERE completed_at IS NOT NULL)::int AS completed,
               COUNT(*) FILTER (WHERE project_slug = 'parpadeo')::int AS parpadeo,
               COUNT(*) FILTER (
                 WHERE project_slug = 'parpadeo' AND completed_at IS NOT NULL

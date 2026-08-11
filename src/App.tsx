@@ -16,17 +16,14 @@ import {
   getSession,
 } from './auth/researcherAuth'
 import type { ParpadeoInterrogatorioState } from './i18n/parpadeoInterrogatorio'
-import type { ParpadeoExamState } from './i18n/parpadeoExam'
-import {
-  saveParpadeoComplete,
-  saveParpadeoInterrogatorio,
-} from './lib/parpadeoApi'
+import { isExamComplete, type ParpadeoExamState } from './i18n/parpadeoExam'
+import { saveParpadeoComplete } from './lib/parpadeoApi'
 import {
   enqueueParpadeoComplete,
   flushPendingUploads,
   isNetworkUploadFailure,
 } from './lib/protocolUploadQueue'
-import type { MeterResult } from './lib/parpadeoMeter'
+import { isMeterComplete, type MeterResult } from './lib/parpadeoMeter'
 import {
   completeWelcome,
   loadPreferences,
@@ -65,10 +62,8 @@ function App() {
   const [selectedProtocol, setSelectedProtocol] = useState<string | null>(null)
   const [interrogatorio, setInterrogatorio] =
     useState<ParpadeoInterrogatorioState | null>(null)
-  const [interrogatorioSaved, setInterrogatorioSaved] = useState(false)
   const [exam, setExam] = useState<ParpadeoExamState | null>(null)
   const [meter, setMeter] = useState<MeterResult | null>(null)
-  const [saving, setSaving] = useState(false)
   const [authInitialView, setAuthInitialView] = useState<'register' | 'login'>(
     'login',
   )
@@ -86,16 +81,19 @@ function App() {
     return () => window.removeEventListener('online', onOnline)
   }, [])
 
+  function resetProtocolProgress() {
+    setSelectedProtocol(null)
+    setInterrogatorio(null)
+    setExam(null)
+    setMeter(null)
+  }
+
   function logout() {
     clearSession()
     clearRememberedCredentials()
     setResearcherEmail(null)
     setDisplayName('')
-    setSelectedProtocol(null)
-    setInterrogatorio(null)
-    setInterrogatorioSaved(false)
-    setExam(null)
-    setMeter(null)
+    resetProtocolProgress()
     setAuthInitialView('login')
     setView('home')
   }
@@ -176,6 +174,9 @@ function App() {
       <ResearcherProjectsScreen
         lang={lang}
         onSelectProject={(slug) => {
+          setInterrogatorio(null)
+          setExam(null)
+          setMeter(null)
           setSelectedProtocol(slug)
           if (slug === 'parpadeo') {
             setView('protocol-intro')
@@ -183,7 +184,10 @@ function App() {
           }
           setView('protocol-next')
         }}
-        onBack={() => setView('researcher-hello')}
+        onBack={() => {
+          resetProtocolProgress()
+          setView('researcher-hello')
+        }}
         onLogout={logout}
       />
     )
@@ -193,7 +197,10 @@ function App() {
     return (
       <ProtocolIntroScreen
         lang={lang}
-        onBack={() => setView('researcher-projects')}
+        onBack={() => {
+          resetProtocolProgress()
+          setView('researcher-projects')
+        }}
         onNext={() => setView('protocol-interrogatorio')}
       />
     )
@@ -205,13 +212,9 @@ function App() {
         lang={lang}
         onBack={() => setView('protocol-intro')}
         onNext={(data) => {
+          // Solo en dispositivo hasta el envío final con parpadeómetro.
           setInterrogatorio(data)
-          setSaving(true)
-          void saveParpadeoInterrogatorio(data).then((saved) => {
-            setInterrogatorioSaved(Boolean(saved))
-            setSaving(false)
-            setView('protocol-summary')
-          })
+          setView('protocol-summary')
         }}
       />
     )
@@ -222,7 +225,6 @@ function App() {
       <ParpadeoSummaryScreen
         lang={lang}
         data={interrogatorio}
-        saved={interrogatorioSaved}
         onBack={() => setView('protocol-interrogatorio')}
         onContinue={() => setView('protocol-exam')}
       />
@@ -246,6 +248,7 @@ function App() {
     return (
       <ParpadeometroScreen
         lang={lang}
+        requireMeter
         onBack={() => setView('protocol-exam')}
         onNext={(result) => {
           setMeter(result)
@@ -261,10 +264,18 @@ function App() {
         lang={lang}
         exam={exam}
         meter={meter}
-        canUpload={Boolean(researcherEmail && interrogatorio)}
+        canUpload={Boolean(
+          researcherEmail &&
+            interrogatorio &&
+            exam &&
+            isExamComplete(exam) &&
+            isMeterComplete(meter),
+        )}
         onBack={() => setView('protocol-parpadeometro')}
         onUpload={async () => {
-          if (!interrogatorio) return { ok: false, reason: 'guest' }
+          if (!interrogatorio || !exam || !isMeterComplete(meter)) {
+            return { ok: false, reason: 'incomplete' }
+          }
           const payload = { interrogatorio, exam, meter }
           const result = await saveParpadeoComplete(payload)
           if (result.ok) return result
@@ -281,11 +292,9 @@ function App() {
     <main className="placeholder">
       <p>Protocolo: {selectedProtocol}</p>
       <p>
-        {saving
-          ? 'Guardando…'
-          : exam
-            ? 'Exploración física completada. Próximo: ID anónimo y medición MediaPipe.'
-            : 'Próximo: ID anónimo y medición MediaPipe.'}
+        {exam
+          ? 'Exploración física completada. Próximo: ID anónimo y medición MediaPipe.'
+          : 'Próximo: ID anónimo y medición MediaPipe.'}
       </p>
       <button
         type="button"

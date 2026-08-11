@@ -4,33 +4,35 @@ const { authRequired } = require('../middleware/auth');
 
 const router = express.Router();
 
-router.post('/interrogatorio', authRequired, async (req, res) => {
-  const answers = req.body.answers || {};
-  const location = req.body.location || null;
-  const environment = req.body.environment || null;
+function isValidMeter(meter) {
+  if (!meter || typeof meter !== 'object') return false;
+  return (
+    Number(meter.durationMs) > 0 &&
+    typeof meter.finishedAt === 'string' &&
+    meter.finishedAt.length > 0
+  );
+}
 
-  try {
-    const inserted = await query(
-      `INSERT INTO parpadeo_sessions
-        (researcher_id, project_slug, answers_json, location_json, environment_json)
-       VALUES ($1, 'parpadeo', $2::jsonb, $3::jsonb, $4::jsonb)
-       RETURNING id, created_at`,
-      [
-        req.user.id,
-        JSON.stringify(answers),
-        location ? JSON.stringify(location) : null,
-        environment ? JSON.stringify(environment) : null,
-      ],
-    );
+function isValidExam(exam) {
+  if (!exam || typeof exam !== 'object') return false;
+  return Boolean(
+    exam.tbut &&
+      exam.schirmer &&
+      exam.staining &&
+      exam.meibomianFunction &&
+      exam.meibomianExpressivity &&
+      exam.meibomianFindings &&
+      exam.otherCriteria,
+  );
+}
 
-    res.status(201).json({
-      id: inserted.rows[0].id,
-      createdAt: inserted.rows[0].created_at,
-    });
-  } catch (err) {
-    console.error('Save interrogatorio error:', err);
-    res.status(500).json({ error: 'server_error' });
-  }
+/** Ya no se guardan sesiones parciales: solo el complete con parpadeómetro. */
+router.post('/interrogatorio', authRequired, async (_req, res) => {
+  res.status(410).json({
+    error: 'partial_upload_disabled',
+    message:
+      'El protocolo solo se guarda al completar interrogatorio, exploración y parpadeómetro.',
+  });
 });
 
 router.post('/complete', authRequired, async (req, res) => {
@@ -40,7 +42,22 @@ router.post('/complete', authRequired, async (req, res) => {
   const exam = req.body.exam || null;
   const meter = req.body.meter || null;
 
+  if (!isValidExam(exam) || !isValidMeter(meter)) {
+    return res.status(400).json({
+      error: 'incomplete_protocol',
+      message:
+        'Se requieren exploración completa y parpadeómetro terminado para guardar.',
+    });
+  }
+
   try {
+    // Abortar borradores / parciales del investigador: no quedan restos a medias.
+    await query(
+      `DELETE FROM parpadeo_sessions
+       WHERE researcher_id = $1 AND completed_at IS NULL`,
+      [req.user.id],
+    );
+
     const inserted = await query(
       `INSERT INTO parpadeo_sessions
         (researcher_id, project_slug, answers_json, location_json, environment_json,
@@ -52,8 +69,8 @@ router.post('/complete', authRequired, async (req, res) => {
         JSON.stringify(answers),
         location ? JSON.stringify(location) : null,
         environment ? JSON.stringify(environment) : null,
-        exam ? JSON.stringify(exam) : null,
-        meter ? JSON.stringify(meter) : null,
+        JSON.stringify(exam),
+        JSON.stringify(meter),
       ],
     );
 
@@ -71,9 +88,10 @@ router.post('/complete', authRequired, async (req, res) => {
 router.get('/sessions/latest', authRequired, async (req, res) => {
   try {
     const result = await query(
-      `SELECT id, answers_json, location_json, environment_json, created_at
+      `SELECT id, answers_json, location_json, environment_json, exam_json, meter_json,
+              created_at, completed_at
        FROM parpadeo_sessions
-       WHERE researcher_id = $1
+       WHERE researcher_id = $1 AND completed_at IS NOT NULL
        ORDER BY created_at DESC
        LIMIT 5`,
       [req.user.id],

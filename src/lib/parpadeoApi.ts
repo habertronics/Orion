@@ -1,52 +1,15 @@
 import { getApiUrl } from '../config'
 import { getToken } from '../auth/researcherAuth'
-import type { ParpadeoExamState } from '../i18n/parpadeoExam'
+import { isExamComplete, type ParpadeoExamState } from '../i18n/parpadeoExam'
 import type { ParpadeoInterrogatorioState } from '../i18n/parpadeoInterrogatorio'
-import type { MeterResult } from './parpadeoMeter'
+import { isMeterComplete, type MeterResult } from './parpadeoMeter'
 
 export type ProtocolUploadResult =
   | { ok: true; id: string }
   | {
       ok: false
-      reason: 'guest' | 'offline' | 'network' | 'auth' | 'server'
+      reason: 'guest' | 'offline' | 'network' | 'auth' | 'server' | 'incomplete'
     }
-
-export async function saveParpadeoInterrogatorio(
-  data: ParpadeoInterrogatorioState,
-): Promise<{ id: string } | null> {
-  const token = getToken()
-  if (!token) return null
-
-  const answers = {
-    age: data.age,
-    sex: data.sex,
-    dryEyeDiagnosis: data.dryEyeDiagnosis,
-    nonLubeTreatment: data.nonLubeTreatment,
-    usingLubricant: data.usingLubricant,
-    osdi6Done: data.osdi6Done,
-    osdi6: data.osdi6,
-  }
-
-  try {
-    const response = await fetch(`${getApiUrl()}/api/parpadeo/interrogatorio`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        answers,
-        location: data.location,
-        environment: data.environment,
-      }),
-    })
-    if (!response.ok) return null
-    const json = (await response.json()) as { id?: string }
-    return json.id ? { id: json.id } : null
-  } catch {
-    return null
-  }
-}
 
 export async function saveParpadeoComplete(data: {
   interrogatorio: ParpadeoInterrogatorioState
@@ -57,6 +20,9 @@ export async function saveParpadeoComplete(data: {
   if (!token) return { ok: false, reason: 'guest' }
   if (typeof navigator !== 'undefined' && !navigator.onLine) {
     return { ok: false, reason: 'offline' }
+  }
+  if (!data.exam || !isExamComplete(data.exam) || !isMeterComplete(data.meter)) {
+    return { ok: false, reason: 'incomplete' }
   }
 
   const answers = {
@@ -86,6 +52,9 @@ export async function saveParpadeoComplete(data: {
     })
     if (response.status === 401 || response.status === 403) {
       return { ok: false, reason: 'auth' }
+    }
+    if (response.status === 400) {
+      return { ok: false, reason: 'incomplete' }
     }
     if (!response.ok) return { ok: false, reason: 'server' }
     const json = (await response.json()) as { id?: string }

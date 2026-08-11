@@ -10,3 +10,13 @@ export type MeterResult = {
   arrhythmiaCvPct?: number | null
   apertureThreshold?: number
 }
+
+/** Prueba de parpadeómetro terminada (requisito para enviar el protocolo). */
+export function isMeterComplete(meter: MeterResult | null | undefined): boolean {
+  if (!meter) return false
+  return (
+    Number(meter.durationMs) > 0 &&
+    typeof meter.finishedAt === 'string' &&
+    meter.finishedAt.length > 0
+  )
+}

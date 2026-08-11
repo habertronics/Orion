@@ -11,7 +11,7 @@ const copy: Record<
     brand: string
     title: string
     saved: string
-    notSaved: string
+    localReady: string
     sectionAnswers: string
     sectionOsdi: string
     sectionLocation: string
@@ -53,8 +53,9 @@ const copy: Record<
   es: {
     brand: 'Habertronic Orión',
     title: 'Datos capturados',
-    saved: 'Guardado en la base de datos (Neon).',
-    notSaved: 'No se pudo guardar en Neon. Revisa la API.',
+    saved: 'Listo en este dispositivo.',
+    localReady:
+      'Guardado en el dispositivo. Se enviará a la base remota solo al terminar el parpadeómetro y pulsar Mandar.',
     sectionAnswers: 'Interrogatorio',
     sectionOsdi: 'OSDI-6',
     sectionLocation: 'Localidad',
@@ -95,8 +96,9 @@ const copy: Record<
   en: {
     brand: 'Habertronic Orión',
     title: 'Captured data',
-    saved: 'Saved to the database (Neon).',
-    notSaved: 'Could not save to Neon. Check the API.',
+    saved: 'Ready on this device.',
+    localReady:
+      'Saved on this device. It will be sent to the remote database only after finishing the blinkometer and tapping Send.',
     sectionAnswers: 'Questionnaire',
     sectionOsdi: 'OSDI-6',
     sectionLocation: 'Locality',
@@ -137,8 +139,9 @@ const copy: Record<
   pt: {
     brand: 'Habertronic Orión',
     title: 'Dados capturados',
-    saved: 'Salvo no banco de dados (Neon).',
-    notSaved: 'Não foi possível salvar no Neon. Revise a API.',
+    saved: 'Pronto neste dispositivo.',
+    localReady:
+      'Salvo no dispositivo. Será enviado à base remota só ao terminar o parpadeômetro e tocar em Enviar.',
     sectionAnswers: 'Questionário',
     sectionOsdi: 'OSDI-6',
     sectionLocation: 'Localidade',
@@ -190,7 +193,6 @@ function Row({ label, value }: { label: string; value: string }) {
 type ParpadeoSummaryScreenProps = {
   lang: Lang
   data: ParpadeoInterrogatorioState
-  saved: boolean
   onContinue: () => void
   onBack: () => void
 }
@@ -198,7 +200,6 @@ type ParpadeoSummaryScreenProps = {
 export function ParpadeoSummaryScreen({
   lang,
   data,
-  saved,
   onContinue,
   onBack,
 }: ParpadeoSummaryScreenProps) {
@@ -227,9 +228,7 @@ export function ParpadeoSummaryScreen({
         </button>
         <h1 className="p-sum__brand">{t.brand}</h1>
         <h2 className="p-sum__title">{t.title}</h2>
-        <p className={saved ? 'p-sum__ok' : 'p-sum__err'}>
-          {saved ? t.saved : t.notSaved}
-        </p>
+        <p className="p-sum__ok">{t.localReady}</p>
       </header>
 
       <div className="p-sum__sections">

@@ -25,6 +25,7 @@ const copy: Record<
     blinks: string
     duration: string
     noMeter: string
+    needMeter: string
     upload: string
     uploading: string
     uploadSuccess: string
@@ -32,6 +33,7 @@ const copy: Record<
     pendingAnnounce: string
     pendingButton: string
     uploadError: string
+    incompleteHint: string
     guestHint: string
     back: string
   }
@@ -42,6 +44,8 @@ const copy: Record<
     blinks: 'Parpadeos',
     duration: 'Duración',
     noMeter: 'Sin prueba de parpadeómetro registrada',
+    needMeter:
+      'Completa el parpadeómetro para poder mandar toda la información.',
     upload: 'Mandar toda la información a base de datos remota',
     uploading: 'Enviando…',
     uploadSuccess: 'Transferencia exitosa de datos',
@@ -50,6 +54,8 @@ const copy: Record<
       'En cuanto se restablezca la red se mandarán los datos.',
     pendingButton: 'Esperando red…',
     uploadError: 'No se pudo guardar. Revisa la API o inicia sesión de nuevo.',
+    incompleteHint:
+      'Falta la medición del parpadeómetro. Sin ella no se registra nada en la base remota.',
     guestHint: 'Para guardar en la nube debes entrar como investigador.',
     back: 'Volver',
   },
@@ -59,6 +65,7 @@ const copy: Record<
     blinks: 'Blinks',
     duration: 'Duration',
     noMeter: 'No blinkometer test recorded',
+    needMeter: 'Finish the blinkometer to send all information.',
     upload: 'Send all information to the remote database',
     uploading: 'Sending…',
     uploadSuccess: 'Successful data transfer',
@@ -67,6 +74,8 @@ const copy: Record<
       'As soon as the network is restored, the data will be sent.',
     pendingButton: 'Waiting for network…',
     uploadError: 'Could not save. Check the API or sign in again.',
+    incompleteHint:
+      'Blinkometer measurement is missing. Nothing is stored remotely without it.',
     guestHint: 'Sign in as a researcher to save to the cloud.',
     back: 'Back',
   },
@@ -76,6 +85,7 @@ const copy: Record<
     blinks: 'Piscadas',
     duration: 'Duração',
     noMeter: 'Sem teste de parpadeômetro registrado',
+    needMeter: 'Conclua o parpadeômetro para enviar toda a informação.',
     upload: 'Enviar toda a informação para a base de dados remota',
     uploading: 'Enviando…',
     uploadSuccess: 'Transferência de dados bem-sucedida',
@@ -84,6 +94,8 @@ const copy: Record<
       'Assim que a rede for restabelecida, os dados serão enviados.',
     pendingButton: 'Aguardando rede…',
     uploadError: 'Não foi possível salvar. Revise a API ou entre de novo.',
+    incompleteHint:
+      'Falta a medição do parpadeômetro. Sem ela nada é registrado na base remota.',
     guestHint: 'Entre como pesquisador para salvar na nuvem.',
     back: 'Voltar',
   },
@@ -191,7 +203,11 @@ export function ParpadeoExamSummaryScreen({
           </p>
         )}
         {status === 'err' && <p className="p-sum__err">{t.uploadError}</p>}
-        {!canUpload && <p className="p-sum__err">{t.guestHint}</p>}
+        {!canUpload && (
+          <p className="p-sum__err">
+            {!meter || !exam ? t.incompleteHint : t.guestHint}
+          </p>
+        )}
       </header>
 
       <div className="p-sum__sections">

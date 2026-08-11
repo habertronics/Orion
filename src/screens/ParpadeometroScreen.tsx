@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react'
 import { parpadeometroCopy } from '../i18n/parpadeometro'
 import type { Lang } from '../i18n/preferences'
-import type { MeterResult } from '../lib/parpadeoMeter'
+import { isMeterComplete, type MeterResult } from '../lib/parpadeoMeter'
 import './ParpadeometroScreen.css'
 
 type ParpadeometroScreenProps = {
   lang: Lang
   onBack: () => void
-  onNext: (meter: MeterResult | null) => void
+  onNext: (meter: MeterResult) => void
   /** Abre el Parpadeómetro IA al entrar (modo sin registro). */
   autoStart?: boolean
+  /** En protocolo clínico: no se puede avanzar sin medición terminada. */
+  requireMeter?: boolean
 }
 
 export function ParpadeometroScreen({
@@ -17,27 +19,22 @@ export function ParpadeometroScreen({
   onBack,
   onNext,
   autoStart = false,
+  requireMeter = false,
 }: ParpadeometroScreenProps) {
   const t = parpadeometroCopy[lang]
   const [running, setRunning] = useState(autoStart)
   const [meter, setMeter] = useState<MeterResult | null>(null)
+  const ready = isMeterComplete(meter)
 
-  async function launchMeter() {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user' },
-        audio: false,
-      })
-      stream.getTracks().forEach((track) => track.stop())
-    } catch {
-      // iPhone puede pedir permiso otra vez dentro del iframe.
-    }
+  function launchMeter() {
+    // No priming getUserMedia aquí: abrir+cerrar el stream en el padre
+    // y luego otra vez en el iframe provoca cuelgues/crashes en móvil.
     setRunning(true)
   }
 
   useEffect(() => {
     if (!autoStart) return
-    void launchMeter()
+    launchMeter()
   }, [autoStart])
 
   useEffect(() => {
@@ -85,6 +82,11 @@ export function ParpadeometroScreen({
     return () => window.removeEventListener('message', onMessage)
   }, [])
 
+  function goNext() {
+    if (!meter || !isMeterComplete(meter)) return
+    onNext(meter)
+  }
+
   if (running) {
     return (
       <div className="p-meter-run">
@@ -109,13 +111,20 @@ export function ParpadeometroScreen({
           allowFullScreen
         />
         {!autoStart && (
-          <button
-            type="button"
-            className="p-meter-run__next"
-            onClick={() => onNext(meter)}
-          >
-            {t.next}
-          </button>
+          <div className="p-meter-run__footer">
+            {requireMeter && !ready && (
+              <p className="p-meter-run__need">{t.needMeter}</p>
+            )}
+            {ready && <p className="p-meter-run__ready">{t.meterReady}</p>}
+            <button
+              type="button"
+              className="p-meter-run__next"
+              disabled={requireMeter && !ready}
+              onClick={goNext}
+            >
+              {t.next}
+            </button>
+          </div>
         )}
       </div>
     )
@@ -139,24 +148,27 @@ export function ParpadeometroScreen({
 
       <section className="p-meter__body">
         <p className="p-meter__hint">{t.hint}</p>
+        {requireMeter && (
+          <p className="p-meter__required">{t.requiredNote}</p>
+        )}
         <button
           type="button"
           className="p-meter__launch"
-          onClick={() => void launchMeter()}
+          onClick={() => launchMeter()}
         >
-          <span className="p-meter__launch-kicker">IA · MediaPipe · v2.2</span>
+          <span className="p-meter__launch-kicker">IA · MediaPipe · v3.1</span>
           <span className="p-meter__launch-title">{t.button}</span>
         </button>
       </section>
 
       <footer className="p-meter__footer">
-        <button
-          type="button"
-          className="p-meter__next"
-          onClick={() => onNext(meter)}
-        >
-          {t.next}
-        </button>
+        {ready ? (
+          <button type="button" className="p-meter__next" onClick={goNext}>
+            {t.next}
+          </button>
+        ) : (
+          <p className="p-meter__need-footer">{t.needMeter}</p>
+        )}
       </footer>
     </main>
   )
