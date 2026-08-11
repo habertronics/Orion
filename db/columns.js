@@ -353,11 +353,12 @@ export const INTERVENCION_COLUMNS = [
   col("meterJson", "Meter JSON", "raw"),
 ];
 
-/** Columnas de invitaciones de representantes. */
+/** Columnas compactas de invitaciones de representantes. */
 export const INVITACIONES_COLUMNS = [
   col("representativeName", "Representante", "reps"),
-  col("inviteTypeLabel", "Invitación enviada", "reps"),
-  col("inviteeName", "Nombre del médico", "reps"),
+  col("representativeEmail", "Correo representante", "reps"),
+  col("inviteeName", "Médico invitado", "reps"),
   col("inviteeEmail", "Correo del médico", "reps"),
+  col("inviteTypeLabel", "Invitación", "reps"),
   col("statusLabel", "Estado", "reps"),
 ];

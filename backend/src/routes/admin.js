@@ -674,15 +674,11 @@ router.get('/invitations', async (req, res) => {
         row.invite_type === 'preceptorship' ? 'Preceptorship' : 'Investigador',
       status: row.status,
       statusLabel:
-        row.status === 'registered'
-          ? 'Ya investigador'
-          : row.status === 'accepted'
-            ? 'Aceptó'
-            : row.status === 'open'
-              ? 'QR abierto'
-              : row.status === 'expired'
-                ? 'Expirado'
-                : row.status,
+        row.status === 'accepted' || row.status === 'registered'
+          ? 'Aceptó'
+          : row.status === 'declined'
+            ? 'No aceptó'
+            : '—',
       inviteeName: row.invitee_name || row.researcher_name || null,
       inviteeEmail: row.invitee_email || row.researcher_email || null,
       medicoAcepto: row.status === 'accepted' || row.status === 'registered',
@@ -696,13 +692,14 @@ router.get('/invitations', async (req, res) => {
     }));
 
     const accepted = invitations.filter((i) => i.medicoAcepto);
+    const declined = invitations.filter((i) => i.status === 'declined');
     const counts = {
       all: invitations.length,
       accepted: accepted.length,
+      declined: declined.length,
       preceptorship: accepted.filter((i) => i.inviteType === 'preceptorship')
         .length,
       researcher: accepted.filter((i) => i.inviteType === 'researcher').length,
-      open: invitations.filter((i) => i.status === 'open').length,
     };
 
     const repsResult = await query(

@@ -11,6 +11,7 @@ const acceptForm = document.getElementById("acceptForm");
 const fromLine = document.getElementById("fromLine");
 const doctorName = document.getElementById("doctorName");
 const doctorEmail = document.getElementById("doctorEmail");
+const declineBtn = document.getElementById("declineBtn");
 const acceptError = document.getElementById("acceptError");
 const donePanel = document.getElementById("donePanel");
 const doneText = document.getElementById("doneText");
@@ -24,6 +25,7 @@ const ERRORS = {
   invite_not_found: "Esta invitación no existe.",
   invite_expired: "Esta invitación ya expiró. Pide un QR nuevo.",
   already_accepted: "Esta invitación ya fue aceptada.",
+  already_declined: "Esta invitación ya quedó como no aceptada.",
   invite_unavailable: "Invitación no disponible.",
   rate_limited: "Demasiados intentos. Espera un momento.",
   network_error: "Sin conexión. Revisa tu red.",
@@ -38,6 +40,20 @@ function showFatal(code) {
   fatalError.hidden = false;
   fatalError.textContent = ERRORS[code] || code || "Error";
   inviteLede.textContent = "No se puede continuar con esta invitación.";
+}
+
+function setBusy(busy) {
+  const submitBtn = acceptForm.querySelector('button[type="submit"]');
+  if (submitBtn) submitBtn.disabled = busy;
+  if (declineBtn) declineBtn.disabled = busy;
+}
+
+function showDone(message, { showRegister = false, registerUrl = "/" } = {}) {
+  acceptForm.hidden = true;
+  donePanel.hidden = false;
+  doneText.textContent = message;
+  registerLink.hidden = !showRegister;
+  registerLink.href = registerUrl || "/";
 }
 
 async function loadInvite() {
@@ -64,14 +80,27 @@ async function loadInvite() {
     typeBadge.textContent = label;
 
     if (data.alreadyAccepted) {
-      acceptForm.hidden = true;
-      donePanel.hidden = false;
-      doneText.textContent = `Ya aceptaste esta invitación de ${label}${
-        data.inviteeEmail ? ` (${data.inviteeEmail})` : ""
-      }. Te invita ${data.representativeName}.`;
-      registerLink.href = data.inviteeEmail
-        ? `/?inviteEmail=${encodeURIComponent(data.inviteeEmail)}`
-        : "/";
+      showDone(
+        `Ya aceptaste esta invitación de ${label}${
+          data.inviteeEmail ? ` (${data.inviteeEmail})` : ""
+        }. Te invita ${data.representativeName}.`,
+        {
+          showRegister: true,
+          registerUrl: data.inviteeEmail
+            ? `/?inviteEmail=${encodeURIComponent(data.inviteeEmail)}`
+            : "/",
+        },
+      );
+      inviteLede.textContent = data.labName || "Laboratorio Sofía";
+      return;
+    }
+    if (data.alreadyDeclined) {
+      showDone(
+        `Esta invitación quedó registrada como no aceptada${
+          data.inviteeEmail ? ` (${data.inviteeEmail})` : ""
+        }.`,
+        { showRegister: false },
+      );
       inviteLede.textContent = data.labName || "Laboratorio Sofía";
       return;
     }
@@ -90,15 +119,23 @@ async function loadInvite() {
   }
 }
 
-acceptForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
+async function postDecision(path) {
   acceptError.hidden = true;
   const email = String(doctorEmail.value || "").trim().toLowerCase();
   const fullName = String(doctorName.value || "").trim();
-  const btn = acceptForm.querySelector('button[type="submit"]');
-  btn.disabled = true;
+  if (!fullName) {
+    acceptError.hidden = false;
+    acceptError.textContent = ERRORS.missing_full_name;
+    return;
+  }
+  if (!email || !email.includes("@")) {
+    acceptError.hidden = false;
+    acceptError.textContent = ERRORS.invalid_email;
+    return;
+  }
+  setBusy(true);
   try {
-    const res = await fetch(`${API_BASE}/api/reps/invites/accept`, {
+    const res = await fetch(`${API_BASE}/api/reps/invites/${path}`, {
       method: "POST",
       headers: {
         Accept: "application/json",
@@ -110,21 +147,40 @@ acceptForm.addEventListener("submit", async (event) => {
     if (!res.ok) {
       acceptError.hidden = false;
       acceptError.textContent = ERRORS[data.error] || data.error || "Error";
-      btn.disabled = false;
+      setBusy(false);
       return;
     }
-    acceptForm.hidden = true;
-    donePanel.hidden = false;
     const label = typeLabel(data.inviteType);
-    doneText.textContent = data.alreadyRegistered
-      ? `Aceptaste la invitación de ${label} de ${data.invitedBy}. Tu cuenta ya quedó vinculada.`
-      : `Aceptaste la invitación de ${label} de ${data.invitedBy}. Usaremos ${data.inviteeEmail} para vincularte. Entra a Orión con ese correo para registrarte.`;
-    registerLink.href = data.registerUrl || "/";
+    if (path === "decline") {
+      showDone(
+        `Registramos que no aceptaste la invitación de ${label} de ${data.invitedBy}.`,
+        { showRegister: false },
+      );
+      return;
+    }
+    showDone(
+      data.alreadyRegistered
+        ? `Aceptaste la invitación de ${label} de ${data.invitedBy}. Tu cuenta ya quedó vinculada.`
+        : `Aceptaste la invitación de ${label} de ${data.invitedBy}. Usaremos ${data.inviteeEmail} para vincularte. Entra a Orión con ese correo para registrarte.`,
+      {
+        showRegister: true,
+        registerUrl: data.registerUrl || "/",
+      },
+    );
   } catch {
     acceptError.hidden = false;
     acceptError.textContent = ERRORS.network_error;
-    btn.disabled = false;
+    setBusy(false);
   }
+}
+
+acceptForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  void postDecision("accept");
+});
+
+declineBtn?.addEventListener("click", () => {
+  void postDecision("decline");
 });
 
 void loadInvite();

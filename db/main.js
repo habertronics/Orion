@@ -835,10 +835,11 @@ function renderSummary() {
     const reps = invitationsData?.representatives?.length ?? 0;
     summaryBar.innerHTML = `
       <span class="pill">Representantes: <strong>${reps}</strong></span>
-      <span class="pill">Invitaciones (filtro): <strong>${c.all ?? 0}</strong></span>
-      <span class="pill">Aceptadas preceptorship: <strong>${c.preceptorship ?? 0}</strong></span>
-      <span class="pill">Aceptadas investigadores: <strong>${c.researcher ?? 0}</strong></span>
-      <span class="pill">QR abiertos: <strong>${c.open ?? 0}</strong></span>
+      <span class="pill">Invitaciones: <strong>${c.all ?? 0}</strong></span>
+      <span class="pill">Aceptó: <strong>${c.accepted ?? 0}</strong></span>
+      <span class="pill">No aceptó: <strong>${c.declined ?? 0}</strong></span>
+      <span class="pill">Preceptorship aceptadas: <strong>${c.preceptorship ?? 0}</strong></span>
+      <span class="pill">Investigadores aceptadas: <strong>${c.researcher ?? 0}</strong></span>
     `;
     return;
   }

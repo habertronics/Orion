@@ -295,12 +295,14 @@ router.get('/invites', repAuthRequired, async (req, res) => {
       researcherId: row.researcher_id,
       researcherName: row.researcher_name || null,
       medicoAcepto: row.status === 'accepted' || row.status === 'registered',
+      medicoDeclino: row.status === 'declined',
     }));
 
     const accepted = invitations.filter((i) => i.medicoAcepto);
     const counts = {
       researcher: accepted.filter((i) => i.inviteType === 'researcher').length,
       preceptorship: accepted.filter((i) => i.inviteType === 'preceptorship').length,
+      declined: invitations.filter((i) => i.medicoDeclino).length,
     };
 
     return res.json({ invitations, counts });
@@ -343,6 +345,7 @@ router.get('/invites/public/:token', async (req, res) => {
       status: row.status,
       expiresAt: row.expires_at,
       alreadyAccepted: row.status === 'accepted' || row.status === 'registered',
+      alreadyDeclined: row.status === 'declined',
       inviteeEmail: row.invitee_email || null,
       inviteeName: row.invitee_name || null,
       representativeName: row.rep_name,
@@ -394,6 +397,9 @@ router.post('/invites/accept', acceptRateLimit, async (req, res) => {
     }
     if (inv.status === 'accepted' || inv.status === 'registered') {
       return res.status(409).json({ error: 'already_accepted' });
+    }
+    if (inv.status === 'declined') {
+      return res.status(409).json({ error: 'already_declined' });
     }
     if (inv.status !== 'open') {
       return res.status(409).json({ error: 'invite_unavailable' });
@@ -459,6 +465,82 @@ router.post('/invites/accept', acceptRateLimit, async (req, res) => {
     });
   } catch (err) {
     console.error('Invite accept error:', err);
+    return res.status(500).json({ error: 'server_error' });
+  }
+});
+
+/**
+ * POST /api/reps/invites/decline
+ * Médico responde "No aceptó" (nombre + email para el registro en DB).
+ */
+router.post('/invites/decline', acceptRateLimit, async (req, res) => {
+  const token = String(req.body.token || '').trim();
+  const email = normalizeEmail(req.body.email);
+  const fullName = normalizeFullName(req.body.fullName || req.body.name);
+
+  if (!token) {
+    return res.status(400).json({ error: 'invalid_token' });
+  }
+  if (!fullName) {
+    return res.status(400).json({ error: 'missing_full_name' });
+  }
+  if (!isValidEmail(email)) {
+    return res.status(400).json({ error: 'invalid_email' });
+  }
+
+  try {
+    const result = await query(
+      `SELECT i.*, rep.full_name AS rep_name, rep.email AS rep_email
+       FROM invitations i
+       JOIN representatives rep ON rep.id = i.representative_id
+       WHERE i.token = $1`,
+      [token],
+    );
+    const inv = result.rows[0];
+    if (!inv) {
+      return res.status(404).json({ error: 'invite_not_found' });
+    }
+    if (new Date(inv.expires_at).getTime() < Date.now()) {
+      await query(
+        `UPDATE invitations SET status = 'expired' WHERE id = $1 AND status = 'open'`,
+        [inv.id],
+      );
+      return res.status(410).json({ error: 'invite_expired' });
+    }
+    if (inv.status === 'accepted' || inv.status === 'registered') {
+      return res.status(409).json({ error: 'already_accepted' });
+    }
+    if (inv.status === 'declined') {
+      return res.status(409).json({ error: 'already_declined' });
+    }
+    if (inv.status !== 'open') {
+      return res.status(409).json({ error: 'invite_unavailable' });
+    }
+
+    const inviteType = parseInviteType(inv.invite_type);
+    const declinedAt = new Date().toISOString();
+
+    await query(
+      `UPDATE invitations
+       SET invitee_email = $1,
+           invitee_name = $2,
+           status = 'declined',
+           accepted_at = $3
+       WHERE id = $4`,
+      [email, fullName, declinedAt, inv.id],
+    );
+
+    return res.json({
+      ok: true,
+      status: 'declined',
+      inviteeEmail: email,
+      inviteeName: fullName,
+      inviteType,
+      medicoAcepto: false,
+      invitedBy: inv.rep_name || inv.rep_email,
+    });
+  } catch (err) {
+    console.error('Invite decline error:', err);
     return res.status(500).json({ error: 'server_error' });
   }
 });

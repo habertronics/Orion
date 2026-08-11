@@ -199,10 +199,10 @@ function selectedInviteType() {
 }
 
 function statusLabel(status) {
-  if (status === "registered") return "Ya investigador";
-  if (status === "accepted") return "Aceptó (pendiente registro)";
-  if (status === "open") return "QR abierto (sin aceptar)";
-  if (status === "expired") return "Expirado";
+  if (status === "registered" || status === "accepted") return "Aceptó";
+  if (status === "declined") return "No aceptó";
+  if (status === "expired") return "Expiró";
+  if (status === "open") return "Pendiente";
   return status;
 }
 
@@ -230,8 +230,7 @@ async function loadInvites() {
   }
   inviteList.innerHTML = rows
     .map((row) => {
-      const who =
-        row.inviteeName || row.inviteeEmail || "— (aún sin aceptar)";
+      const who = row.inviteeName || row.inviteeEmail || "—";
       const email = row.inviteeEmail ? ` · ${row.inviteeEmail}` : "";
       const when = row.acceptedAt
         ? new Date(row.acceptedAt).toLocaleString("es-MX", {
@@ -242,7 +241,7 @@ async function loadInvites() {
       return `<li class="invite-item">
         <strong>${escapeHtml(who)}</strong>
         <span>${escapeHtml(statusLabel(row.status))} · ${escapeHtml(typeLabel(row.inviteType))}${escapeHtml(email)}</span>
-        <span class="invite-meta">Aceptó: ${escapeHtml(when)}${row.medicoAcepto ? " · Médico aceptó: sí" : ""}</span>
+        <span class="invite-meta">Respuesta: ${escapeHtml(when)}</span>
       </li>`;
     })
     .join("");

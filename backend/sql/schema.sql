@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS invitations (
   invite_type         VARCHAR(30) NOT NULL DEFAULT 'researcher'
                       CHECK (invite_type IN ('researcher', 'preceptorship')),
   status              VARCHAR(20) NOT NULL DEFAULT 'open'
-                      CHECK (status IN ('open', 'accepted', 'registered', 'expired')),
+                      CHECK (status IN ('open', 'accepted', 'registered', 'expired', 'declined')),
   created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   expires_at          TIMESTAMPTZ NOT NULL,
   accepted_at         TIMESTAMPTZ
