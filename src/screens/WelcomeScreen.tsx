@@ -8,8 +8,7 @@ type WelcomeScreenProps = {
   onContinue?: (lang: Lang) => void
 }
 
-const INTERACTIVE =
-  'button, a, input, label, [role="group"], .welcome__lang, .welcome__footer'
+const INTERACTIVE = 'button, a, input, label, .welcome__lang-btn, .welcome__consent, .welcome__continue'
 
 function prefersReducedMotion() {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches

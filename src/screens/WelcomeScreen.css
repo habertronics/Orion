@@ -47,38 +47,41 @@
 
 .welcome__brand-veil {
   position: absolute;
-  inset: 0;
+  inset: -5%;
   z-index: 0;
   display: grid;
   place-items: center;
   pointer-events: none;
-  opacity: calc(0.05 + (var(--sstrength, 0) * 0.42));
-  transition: opacity 0.05s linear;
+  opacity: calc(0.12 + (var(--sstrength, 0) * 0.78));
+  transition: opacity 0.08s linear;
   -webkit-mask-image: radial-gradient(
-    circle 42vmin at var(--sx, 50%) var(--sy, 40%),
-    rgba(0, 0, 0, calc(0.15 + var(--sstrength, 0) * 0.85)) 0%,
-    rgba(0, 0, 0, calc(0.08 + var(--sstrength, 0) * 0.45)) 28%,
-    rgba(0, 0, 0, calc(var(--sstrength, 0) * 0.12)) 55%,
-    transparent 78%
+    circle 55vmin at var(--sx, 50%) var(--sy, 42%),
+    #000 0%,
+    #000 22%,
+    rgba(0, 0, 0, 0.55) 45%,
+    rgba(0, 0, 0, 0.15) 68%,
+    transparent 100%
   );
   mask-image: radial-gradient(
-    circle 42vmin at var(--sx, 50%) var(--sy, 40%),
-    rgba(0, 0, 0, calc(0.15 + var(--sstrength, 0) * 0.85)) 0%,
-    rgba(0, 0, 0, calc(0.08 + var(--sstrength, 0) * 0.45)) 28%,
-    rgba(0, 0, 0, calc(var(--sstrength, 0) * 0.12)) 55%,
-    transparent 78%
+    circle 55vmin at var(--sx, 50%) var(--sy, 42%),
+    #000 0%,
+    #000 22%,
+    rgba(0, 0, 0, 0.55) 45%,
+    rgba(0, 0, 0, 0.15) 68%,
+    transparent 100%
   );
 }
 
 .welcome__brand-logo {
-  width: min(78vw, 28rem);
+  width: min(88vw, 34rem);
   height: auto;
-  max-height: 42vh;
+  max-height: 48vh;
   object-fit: contain;
   user-select: none;
-  filter: blur(calc((1 - var(--sstrength, 0)) * 1.1px));
+  /* Negro del PNG se funde; el azul Sofía se nota sobre el fondo claro */
   mix-blend-mode: multiply;
-  opacity: 0.9;
+  opacity: 0.95;
+  filter: contrast(1.05) saturate(1.15);
 }
 
 .welcome__hero,
@@ -86,6 +89,14 @@
 .welcome__footer {
   position: relative;
   z-index: 1;
+  /* Deja pasar el toque al fondo; los controles reactivan pointer-events */
+  pointer-events: none;
+}
+
+.welcome__lang-btn,
+.welcome__consent,
+.welcome__continue {
+  pointer-events: auto;
 }
 
 .welcome__hero {
