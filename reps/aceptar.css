@@ -50,6 +50,17 @@ h1 {
   line-height: 1.45;
 }
 
+.type-badge {
+  display: inline-block;
+  margin: 0 0 1rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(110, 207, 142, 0.18);
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
 .invite-form,
 .done {
   padding: 1.15rem 1.1rem;
@@ -63,35 +74,16 @@ h1 {
   font-size: 0.95rem;
 }
 
-.type-box {
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 0.75rem 0.85rem;
-  margin: 0 0 1rem;
-}
-
-.type-box legend {
-  padding: 0 0.35rem;
-  color: var(--muted);
-  font-size: 0.85rem;
-}
-
-.radio {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  margin: 0.35rem 0;
-  font-size: 0.95rem;
-}
-
-label[for="doctorEmail"] {
+label[for="doctorEmail"],
+label[for="doctorName"] {
   display: block;
-  margin-bottom: 0.35rem;
+  margin: 0.55rem 0 0.35rem;
   font-size: 0.85rem;
   color: var(--muted);
 }
 
-input[type="email"] {
+input[type="email"],
+input[type="text"] {
   width: 100%;
   padding: 0.75rem 0.85rem;
   border-radius: 10px;

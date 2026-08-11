@@ -181,6 +181,32 @@ body {
   font-weight: 600;
 }
 
+.counts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.count-card {
+  padding: 0.9rem 1rem;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--card);
+}
+
+.count-label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-bottom: 0.25rem;
+}
+
+.count-value {
+  font-size: 1.55rem;
+  font-variant-numeric: tabular-nums;
+}
+
 .board-tools {
   display: flex;
   justify-content: flex-end;

@@ -86,6 +86,7 @@ CREATE TABLE IF NOT EXISTS invitations (
   representative_id   UUID NOT NULL REFERENCES representatives(id) ON DELETE CASCADE,
   token               VARCHAR(64) NOT NULL UNIQUE,
   invitee_email       VARCHAR(255),
+  invitee_name        VARCHAR(200),
   researcher_id       UUID REFERENCES researchers(id) ON DELETE SET NULL,
   invite_type         VARCHAR(30) NOT NULL DEFAULT 'researcher'
                       CHECK (invite_type IN ('researcher', 'preceptorship')),

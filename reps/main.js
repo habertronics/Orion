@@ -30,15 +30,22 @@ const regEmail = document.getElementById("regEmail");
 const regPassword = document.getElementById("regPassword");
 const logoutBtn = document.getElementById("logoutBtn");
 const welcomeLine = document.getElementById("welcomeLine");
-const qrInviteBtn = document.getElementById("qrInviteBtn");
+const qrPreceptorshipBtn = document.getElementById("qrPreceptorshipBtn");
+const qrResearcherBtn = document.getElementById("qrResearcherBtn");
 const qrCard = document.getElementById("qrCard");
+const qrCardTitle = document.getElementById("qrCardTitle");
+const qrCardHelp = document.getElementById("qrCardHelp");
 const qrCanvas = document.getElementById("qrCanvas");
 const qrStatus = document.getElementById("qrStatus");
 const qrLinkHint = document.getElementById("qrLinkHint");
 const refreshQrBtn = document.getElementById("refreshQrBtn");
 const inviteList = document.getElementById("inviteList");
 const refreshInvitesBtn = document.getElementById("refreshInvitesBtn");
+const countPreceptorship = document.getElementById("countPreceptorship");
+const countResearcher = document.getElementById("countResearcher");
 const ledeText = document.getElementById("ledeText");
+
+let activeInviteType = "researcher";
 
 const ERRORS = {
   invalid_email: "Revisa el correo electrónico.",
@@ -188,8 +195,7 @@ function logout() {
 }
 
 function selectedInviteType() {
-  const el = document.querySelector('input[name="inviteType"]:checked');
-  return el?.value === "preceptorship" ? "preceptorship" : "researcher";
+  return activeInviteType === "preceptorship" ? "preceptorship" : "researcher";
 }
 
 function statusLabel(status) {
@@ -211,6 +217,12 @@ async function loadInvites() {
     inviteList.innerHTML = `<li class="invite-empty">${ERRORS[data.error] || "No se pudo cargar"}</li>`;
     return;
   }
+  if (countPreceptorship) {
+    countPreceptorship.textContent = String(data.counts?.preceptorship ?? 0);
+  }
+  if (countResearcher) {
+    countResearcher.textContent = String(data.counts?.researcher ?? 0);
+  }
   const rows = data.invitations || [];
   if (!rows.length) {
     inviteList.innerHTML = `<li class="invite-empty">Aún no hay invitaciones.</li>`;
@@ -218,7 +230,9 @@ async function loadInvites() {
   }
   inviteList.innerHTML = rows
     .map((row) => {
-      const email = row.inviteeEmail || "— (aún sin correo)";
+      const who =
+        row.inviteeName || row.inviteeEmail || "— (aún sin aceptar)";
+      const email = row.inviteeEmail ? ` · ${row.inviteeEmail}` : "";
       const when = row.acceptedAt
         ? new Date(row.acceptedAt).toLocaleString("es-MX", {
             dateStyle: "short",
@@ -226,8 +240,8 @@ async function loadInvites() {
           })
         : "—";
       return `<li class="invite-item">
-        <strong>${escapeHtml(email)}</strong>
-        <span>${escapeHtml(statusLabel(row.status))} · ${escapeHtml(typeLabel(row.inviteType))}</span>
+        <strong>${escapeHtml(who)}</strong>
+        <span>${escapeHtml(statusLabel(row.status))} · ${escapeHtml(typeLabel(row.inviteType))}${escapeHtml(email)}</span>
         <span class="invite-meta">Aceptó: ${escapeHtml(when)}${row.medicoAcepto ? " · Médico aceptó: sí" : ""}</span>
       </li>`;
     })
@@ -242,14 +256,23 @@ function escapeHtml(value) {
     .replace(/"/g, "&quot;");
 }
 
-async function createAndShowQr() {
+async function createAndShowQr(inviteType = activeInviteType) {
+  activeInviteType = inviteType === "preceptorship" ? "preceptorship" : "researcher";
   qrCard.hidden = false;
+  qrCardTitle.textContent =
+    activeInviteType === "preceptorship"
+      ? "QR · Preceptorship"
+      : "QR · Investigador";
+  qrCardHelp.textContent =
+    activeInviteType === "preceptorship"
+      ? "El médico escanea y acepta una invitación de preceptorship (sin elegir tipo)."
+      : "El médico escanea y acepta una invitación de investigador (sin elegir tipo).";
   qrStatus.textContent = "Generando…";
   qrLinkHint.hidden = true;
   const { res, data } = await api("/api/reps/invites", {
     method: "POST",
     auth: true,
-    body: { inviteType: selectedInviteType() },
+    body: { inviteType: activeInviteType },
   });
   if (!res?.ok) {
     qrStatus.textContent = ERRORS[data.error] || "No se pudo crear el QR";
@@ -357,15 +380,16 @@ registerForm.addEventListener("submit", async (event) => {
 });
 
 logoutBtn.addEventListener("click", logout);
-qrInviteBtn.addEventListener("click", () => void createAndShowQr());
-refreshQrBtn.addEventListener("click", () => void createAndShowQr());
+qrPreceptorshipBtn.addEventListener("click", () =>
+  void createAndShowQr("preceptorship"),
+);
+qrResearcherBtn.addEventListener("click", () =>
+  void createAndShowQr("researcher"),
+);
+refreshQrBtn.addEventListener("click", () =>
+  void createAndShowQr(activeInviteType),
+);
 refreshInvitesBtn.addEventListener("click", () => void loadInvites());
-
-document.querySelectorAll('input[name="inviteType"]').forEach((input) => {
-  input.addEventListener("change", () => {
-    if (!qrCard.hidden) void createAndShowQr();
-  });
-});
 
 const existing = getSession();
 if (existing && getToken()) {

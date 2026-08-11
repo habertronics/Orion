@@ -13,23 +13,22 @@
   <body>
     <main class="invite-shell">
       <p class="eyebrow">Cuerpo médico · Laboratorio Sofía</p>
-      <h1>Invitación a Orión</h1>
+      <h1 id="inviteTitle">Invitación a Orión</h1>
       <p class="lede" id="inviteLede">Cargando invitación…</p>
+      <p class="type-badge" id="typeBadge" hidden></p>
 
       <form id="acceptForm" class="invite-form" hidden>
         <p class="from" id="fromLine"></p>
-        <fieldset class="type-box">
-          <legend>Tipo de invitación</legend>
-          <label class="radio">
-            <input type="radio" name="acceptType" value="researcher" checked />
-            Investigador
-          </label>
-          <label class="radio">
-            <input type="radio" name="acceptType" value="preceptorship" />
-            Preceptorship
-          </label>
-        </fieldset>
-        <label for="doctorEmail">Tu correo electrónico</label>
+        <label for="doctorName">Nombre completo</label>
+        <input
+          id="doctorName"
+          type="text"
+          required
+          maxlength="200"
+          autocomplete="name"
+          placeholder="Tu nombre"
+        />
+        <label for="doctorEmail">Correo electrónico</label>
         <input
           id="doctorEmail"
           type="email"
@@ -38,8 +37,8 @@
           placeholder="doctor@clinica.com"
         />
         <p class="note">
-          Obligatorio: con este correo te vinculamos al representante y te
-          enviaremos el enlace formal para registrarte en Orión.
+          Con este correo te vinculamos al representante. Luego podrás
+          registrarte o entrar a Orión con el mismo correo.
         </p>
         <button type="submit" class="btn accept">Aceptar invitación</button>
         <p class="form-error" id="acceptError" hidden></p>

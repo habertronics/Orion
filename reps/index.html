@@ -64,7 +64,7 @@
           Regístrate con tu correo institucional, invita médicos con tu QR y
           comprueba quién ya aceptó.
         </p>
-        <p class="ver" id="appVer">v0.8</p>
+        <p class="ver" id="appVer">v0.9</p>
       </header>
 
       <section class="panel auth-panel" id="authPanel">
@@ -143,28 +143,31 @@
           <button type="button" class="btn ghost" id="logoutBtn">Cerrar sesión</button>
         </div>
 
+        <div class="counts" id="inviteCounts" aria-label="Totales de invitaciones aceptadas">
+          <div class="count-card">
+            <span class="count-label">Preceptorship</span>
+            <strong class="count-value" id="countPreceptorship">0</strong>
+          </div>
+          <div class="count-card">
+            <span class="count-label">Investigadores</span>
+            <strong class="count-value" id="countResearcher">0</strong>
+          </div>
+        </div>
+
         <div class="action-grid">
-          <button type="button" class="action-btn" id="qrInviteBtn">
-            <span class="action-title">QR de invitación</span>
-            <span class="action-sub">El médico escanea, pone su correo y acepta</span>
+          <button type="button" class="action-btn" id="qrPreceptorshipBtn" data-type="preceptorship">
+            <span class="action-title">Invitación a preceptorship</span>
+            <span class="action-sub">Muestra un QR solo para preceptorship</span>
+          </button>
+          <button type="button" class="action-btn" id="qrResearcherBtn" data-type="researcher">
+            <span class="action-title">Invitación a investigador</span>
+            <span class="action-sub">Muestra un QR solo para investigador</span>
           </button>
         </div>
 
         <div class="card" id="qrCard" hidden>
-          <h2>QR de invitación</h2>
-          <p class="card-help">
-            Elige el tipo y muestra el código. Caduca en 12 horas.
-          </p>
-          <div class="type-row">
-            <label class="radio">
-              <input type="radio" name="inviteType" value="researcher" checked />
-              Solo investigador
-            </label>
-            <label class="radio">
-              <input type="radio" name="inviteType" value="preceptorship" />
-              Preceptorship
-            </label>
-          </div>
+          <h2 id="qrCardTitle">QR de invitación</h2>
+          <p class="card-help" id="qrCardHelp">El médico escanea este código.</p>
           <div class="qr-slot">
             <canvas id="qrCanvas" width="240" height="240" aria-label="Código QR"></canvas>
             <p class="qr-status" id="qrStatus">Generando…</p>
@@ -176,7 +179,7 @@
         <div class="card">
           <h2>Mis invitados</h2>
           <p class="card-help">
-            Verás el correo, si aceptó, el tipo de invitación y si ya es investigador.
+            Quién aceptó, tipo de invitación y si ya es investigador.
           </p>
           <ul class="invite-list" id="inviteList">
             <li class="invite-empty">Cargando…</li>

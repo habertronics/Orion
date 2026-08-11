@@ -269,11 +269,11 @@ router.post('/invites', repAuthRequired, async (req, res) => {
   }
 });
 
-/** GET /api/reps/invites — listado del representante */
+/** GET /api/reps/invites — listado + conteos por tipo (aceptados). */
 router.get('/invites', repAuthRequired, async (req, res) => {
   try {
     const result = await query(
-      `SELECT i.id, i.invitee_email, i.invite_type, i.status,
+      `SELECT i.id, i.invitee_email, i.invitee_name, i.invite_type, i.status,
               i.created_at, i.expires_at, i.accepted_at, i.researcher_id,
               r.full_name AS researcher_name
        FROM invitations i
@@ -283,20 +283,27 @@ router.get('/invites', repAuthRequired, async (req, res) => {
        LIMIT 100`,
       [req.user.id],
     );
-    return res.json({
-      invitations: result.rows.map((row) => ({
-        id: row.id,
-        inviteeEmail: row.invitee_email,
-        inviteType: row.invite_type,
-        status: row.status,
-        createdAt: row.created_at,
-        expiresAt: row.expires_at,
-        acceptedAt: row.accepted_at,
-        researcherId: row.researcher_id,
-        researcherName: row.researcher_name || null,
-        medicoAcepto: row.status === 'accepted' || row.status === 'registered',
-      })),
-    });
+    const invitations = result.rows.map((row) => ({
+      id: row.id,
+      inviteeEmail: row.invitee_email,
+      inviteeName: row.invitee_name || row.researcher_name || null,
+      inviteType: row.invite_type,
+      status: row.status,
+      createdAt: row.created_at,
+      expiresAt: row.expires_at,
+      acceptedAt: row.accepted_at,
+      researcherId: row.researcher_id,
+      researcherName: row.researcher_name || null,
+      medicoAcepto: row.status === 'accepted' || row.status === 'registered',
+    }));
+
+    const accepted = invitations.filter((i) => i.medicoAcepto);
+    const counts = {
+      researcher: accepted.filter((i) => i.inviteType === 'researcher').length,
+      preceptorship: accepted.filter((i) => i.inviteType === 'preceptorship').length,
+    };
+
+    return res.json({ invitations, counts });
   } catch (err) {
     console.error('Rep list invites error:', err);
     return res.status(500).json({ error: 'server_error' });
@@ -312,6 +319,7 @@ router.get('/invites/public/:token', async (req, res) => {
   try {
     const result = await query(
       `SELECT i.id, i.token, i.invite_type, i.status, i.expires_at, i.invitee_email,
+              i.invitee_name,
               rep.full_name AS rep_name, rep.email AS rep_email
        FROM invitations i
        JOIN representatives rep ON rep.id = i.representative_id
@@ -336,6 +344,7 @@ router.get('/invites/public/:token', async (req, res) => {
       expiresAt: row.expires_at,
       alreadyAccepted: row.status === 'accepted' || row.status === 'registered',
       inviteeEmail: row.invitee_email || null,
+      inviteeName: row.invitee_name || null,
       representativeName: row.rep_name,
       labName: 'Cuerpo médico · Laboratorio Sofía',
     });
@@ -347,17 +356,18 @@ router.get('/invites/public/:token', async (req, res) => {
 
 /**
  * POST /api/reps/invites/accept
- * Médico: email + aceptar (obligatorio; nada anónimo).
+ * Médico: nombre + email + aceptar. El tipo lo fija el QR (no se elige aquí).
  */
 router.post('/invites/accept', acceptRateLimit, async (req, res) => {
   const token = String(req.body.token || '').trim();
   const email = normalizeEmail(req.body.email);
-  const inviteTypeOverride = req.body.inviteType
-    ? parseInviteType(req.body.inviteType)
-    : null;
+  const fullName = normalizeFullName(req.body.fullName || req.body.name);
 
   if (!token) {
     return res.status(400).json({ error: 'invalid_token' });
+  }
+  if (!fullName) {
+    return res.status(400).json({ error: 'missing_full_name' });
   }
   if (!isValidEmail(email)) {
     return res.status(400).json({ error: 'invalid_email' });
@@ -389,7 +399,7 @@ router.post('/invites/accept', acceptRateLimit, async (req, res) => {
       return res.status(409).json({ error: 'invite_unavailable' });
     }
 
-    const inviteType = inviteTypeOverride || inv.invite_type;
+    const inviteType = parseInviteType(inv.invite_type);
     const researcher = await query(
       `SELECT id, email, full_name FROM researchers WHERE email = $1`,
       [email],
@@ -401,14 +411,14 @@ router.post('/invites/accept', acceptRateLimit, async (req, res) => {
     await query(
       `UPDATE invitations
        SET invitee_email = $1,
-           invite_type = $2,
+           invitee_name = $2,
            status = $3,
            accepted_at = $4,
            researcher_id = $5
        WHERE id = $6`,
       [
         email,
-        inviteType,
+        fullName,
         nextStatus,
         acceptedAt,
         existing ? existing.id : null,
@@ -420,9 +430,10 @@ router.post('/invites/accept', acceptRateLimit, async (req, res) => {
       await query(
         `UPDATE researchers
          SET invited_by_rep_id = COALESCE(invited_by_rep_id, $1),
-             invitation_accepted_at = COALESCE(invitation_accepted_at, $2)
-         WHERE id = $3`,
-        [inv.representative_id, acceptedAt, existing.id],
+             invitation_accepted_at = COALESCE(invitation_accepted_at, $2),
+             full_name = COALESCE(NULLIF(full_name, ''), $3)
+         WHERE id = $4`,
+        [inv.representative_id, acceptedAt, fullName, existing.id],
       );
     }
 
@@ -438,6 +449,7 @@ router.post('/invites/accept', acceptRateLimit, async (req, res) => {
       ok: true,
       status: nextStatus,
       inviteeEmail: email,
+      inviteeName: fullName,
       inviteType,
       medicoAcepto: true,
       invitedBy: inv.rep_name || inv.rep_email,
