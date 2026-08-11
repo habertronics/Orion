@@ -1,4 +1,6 @@
 import "./style.css";
+import "../shared/sophiaMosaic.css";
+import { mountSophiaMosaic } from "../shared/sophiaMosaic.js";
 import QRCode from "qrcode";
 import {
   API_BASE,
@@ -7,6 +9,8 @@ import {
   SESSION_KEY,
   TOKEN_KEY,
 } from "./config.js";
+
+mountSophiaMosaic({ tint: "#6ecf8e" });
 
 const appVer = document.getElementById("appVer");
 if (appVer) appVer.textContent = APP_VERSION;

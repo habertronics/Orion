@@ -1,5 +1,5 @@
-.brand-spotlight {
-  position: absolute;
+.sophia-mosaic {
+  position: fixed;
   inset: 0;
   z-index: 0;
   display: flex;
@@ -10,7 +10,7 @@
   overflow: hidden;
 }
 
-.brand-spotlight__mosaic {
+.sophia-mosaic__grid {
   display: grid;
   grid-template-columns: repeat(var(--cols, 7), 1fr);
   grid-template-rows: repeat(var(--rows, 5), 1fr);
@@ -18,25 +18,37 @@
   width: min(92vw, 36rem);
   height: min(42vh, 20rem);
   max-width: 100%;
+}
+
+.sophia-mosaic:not(.sophia-mosaic--tinted) .sophia-mosaic__grid {
   mix-blend-mode: multiply;
   filter: contrast(1.04) saturate(1.1);
 }
 
-.brand-spotlight__tile {
+.sophia-mosaic--tinted .sophia-mosaic__grid {
+  filter: saturate(1.05);
+  opacity: 0.92;
+}
+
+.sophia-mosaic__tile {
   display: block;
   width: 100%;
   height: 100%;
   background-repeat: no-repeat;
   background-size: calc(var(--cols, 7) * 100%) calc(var(--rows, 5) * 100%);
   opacity: 0.06;
-  /* El viento “barre” de izquierda a derecha, con irregularidad por ráfaga */
-  animation: brand-wind calc(11s + var(--gust, 0.5) * 5s) ease-in-out infinite;
+  animation: sophia-wind calc(11s + var(--gust, 0.5) * 5s) ease-in-out infinite;
   animation-delay: calc(
     (var(--col, 0) * -0.7s) + (var(--row, 0) * -0.28s) + (var(--gust, 0) * -2.4s)
   );
 }
 
-@keyframes brand-wind {
+.sophia-mosaic--tinted .sophia-mosaic__tile {
+  background-color: var(--mosaic-tint, #38bdf8);
+  background-image: none;
+}
+
+@keyframes sophia-wind {
   0%,
   100% {
     opacity: 0.03;
@@ -45,25 +57,25 @@
     opacity: 0.1;
   }
   28% {
-    opacity: 0.48;
+    opacity: 0.5;
   }
   40% {
     opacity: 0.14;
   }
   58% {
-    opacity: 0.38;
+    opacity: 0.4;
   }
   74% {
     opacity: 0.06;
   }
   88% {
-    opacity: 0.22;
+    opacity: 0.24;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .brand-spotlight__tile {
+  .sophia-mosaic__tile {
     animation: none;
-    opacity: 0.1;
+    opacity: 0.12;
   }
 }

@@ -1,4 +1,6 @@
 import "./style.css";
+import "../shared/sophiaMosaic.css";
+import { mountSophiaMosaic } from "../shared/sophiaMosaic.js";
 import {
   BANDS,
   INTERVENCION_COLUMNS,
@@ -6,6 +8,8 @@ import {
   MEDICOS_COLUMNS,
 } from "./columns.js";
 import { API_BASE, APP_VERSION, DB_ACCESS_PIN, SESSION_KEY } from "./config.js";
+
+mountSophiaMosaic({ tint: "#38bdf8" });
 
 const gatePanel = document.getElementById("gatePanel");
 const boardPanel = document.getElementById("boardPanel");

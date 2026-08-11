@@ -1,4 +1,6 @@
 import "./style.css";
+import "../shared/sophiaMosaic.css";
+import { mountSophiaMosaic } from "../shared/sophiaMosaic.js";
 import {
   APP_VERSION,
   BACKUP_STALE_MS,
@@ -8,6 +10,8 @@ import {
   SLOW_MS,
   STATUS_ACCESS_PIN,
 } from "./config.js";
+
+mountSophiaMosaic({ tint: "#5eead4" });
 
 const gatePanel = document.getElementById("gatePanel");
 const boardPanel = document.getElementById("boardPanel");
