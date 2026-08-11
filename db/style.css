@@ -293,6 +293,33 @@ thead .band-reps {
   margin-top: -0.35rem;
 }
 
+/* Vista Representantes: columnas angostas (~2.5 palabras) */
+table.sheet-reps {
+  width: max-content;
+  max-width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+  font-size: 0.78rem;
+}
+
+table.sheet-reps th,
+table.sheet-reps td {
+  width: 7.2rem;
+  max-width: 7.2rem;
+  padding: 0.4rem 0.45rem;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.25;
+  vertical-align: top;
+}
+
+table.sheet-reps th {
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
 /*
   Filas: color completo para seguir la línea.
   --row-h / --row-s / --row-l vienen del JS.

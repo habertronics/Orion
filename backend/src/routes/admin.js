@@ -661,7 +661,7 @@ router.get('/invitations', async (req, res) => {
        FROM invitations i
        JOIN representatives rep ON rep.id = i.representative_id
        LEFT JOIN researchers r ON r.id = i.researcher_id
-       WHERE 1=1${typeSql}
+       WHERE i.status IN ('accepted', 'registered', 'declined')${typeSql}
        ORDER BY COALESCE(i.accepted_at, i.created_at) DESC
        LIMIT 500`,
       params,
@@ -676,9 +676,7 @@ router.get('/invitations', async (req, res) => {
       statusLabel:
         row.status === 'accepted' || row.status === 'registered'
           ? 'Aceptó'
-          : row.status === 'declined'
-            ? 'No aceptó'
-            : '—',
+          : 'No aceptó',
       inviteeName: row.invitee_name || row.researcher_name || null,
       inviteeEmail: row.invitee_email || row.researcher_email || null,
       medicoAcepto: row.status === 'accepted' || row.status === 'registered',

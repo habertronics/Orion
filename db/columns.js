@@ -356,9 +356,9 @@ export const INTERVENCION_COLUMNS = [
 /** Columnas compactas de invitaciones de representantes. */
 export const INVITACIONES_COLUMNS = [
   col("representativeName", "Representante", "reps"),
-  col("representativeEmail", "Correo representante", "reps"),
-  col("inviteeName", "Médico invitado", "reps"),
-  col("inviteeEmail", "Correo del médico", "reps"),
+  col("representativeEmail", "Correo rep.", "reps"),
+  col("inviteeName", "Médico", "reps"),
+  col("inviteeEmail", "Correo médico", "reps"),
   col("inviteTypeLabel", "Invitación", "reps"),
   col("statusLabel", "Estado", "reps"),
 ];

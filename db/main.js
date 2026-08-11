@@ -277,9 +277,10 @@ function buildRow(columns, data, color = {}) {
   return `<tr class="paint-row paint-${mode}" style="${style}">${cells}</tr>`;
 }
 
-function renderTable(columns, rowHtml) {
+function renderTable(columns, rowHtml, { compact = false } = {}) {
+  const sheetClass = compact ? "data sheet-reps" : "data sheet-full";
   tableWrap.innerHTML = `
-    <table class="data sheet-full">
+    <table class="${sheetClass}">
       <thead>${buildHeader(columns)}</thead>
       <tbody>${rowHtml || `<tr><td colspan="${columns.length}" class="muted">Sin datos</td></tr>`}</tbody>
     </table>`;
@@ -826,7 +827,11 @@ function renderRepresentantes() {
       return `<tr class="row-tone-${index % 2}">${cells}</tr>`;
     })
     .join("");
-  renderTable(INVITACIONES_COLUMNS, body || `<tr><td colspan="${INVITACIONES_COLUMNS.length}">Sin invitaciones</td></tr>`);
+  renderTable(
+    INVITACIONES_COLUMNS,
+    body || `<tr><td colspan="${INVITACIONES_COLUMNS.length}">Sin respuestas aún</td></tr>`,
+    { compact: true },
+  );
 }
 
 function renderSummary() {
