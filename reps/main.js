@@ -415,6 +415,86 @@ refreshQrBtn.addEventListener("click", () =>
 );
 refreshInvitesBtn.addEventListener("click", () => void loadInvites());
 
+/* —— Instalar PWA (evitar que Orión capture el enlace) —— */
+const installBanner = document.getElementById("installBanner");
+const installBannerText = document.getElementById("installBannerText");
+const installAppBtn = document.getElementById("installAppBtn");
+const copyInstallLinkBtn = document.getElementById("copyInstallLinkBtn");
+const installFeedback = document.getElementById("installFeedback");
+const INSTALL_URL = `${window.location.origin}/reps/`;
+let deferredInstall = null;
+
+function isStandaloneDisplay() {
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.matchMedia("(display-mode: fullscreen)").matches ||
+    // iOS Safari
+    Boolean(window.navigator.standalone)
+  );
+}
+
+function showInstallFeedback(message) {
+  if (!installFeedback) return;
+  installFeedback.hidden = false;
+  installFeedback.textContent = message;
+}
+
+function refreshInstallBanner() {
+  if (!installBanner) return;
+  const standalone = isStandaloneDisplay();
+  installBanner.hidden = false;
+  if (standalone) {
+    if (installBannerText) {
+      installBannerText.textContent =
+        "Parece que abriste este enlace dentro de otra app (p. ej. Orión). Copia el enlace y ábrelo en Chrome para poder instalar Representantes.";
+    }
+    if (installAppBtn) installAppBtn.hidden = true;
+  } else if (deferredInstall) {
+    if (installBannerText) {
+      installBannerText.textContent =
+        "Puedes guardar Representantes en tu pantalla de inicio.";
+    }
+    if (installAppBtn) installAppBtn.hidden = false;
+  } else {
+    if (installBannerText) {
+      installBannerText.textContent =
+        "En Chrome: menú ⋮ → Instalar app / Añadir a pantalla de inicio. Si no aparece, copia el enlace y ábrelo en una pestaña nueva de Chrome (no desde Orión).";
+    }
+    if (installAppBtn) installAppBtn.hidden = true;
+  }
+}
+
+window.addEventListener("beforeinstallprompt", (event) => {
+  event.preventDefault();
+  deferredInstall = event;
+  refreshInstallBanner();
+});
+
+window.addEventListener("appinstalled", () => {
+  deferredInstall = null;
+  showInstallFeedback("Listo: Representantes quedó instalada.");
+  refreshInstallBanner();
+});
+
+installAppBtn?.addEventListener("click", async () => {
+  if (!deferredInstall) return;
+  deferredInstall.prompt();
+  await deferredInstall.userChoice.catch(() => ({}));
+  deferredInstall = null;
+  refreshInstallBanner();
+});
+
+copyInstallLinkBtn?.addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText(INSTALL_URL);
+    showInstallFeedback("Enlace copiado. Pégalo en Chrome.");
+  } catch {
+    showInstallFeedback(INSTALL_URL);
+  }
+});
+
+refreshInstallBanner();
+
 const existing = getSession();
 if (existing && getToken()) {
   // Siempre empezar en Entrar / Registrarme (no saltar al home).

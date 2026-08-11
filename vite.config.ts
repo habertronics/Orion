@@ -44,6 +44,7 @@ export default defineConfig({
         'reps/manifest.webmanifest',
       ],
       manifest: {
+        id: '/',
         name: 'Habertronic Orión',
         short_name: 'Orión',
         description:
@@ -54,6 +55,9 @@ export default defineConfig({
         orientation: 'portrait',
         lang: 'es',
         start_url: '/',
+        scope: '/',
+        // No capturar /reps /db /status: el celular debe abrirlos en Chrome para poder instalarlos.
+        handle_links: 'not-preferred',
         icons: [
           {
             src: 'pwa-192.png',

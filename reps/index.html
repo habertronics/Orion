@@ -65,8 +65,20 @@
           Regístrate con tu correo institucional, invita médicos con tu QR y
           comprueba quién ya aceptó.
         </p>
-        <p class="ver" id="appVer">v0.16</p>
+        <p class="ver" id="appVer">v0.17</p>
       </header>
+
+      <div class="install-banner" id="installBanner" hidden>
+        <p id="installBannerText">
+          Para guardar Representantes en tu celular, ábrela en Chrome (navegador)
+          y usa Instalar app.
+        </p>
+        <div class="install-actions">
+          <button type="button" class="btn" id="installAppBtn" hidden>Instalar app</button>
+          <button type="button" class="btn ghost" id="copyInstallLinkBtn">Copiar enlace</button>
+        </div>
+        <p class="install-feedback" id="installFeedback" hidden></p>
+      </div>
 
       <section class="panel auth-panel" id="authPanel">
         <!-- Solo dos botones. Nada más. -->

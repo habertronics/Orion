@@ -92,6 +92,39 @@ body {
   margin-bottom: 0.65rem;
 }
 
+.install-banner {
+  margin: 0.85rem 0 0;
+  padding: 0.9rem 1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(110, 207, 142, 0.35);
+  background: rgba(61, 154, 92, 0.14);
+}
+
+.install-banner p {
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.install-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 0.75rem;
+}
+
+.install-actions .btn {
+  width: auto;
+  min-width: 8.5rem;
+}
+
+.install-feedback {
+  margin-top: 0.55rem !important;
+  color: var(--accent) !important;
+  font-size: 0.85rem !important;
+}
+
 .brand-icon {
   border-radius: 12px;
   flex-shrink: 0;

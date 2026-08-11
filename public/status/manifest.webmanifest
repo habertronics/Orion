@@ -8,7 +8,7 @@
   "start_url": "/status/?source=pwa",
   "scope": "/status/",
   "display": "standalone",
-  "orientation": "any",
+  "handle_links": "preferred",
   "theme_color": "#102832",
   "background_color": "#102832",
   "icons": [

@@ -1,3 +1,6 @@
+/** Versión visible en portada (Welcome + Home). Subir en cada cambio visible/funcional del front principal. */
+export const APP_VERSION = 'v1.1'
+
 const API_URLS = {
   localhost: 'http://localhost:3001',
   production: 'https://orion-83ct.onrender.com',

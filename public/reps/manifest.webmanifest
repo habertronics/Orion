@@ -7,6 +7,7 @@
   "start_url": "/reps/?source=pwa",
   "scope": "/reps/",
   "display": "standalone",
+  "handle_links": "preferred",
   "theme_color": "#1a2e1f",
   "background_color": "#142018",
   "icons": [
